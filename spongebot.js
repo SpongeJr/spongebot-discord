@@ -29,99 +29,25 @@ const BOT = new Discord.Client();
 const FS = require('fs');
 const TESTFILENAME = 'testfile.dat';
 const BANK_FILENAME = 'data/banks.csv';
+const STATS_FILENAME = 'data/gamestats.json';
 
 // note: make sure SCRAM_DELAY - SCRAM_DELAY_VARIATION > SCRAM_GUESSTIME
-const SCRAM_DELAY = 300000;
-const SCRAM_DELAY_VARIATION = 30000;
-const SCRAM_AWARD = 500;
-const SCRAM_GUESSTIME = 16000;
-const SCRAM_EXTRA_TIME = 2000; // per letter
+const SCRAM_DELAY = 300300;
+const SCRAM_DELAY_VARIATION = 42000;
+const SCRAM_AWARD = 300;
+const SCRAM_GUESSTIME = 29000;
+const SCRAM_EXTRA_TIME = 3000; // per letter
 
 const SPONGE_ID = "167711491078750208";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.8';
+const VERSION_STRING = '0.92';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
   'can possibly be found at: http://www.spongejr.com/spongebot/spongebot.js' +
   '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
-//-----------------------------------------------------------------------------
-var scram = {
-	ready: true,
-	announce: true,
-	runState: 'ready'
-};
-//-----------------------------------------------------------------------------
-var botStorage = {};
-//-----------------------------------------------------------------------------
-var bankroll = {};
-//-----------------------------------------------------------------------------
-var loadBanks = function() {
-	var readStream = FS.createReadStream(BANK_FILENAME);
-	readStream
-		.on('readable', function() {
-			var chunk;
-			while (null !== (chunk = readStream.read())) {
-				
-				botStorage.bankloaddata = '';
-				for (var i = 0; i < chunk.length; i++) {
-					botStorage.bankloaddata += String.fromCharCode(chunk[i]);
-				};
-				console.log('  !loadbanks: Data chunk loaded.');
-			}
-		})
-		.on('end', function() {
-			bankroll = parseBankfile(botStorage.bankloaddata);
-			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
-		});
-};
-//-----------------------------------------------------------------------------
-var saveBanks = function() {
-		var writeStream = FS.createWriteStream(BANK_FILENAME, {autoClose: true});
-		writeStream.write(makeBankFile(bankroll));
-		writeStream.end(function() {
-			console.log(' Banks saved.');
-	});
-};
-//-----------------------------------------------------------------------------
-var addBank = function(who, amt) {
-	
-	if (!BOT.users.get(who)) {
-		console.log('addBank: nonexistent user: ' + who);
-		return false;
-	}
-	
-	if (!bankroll[who]) {
-		bankroll[who] = 0;
-		console.log('addbank: New bankroll made for ' + who);
-	}
-	
-	bankroll[who] += parseInt(amt);
-	saveBanks();
-	return true;
-};
-//-----------------------------------------------------------------------------
-var makeBankFile = function(bankdata) {
-	var theFile = '';
-	for (who in bankdata) {
-		theFile += who + ',' + bankdata[who] + ','
-	}
-	theFile = theFile.slice(0, -1); // remove trailing comma
-	return theFile;
-};
-//-----------------------------------------------------------------------------
-var parseBankfile = function(inp) {
-	inp = inp.split(',');
-	
-	var outp = {};
-	for (var i = 0; i < inp.length; i = i + 2) {
-		outp[inp[i]] = parseInt(inp[i + 1]);
-		console.log (' ID: ' + inp[i] + '    BANK: ' + inp[i + 1]);
-	}
-	return outp;
-};
 //-----------------------------------------------------------------------------
 var spongeBot = {};
 //-----------------------------------------------------------------------------
@@ -146,7 +72,7 @@ var acro = {
 	config: {
 		voteOwn: false,
 		minPlayersForCredits: 3,
-		winCredits: 50,
+		winCredits: 3500,
 		categories: true
 	},
 	categories: [
@@ -154,6 +80,166 @@ var acro = {
 		'movies and television', 'news and current events',	'occupations',
 		'technology and science', 'memes and fads', 'fantasy', 'general/any'
 	]
+};
+//-----------------------------------------------------------------------------
+var scram = {
+	ready: true,
+	announce: true,
+	runState: 'ready'
+};
+//-----------------------------------------------------------------------------
+var botStorage = {};
+var bankroll = {};
+var gameStats = {};
+//-----------------------------------------------------------------------------
+var makeStatFile = function() {
+	var theFile = JSON.stringify(gameStats);
+	return theFile;
+};
+//-----------------------------------------------------------------------------
+var parseStatFile = function() {
+	var outp = JSON.parse(botStorage.statloaddata);
+	console.log(outp);
+	return outp;
+};
+//-----------------------------------------------------------------------------
+var loadStats = function() {
+	var readStream = FS.createReadStream(STATS_FILENAME);
+	readStream
+		.on('readable', function() {
+			var chunk;
+			while (null !== (chunk = readStream.read())) {
+				botStorage.statloaddata = '';
+				for (var i = 0; i < chunk.length; i++) {
+					botStorage.statloaddata += String.fromCharCode(chunk[i]);
+				};
+				console.log('  !loadStats: Data chunk loaded.');
+			}
+		})
+		.on('end', function() {
+			gameStats = parseStatFile();
+			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
+		});	
+};
+//-----------------------------------------------------------------------------
+var saveStats = function() {
+	var writeStream = FS.createWriteStream(STATS_FILENAME, {autoClose: true});
+	writeStream.write(makeStatFile(gameStats));
+	writeStream.end(function() {
+		console.log(' Game stats saved.');
+	});
+};
+//-----------------------------------------------------------------------------
+var incStat = function(who, game, stat) {
+	// Increments an integer stat. Returns: the new, incremented value
+	// Does not check validity of who, game, or stat, and will make a new
+	// Object key (who), game, or stat as needed if it doesn't exist.
+	
+	if (!gameStats[who]) {
+		gameStats[who] = {};
+	}
+	
+	if (!gameStats[who][game]) {
+		gameStats[who][game] = {};
+	}
+	
+	if (!gameStats[who][game].hasOwnProperty(stat)) {
+		gameStats[who][game][stat] = 0;
+		console.log('!incStat: Made a new ' + game + ' stat for ' + who);
+	}
+	
+	gameStats[who][game][stat]++;
+	saveStats();
+	return gameStats[who][game][stat];
+};
+//-----------------------------------------------------------------------------
+var alterStat = function(who, game, stat, amt) {
+	// Increments an integer stat. Returns: the stat's new value
+	// Does not check validity of who, game, or stat, and will make a new
+	// Object key (who), game, or stat as needed if it doesn't exist.
+	// Also does no validation on amount parameter, call with care.
+	
+	if (!gameStats[who]) {
+		gameStats[who] = {};
+	}
+	
+	if (!gameStats[who][game]) {
+		gameStats[who][game] = {};
+	}
+	
+	if (!gameStats[who][game].hasOwnProperty(stat)) {
+		gameStats[who][game][stat] = 0;
+		console.log('!alterStat: Made a new ' + game + ' stat for ' + who);
+	}
+	
+	gameStats[who][game][stat] += amt;
+	saveStats();
+	return gameStats[who][game][stat];
+};
+//-----------------------------------------------------------------------------
+var parseBankfile = function(inp) {
+	inp = inp.split(',');
+	
+	var outp = {};
+	for (var i = 0; i < inp.length; i = i + 2) {
+		outp[inp[i]] = parseInt(inp[i + 1]);
+		console.log (' ID: ' + inp[i] + '    BANK: ' + inp[i + 1]);
+	}
+	return outp;
+};
+//-----------------------------------------------------------------------------
+var loadBanks = function() {
+	var readStream = FS.createReadStream(BANK_FILENAME);
+	readStream
+		.on('readable', function() {
+			var chunk;
+			while (null !== (chunk = readStream.read())) {
+				
+				botStorage.bankloaddata = '';
+				for (var i = 0; i < chunk.length; i++) {
+					botStorage.bankloaddata += String.fromCharCode(chunk[i]);
+				};
+				console.log('  !loadBanks: Data chunk loaded.');
+			}
+		})
+		.on('end', function() {
+			bankroll = parseBankfile(botStorage.bankloaddata);
+			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
+		});
+};
+//-----------------------------------------------------------------------------
+var saveBanks = function() {
+	var writeStream = FS.createWriteStream(BANK_FILENAME, {autoClose: true});
+	writeStream.write(makeBankFile(bankroll));
+	writeStream.end(function() {
+		console.log(' Banks saved.');
+	});
+};
+//-----------------------------------------------------------------------------
+var addBank = function(who, amt) {
+	
+	if (!BOT.users.get(who)) {
+		console.log('addBank: nonexistent user: ' + who);
+		return false;
+	}
+	
+	if (!bankroll.hasOwnProperty(who)) {
+		bankroll[who] = START_BANK;
+		console.log('addBank: New bankroll made for ' + who);
+	}
+	
+	bankroll[who] += parseInt(amt);
+	saveBanks();
+	return true;
+};
+//-----------------------------------------------------------------------------
+var makeBankFile = function(bankdata) {
+	var theFile = '';
+	for (who in bankdata) {
+		theFile += who + ',' + bankdata[who] + ','
+	}
+	theFile = theFile.slice(0, -1); // remove trailing comma
+	return theFile;
 };
 //-----------------------------------------------------------------------------
 var giveaways = {
@@ -212,6 +298,18 @@ var giveaways = {
 		},
 		enabled: true,
 		type: 'software'
+	},
+	'TwitchSub': {
+		info: {
+			description: 'Will subscribe to your Twitch channel if you are a Twitch partner. Will legit check your content regularly and stuff.',
+			infoUrl: 'http://www.twitch.tv'
+		}
+	},
+	'Amazon3': {
+		info: {
+			description: '$3.00 USD Amazon gift code.',
+			infoUrl: 'https://www.amazon.com/gc/redeem/'
+		}
 	}
 };
 //-----------------------------------------------------------------------------
@@ -301,6 +399,18 @@ toppings = toppings.split(",");
 	return sammich;
 }
 //-----------------------------------------------------------------------------
+var chSend = function(message, str) {
+	
+	if (message.author.bot) {
+		console.log(' -- Blocked a bot-to-bot m.channel.send');
+		return;
+	}
+	
+	message.channel.send(str).catch(reason => {
+		console.log('Error sending a channel message: ' + reason);
+	});
+};
+//-----------------------------------------------------------------------------
 var bigLetter = function(inp) {
 	var outp = '';
 	var ch = '';
@@ -312,89 +422,163 @@ var bigLetter = function(inp) {
 	return outp;
 };
 //-----------------------------------------------------------------------------
-spongeBot.readfile = {
-	do: function() {
+spongeBot.roll = {
+	cmdGroup: 'Fun and Games',
+	do: function (message, parms){
 		
-		if (spongeBot.fileData !== '') {
-			BOT.channels.get(SPAMCHAN_ID).send('I have some data stored already, but I\'ll overwrite it, k?');
-		}
-		
-		BOT.channels.get(SPAMCHAN_ID).send('Attempting to open file...');
-		
-		var readStream = FS.createReadStream(TESTFILENAME);
-		readStream
-			.on('readable', function() {
-				var chunk;
-				while (null !== (chunk = readStream.read())) {
-					
-					var theData = '';
-					for (var i = 0; i < chunk.length; i++) {
-						theData += String.fromCharCode(chunk[i]);
-					};
-					//BOT.channels.get(SPAMCHAN_ID).send(theData);
-					spongeBot.fileData = theData;
-					BOT.channels.get(SPAMCHAN_ID).send('I\'ve stored that. :slight_smile:');
-					console.log(chunk);
-				}
-			})
-			.on('end', function() {
-				BOT.channels.get(SPAMCHAN_ID).send('All done!');
-			});
-	},
-	help: '(( currently under development ))',
-	disabled: true
-};
-//-----------------------------------------------------------------------------
-spongeBot.showfile = {
-	
-	do: function() {
-		if (spongeBot.fileData === '') {
-			BOT.channels.get(SPAMCHAN_ID).send(':warning: I have no file loaded right now.');
+		if (!parms) {
+			chSend(message, 'See `!help roll` for help.');
 			return;
 		}
 		
-		theData = spongeBot.fileData;
+		parms = parms.split('d');
+		var x = parms[0];
+		var y = parms[1];
 		
-		BOT.channels.get(SPAMCHAN_ID).send(theData);
+		if (x && y) {
+			x = parseInt(x);
+			y = parseInt(y);
+			
+			if (x > 20) {
+				chSend(message, '`!roll`: No more than 20 dice please.');
+				return;
+			}
+			
+			if (x < 1) {
+				chSend(message, '`!roll`: Must roll at least one die.');
+				return;
+			}
+			
+			if (y < 2) {
+				chSend(message, '`!roll`: Dice must have at least 2 sides.');
+				return;
+			}
+			
+			if (y > 10000) {
+				chSend(message, '`!roll`: Max sides allowed is 10000.');
+				return;
+			}
+			
+			var str = ':game_die: Rolling ' + x + 'd' + y + ' for ';
+			str += message.author + ':\n`';
+			
+			var total = 0;
+			//var dice = [];
+			var roll;
+			
+			for (var i = 0; i < x; i++) {
+				roll = Math.floor(Math.random() * y) + 1;
+				//dice[i] = roll;
+				str += '[ ' + roll + ' ]  ';
+				total += roll;
+			}
+			str += '`\n' + x + 'd' + y + ' TOTAL: ' + total;
+			chSend(message, str);
+		} else {
+			chSend(message, 'Use `!roll `X`d`Y to roll X Y-sided dice.');
+		}
 	},
-	help: '(( currently under development ))',
-	disabled: true
+	help: '`!roll <x>d<y>` rolls a `y`-sided die `x` times and gives results.',
+	longHelp: '`!roll <x>d<y>` rolls a `y`-sided die `x` times and gives results.' +
+	'\n You can roll up to 20 dice with up to 10000 virtual "sides" each.' +
+	  '\n EXAMPLE: `!roll 3d6` would roll 3 "fair" six-sided dice, display the\n' +
+	  ' individual die rolls, and show the total (which would be between 3 and 18\n' +
+	  ' inclusive in this example.)',
+	disabled: false
 }
 //-----------------------------------------------------------------------------
-spongeBot.append = {
+spongeBot.rot13 = {
+	cmdGroup: 'Miscellaneous',
+	do: function (message, inp){
+		
+		var outp;
+		
+		// ROT-13 by Ben Alpert
+		// See: http://stackoverflow.com/questions/617647/where-is-my-one-line-implementation-of-rot13-in-javascript-going-wrong
+		outp = inp.replace(/[a-zA-Z]/g,function(c){
+			return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);});
+			
+		if (outp === '') {
+			chSend(message, message.author + ' nothing to ROT-13!');
+			return false;
+		};
+		chSend(message, message.author + ': `' + outp + '`');
+    },
+	help: '`!rot13 <message>` spits back the ROT-13 ciphertext of your message.',
+	longHelp: '	You could use this in DM and then use the result in public chat if you were giving spoilers or something I guess.',
+	disabled: false
+}
+//-----------------------------------------------------------------------------
+spongeBot.exchange = {
+	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		spongeBot.fileData += parms;
-		BOT.channels.get(SPAMCHAN_ID).send('Appended ' + parms + ' to the stored data.');
+		if (parms  === 'iamsure') {
+			
+			if (!bankroll.hasOwnProperty(message.author.id)) {
+				chSend(message, message.author + ', you have no bank ' +
+				'account.  You can open one with `!bank`.');
+				return;
+			}
+			
+			if (bankroll[message.author.id] < 100000) {
+				chSend(message, message.author + ', you don\'t have enough credits.');
+				return;
+			}
+			
+			addBank(message.author.id, -100000);
+			var newTix = incStat(message.author.id, 'raffle', 'ticketCount');
+			chSend(message, message.author + ', you now have ' +
+			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
+		} else {
+			chSend(message, message.author + ', be sure you want to tade 100K ' +
+			  'credits for one raffle ticket, then type `!exchange iamsure` to do so.');
+		}
 	},
-	help: '(( currently under development ))',
-	disabled: true
+	help: '`!exchange iamsure` trades 100,000 credits for a raffle ticket. Make sure you really want to do this.'
 };
 //-----------------------------------------------------------------------------
-spongeBot.savefile = {
-	do: function() {
-		var writeStream = FS.createWriteStream(TESTFILENAME, {autoClose: true});
-		BOT.channels.get(SPAMCHAN_ID).send('Here goes! Attempting to write to disk...');
-		writeStream.write(spongeBot.fileData);
-		writeStream.end(function() {
-			BOT.channels.get(SPAMCHAN_ID).send('...and I am done!');
-		});
+spongeBot.stats = {
+	cmdGroup: 'Fun and Games',
+	do: function(message, parms) {
+		var who;
+		
+		if (!parms) {
+			//chSend(message, message.author + ', specify a <user> for `!stats`.');
+			who = message.author.id;
+		} else {
+			who = makeId(parms);
+		}
+		
+		if (!gameStats[who]) {
+			chSend(message, message.author + ', I don\'t have any stats for them.');
+			return;
+		}
+		
+		var theStr = ' :bar_chart:  STATS FOR ' + makeTag(who) + '  :bar_chart:\n```';
+		for (var game in gameStats[who]) {
+			theStr += '> ' + game + ':\n';
+			for (var stat in gameStats[who][game]) {
+				theStr += '    ' + stat + ': ' + gameStats[who][game][stat] + '\n';
+			}
+		}
+		theStr += '```';
+		chSend(message, theStr);
 	},
-	help: '(( under development ))',
-	disabled: true
-}
+	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
+};
 //-----------------------------------------------------------------------------
 spongeBot.disable = {
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
-			message.channel.send('Can\'t find command ' + parms + '!');
+			chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
 		if (parms === 'disable') {
-			message.channel.send('Don\'t disable `!disable`. Just don\'t.');
+			chSend(message, 'Don\'t disable `!disable`. Just don\'t.');
 			return;
 		}
 		spongeBot[parms].disabled = !(spongeBot[parms].disabled);
-		message.channel.send(parms + '.disabled: '
+		chSend(message, parms + '.disabled: '
 		  + spongeBot[parms].disabled);
 	},
 	help: 'Disables/enables a bot command. Restricted access.',
@@ -402,10 +586,11 @@ spongeBot.disable = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.s = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		
 		if (scram.runState !== 'guessing') {
-			message.channel.send('You can\'t guess the scrambled word now! ' +
+			chSend(message, 'You can\'t guess the scrambled word now! ' +
 			  'You need to wait for a new word to unscramble!');
 			return;
 		}
@@ -413,10 +598,14 @@ spongeBot.s = {
 		if (parms === scram.word) {
 			scram.runState = 'gameover';
 			addBank(message.author.id, SCRAM_AWARD);
-			message.channel.send(message.author + ' just unscrambled ' +
+			chSend(message, message.author + ' just unscrambled ' +
 			  ' the word and wins ' + SCRAM_AWARD + ' credits!');
+			incStat(message.author.id, 'scram', 'wins');
+			
+			chSend(message, message.author + ' has now unscrambled ' +
+			  gameStats[message.author.id].scram.wins + ' words!');
 		} else {
-			//message.channel.send('Not the word.');
+			//chSend(message, 'Not the word.');
 		}
 	},
 	help: 'Use `!s <word>` to submit a guess in the `!scram` '
@@ -425,6 +614,7 @@ spongeBot.s = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.scram = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		if (scram.runState === 'ready') {
 			
@@ -434,14 +624,14 @@ spongeBot.scram = {
 			var theWord = listPick(SCRAMWORDS[theCat].split(','))[0];
 			scram.word = theWord;		
 			var scramWord = scrambler(theWord);
-			message.channel.send('Unscramble this: ' + bigLetter(scramWord) + 
+			chSend(message, 'Unscramble this: ' + bigLetter(scramWord) + 
 			  '   *Category*: ' + theCat);
 			  
 			var theDelay = parseInt(SCRAM_DELAY - (SCRAM_DELAY_VARIATION / 2) +
 			  Math.random() * SCRAM_DELAY_VARIATION);
 			var guessTime = SCRAM_GUESSTIME + SCRAM_EXTRA_TIME * theWord.length;
 			  
-			message.channel.send('You have ' + parseInt(guessTime / 1000) + 
+			chSend(message, 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess. Next word available in ' + 
 			  parseInt(theDelay / 1000) + ' seconds.');
 			scram.runState = 'guessing';
@@ -450,20 +640,20 @@ spongeBot.scram = {
 				if (scram.runState !== 'ready') {
 					scram.runState = 'ready';
 					if (scram.announce) {
-						message.channel.send('There\'s a new `!scram` word ready!');
+						chSend(message, 'There\'s a new `!scram` word ready!');
 					}
 				}
 			}, theDelay);
 			
 			scram.guessTimer = setTimeout(function() {
 				if (scram.runState === 'guessing') {
-					message.channel.send('The `!scram` word was not guessed' +
+					chSend(message, 'The `!scram` word was not guessed' +
 					' in time! The word was: ' + scram.word);
 					scram.runState = 'gameover';
 				}
 			}, guessTime);
 		} else {
-			message.channel.send('`!scram` is not ready just yet.');
+			chSend(message, '`!scram` is not ready just yet.');
 		}
 	},
     help: '`!scram` starts the scramble game or checks to see if it\'s ready',
@@ -471,28 +661,30 @@ spongeBot.scram = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.ttc = {
+	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 		
 		if (!parms) {
-			message.channel.send('To look up an item on Tamriel Trade Centre (EU/PC), just use `!ttc <item>`.' +
+			chSend(message, 'To look up an item on Tamriel Trade Centre (EU/PC), just use `!ttc <item>`.' +
 			  '\nUse an exact item name, or you can search for partial matches.');
 			return;
 		}
 		var theLink = 'https://eu.tamrieltradecentre.com/pc/Trade/SearchResult?ItemNamePattern='
 		parms = parms.replace(/ /g, '+');
 		theLink += parms + '&SortBy=Price&Order=asc';
-		message.channel.send(theLink);
+		chSend(message, theLink);
 	},
 	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
 	  + ' Use an exact item name, or you can search for partial matches.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.giveaways = {
+	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
 		
 		if (!parms) {
-			message.channel.send(':fireworks: GIVEAWAYS! :fireworks:\n There are currently no giveaways running.');
-			message.channel.send('There are a few items that _may possibly_ someday go here, but no guarantees, at all! ' +
+			chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n There are currently no giveaways running.');
+			chSend(message, 'There are a few items that _may possibly_ someday go here, but no guarantees, at all! ' +
 			'You can see this list with `!giveaways list`. If giveaways actually do someday get implemented, there would ' +
 			'first need to be some system of earning them, or earning chances for them or something.');
 			return;
@@ -506,7 +698,7 @@ spongeBot.giveaways = {
 			for (var item in giveaways) {
 				str += '`' + item + '`   ';
 			}
-			message.channel.send(str);
+			chSend(message, str);
 		}
 		
 		if (parms[0] === 'info') {
@@ -516,9 +708,9 @@ spongeBot.giveaways = {
 				var str = '`' + parms + '`: ';
 				str += giveaways[parms].info.description + '\n';
 				str += '  More info: ' + giveaways[parms].info.infoUrl;
-				message.channel.send(str);
+				chSend(message, str);
 			} else {
-				message.channel.send('Couldn\'t find any info for that giveaway, ' + message.author +
+				chSend(message, 'Couldn\'t find any info for that giveaway, ' + message.author +
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
 		}
@@ -527,27 +719,30 @@ spongeBot.giveaways = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.sammich = {
-	
+	cmdGroup: 'Fun and Games',
 	do: function(message) {
-		message.channel.send('How about having a ' + sammichMaker() + ' for a snack?   :yum:');
+		chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
 	},
 	help: '`!sammich` whips you up a tasty random sandwich (65% chance) or smoothie (35% chance)'
 };
 //-----------------------------------------------------------------------------
 spongeBot.give = {
+	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
 		
 		var giver = message.author.id;
 		
 		if (!parms) {
-			message.channel.send('You forgot the target to !gift.');
+			chSend(message, 'Who are you trying to `!give` credits ' +
+			  ' to, ' + makeTag(giver) + '? (`!help give` for help)');
 			return;
 		}
 			
 		parms = parms.split(' ');
 			
 		if (!parms[1]) {
-			message.channel.send('No amount specified to `!gift`');
+			chSend(message, 'No amount specified to `!give`, ' + 
+			  makeTag(giver) + '. (`!help give` for help)' );
 			return;
 		}
 			
@@ -555,57 +750,63 @@ spongeBot.give = {
 		var amt = parseInt(parms[1]);
 
 		if (isNaN(amt)) {
-			message.channel.send(makeTag(giver) + ', that\'s not a number to me.');
+			chSend(message, makeTag(giver) + ', that\'s not a number to me.');
 			return;
 		}
 		
 		if (amt === 0) {
-			message.channel.send(makeTag(giver) + ' you want to give *nothing*? ' + 
+			chSend(message, makeTag(giver) + ' you want to give *nothing*? ' + 
 			  'Ok, uh... consider it done I guess.');
 			return;
 		}
 		
 		if (amt < 0) {
-			message.channel.send(makeTag(giver) + ' wouldn\'t that be *taking*?'); 
+			chSend(message, makeTag(giver) + ' wouldn\'t that be *taking*?'); 
 			return;
 		}
 		
 		if (bankroll[giver] < amt) {
-			message.channel.send('You can\'t give what you don\'t have!');
+			chSend(message, 'You can\'t give what you don\'t have, ' +
+			  makeTag(giver) + '!');
+			return;
+		}
+		
+		if (!bankroll.hasOwnProperty(giver)) {
+			chSend(message, 'You\'ll need a bank account first, ' +
+			  makeTag(giver) + '!');
 			return;
 		}
 		
 		if (amt === 1) {
-			message.channel.send('Aren\'t you the generous one, ' + makeTag(giver) + '?');
+			chSend(message, 'Aren\'t you the generous one, ' + makeTag(giver) + '?');
 		}
-		
-		addBank(giver, -amt);
-		
+	
 		if (!addBank(who, amt)) {
-			message.channel.send('Failed to give to ' + who);
+			chSend(message, 'Failed to give to ' + who);
 		} else {
-			message.channel.send(':gift: OK, I moved ' + amt +
+			addBank(giver, -amt);
+			chSend(message, ':gift: OK, I moved ' + amt +
 			  ' of your credits to ' + makeTag(who) + ', ' + makeTag(giver));
 		}
 	},
-	help: '`!give <user> <amount>` gives someone some of your credits. Disabled, because Arch.',
-	disabled: true
-	
+	help: '`!give <user> <amount>` gives someone some of your credits.',
+	disabled: false
 };
 //-----------------------------------------------------------------------------
 spongeBot.gift = {
+	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
 		if (message.author.id === SPONGE_ID) {
 			
 			if (!parms) {
-				message.channel.send('You forgot the target to !gift.');
+				chSend(message, 'You forgot the target to !gift.');
 				return;
 			}
 			
 			parms = parms.split(' ');
 			
 			if (!parms[1]) {
-				message.channel.send('No amount specified to `!gift`');
+				chSend(message, 'No amount specified to `!gift`');
 				return;
 			}
 			
@@ -613,12 +814,10 @@ spongeBot.gift = {
 			var amt = parseInt(parms[1]);
 			
 			if (!addBank(who, amt)) {
-				message.channel.send('Failed to give to ' + who);
+				chSend(message, 'Failed to give to ' + who);
 			} else {
-				message.channel.send('OK, gave ' + makeTag(who) + ' ' + amt + ' credits!');
+				chSend(message, 'OK, gave ' + makeTag(who) + ' ' + amt + ' credits!');
 			}
-		} else {
-			message.channel.send('You are not the Sponge. Your shtyle is weak!');
 		}
 	},
 	help: 'If you are a sponge, `!gift <user> <amount>` gives someone some credits.',
@@ -626,6 +825,7 @@ spongeBot.gift = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.bank = {
+	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
 		
 		var who;
@@ -635,7 +835,7 @@ spongeBot.bank = {
 			who = message.author.id;
 			
 			if (typeof bankroll[who] === 'undefined') {
-				message.channel.send(makeTag(who) + ', I don\'t see an account ' +
+				chSend(message, makeTag(who) + ', I don\'t see an account ' +
 				  'for you, so I\'ll open one with ' + START_BANK + ' credits.');
 				
 				/*
@@ -658,14 +858,25 @@ spongeBot.bank = {
 		}
 		
 		if (typeof bankroll[who] === 'undefined') {
-			message.channel.send(message.author + ', they don\'t have a bank account.');
+			chSend(message, message.author + ', they don\'t have a bank account.');
 		} else {
-			message.channel.send(makeTag(who) + ' has ' + bankroll[who] + ' credits.');	
+			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');	
 		}
 	},
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
 	  'will either show your own bank, or create a new account for you.'
 };
+//-----------------------------------------------------------------------------
+spongeBot.showCode = {
+	do: function(message, parms) {
+		var theCode = spongeBot[parms];
+		
+		chSend(message, theCode);
+		console.log(theCode);
+	},
+	help: 'shows code.',
+	disabled: true
+}
 //-----------------------------------------------------------------------------
 spongeBot.savebanks = {
 	do: function() {
@@ -683,7 +894,17 @@ spongeBot.loadbanks = {
 	disabled: true
 };
 //-----------------------------------------------------------------------------
+spongeBot.setStat = {
+	do: function() {
+		// alterStat()
+	},
+	help: 'sets a game stat. limited access.',
+	access: true,
+	disabled: true
+}
+//-----------------------------------------------------------------------------
 spongeBot.slots = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		
 		if (!slots.config.symArr) {
@@ -702,7 +923,7 @@ spongeBot.slots = {
 		var payTab = slots.config.payTable;
 		
 		if (parms === '') {
-			message.channel.send('Try `!slots spin <bet>` or `!slots paytable`.');
+			chSend(message, 'Try `!slots spin <bet>` or `!slots paytable`.');
 			return;
 		}	
 		
@@ -744,35 +965,35 @@ spongeBot.slots = {
 				ptabString += '      (' + lineChance.toFixed(1) + ' : 1)';
 				ptabString += '\n';
 			}
-			message.channel.send(ptabString);
+			chSend(message, ptabString);
 		}
 
 		if (parms[0] === 'spin') {
 			var who = message.author.id;
 
 			if (!bankroll[who]) {
-				message.channel.send(message.author + ', please open a `!bank` account before playing slots.');
+				chSend(message, message.author + ', please open a `!bank` account before playing slots.');
 				return;
 			}
 			betAmt = parseInt(parms[1]) || 0;
 
 			if (betAmt === 0) {
-				message.channel.send(message.author + ', you can\'t play if you don\'t pay.');
+				chSend(message, message.author + ', you can\'t play if you don\'t pay.');
 				return;
 			}
 			
 			if (betAmt < 0) {
-				message.channel.send(message.author + ' thinks they\'re clever making a negative bet.');
+				chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
 				return;
 			}
 			
 			if (betAmt > bankroll[who]) {
-				message.channel.send(message.author + ', check your `!bank`. You don\'t have that much.');
+				chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
 				return;
 			}
 			
 			if (betAmt === bankroll[who]) {
-				message.channel.send(message.author + ' just bet the farm on `!slots`!');
+				chSend(message, message.author + ' just bet the farm on `!slots`!');
 			}
 			
 			addBank(who, -betAmt);
@@ -807,7 +1028,7 @@ spongeBot.slots = {
 			for (var i = 0; i < 3; i++) {
 				spinString += slots.config.symbols[spinArr[i]].emo;
 			}
-			message.channel.send(spinString + ' (spun by ' + message.author + ')');
+			chSend(message, spinString + ' (spun by ' + message.author + ')');
 			
 			for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
 				
@@ -824,7 +1045,7 @@ spongeBot.slots = {
 					if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
 						// winner winner chicken dinner
 						var winAmt = betAmt * payTab[pNum].payout;
-						message.channel.send(':slot_machine: ' +
+						chSend(message, ':slot_machine: ' +
 						  message.author + ' is a `!slots` winner!\n' + 
 						  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
 						  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
@@ -840,42 +1061,117 @@ spongeBot.slots = {
 	help: '`!slots`: give the slot machine a spin!'
 }
 //-----------------------------------------------------------------------------
-spongeBot.help = { 
+var buildHelp = function() {
+	
+	theHelp = {};
+	
+	for (var cmd in spongeBot) {
+		
+		var cGroup = '';
+		if (!spongeBot[cmd].cmdGroup) {
+			cGroup = 'Uncategorized';
+		} else {
+			cGroup = spongeBot[cmd].cmdGroup;
+		}
+		
+		if (!theHelp[cGroup]) {theHelp[cGroup] = '';}
+	
+		if (spongeBot[cmd].disabled !== true) {
+			if (spongeBot[cmd].access) {theHelp[cGroup] += '*'}
+			theHelp[cGroup] += '`!' + cmd + '`: ';
+			if (spongeBot[cmd].help) {
+				theHelp[cGroup] += spongeBot[cmd].help;
+			}
+			theHelp[cGroup]+= '\n';
+		}
+	}
+	return theHelp;
+};
+//-----------------------------------------------------------------------------
+spongeBot.ticket = {
+	do: function(message, parms) {
+		if (message.author.id === SPONGE_ID) {
+			
+			if (!parms) {
+				chSend(message, 'You forgot the target to for !ticket.');
+				return;
+			}
+			
+			parms = parms.split(' ');
+			var amt;
+			var who = makeId(parms[0]);
+			var str;
+			
+			console.log('!ticket: parms[1] is: ' + parms[1]);
+			if (parms[1] === '' || typeof parms[1] === 'undefined') {
+				amt = 1;
+			} else {
+				var amt = parseInt(parms[1]);	
+			}
+			
+			str = makeTag(who) + ' now has ';
+			str += alterStat(who, 'raffle', 'ticketCount', amt);
+			str += ' raffle tickets.';
+			
+			chSend(message, str);
+		}
+	},
+	access: true,
+	disabled: false,
+	help: '`!ticket <who> <#>` Gives <#> tickets to <who>. With no #, gives one.'
+}
+//-----------------------------------------------------------------------------
+spongeBot.help = {
+	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 		if (parms) {
-			if (typeof spongeBot[parms] !== 'undefined') {
-				message.channel.send(spongeBot[parms].help);
+			if (typeof spongeBot[parms] !== 'undefined') {	
+				if (spongeBot[parms].longHelp) {
+					chSend(message, spongeBot[parms].longHelp);
+				} else if (spongeBot[parms].help) {
+					chSend(message, spongeBot[parms].help);
+				} else {
+					chSend(message, 'I have no help about that, ' + message.author);
+				}
+			} else {
+				chSend(message, 'Not a command I know, ' + message.author);
 			}
 		} else {
-			var cmds = '';
+			// no parms supplied, show help on everything in a DM
 			
-			for (var cmd in spongeBot) {
-				
-				if (spongeBot[cmd].disabled !== true) {
-					cmds += '`!' + cmd + '`  ';
-				}
+			if (!botStorage.fullHelp) {
+				// "cached" help doesn't exist, so build it...
+				console.log('!help: building help text for first time');
+				botStorage.fullHelp = buildHelp();
+			} 
+			
+			// since help text is built, just regurgitate it
+			chSend(message, message.author + ', incoming DM spam!');
+			for (var cat in botStorage.fullHelp) {
+				message.author.send('\n**' + cat +'**\n');
+				message.author.send('---\n' + botStorage.fullHelp[cat]);
 			}
-			
-			message.channel.send('Try one of these: ' + cmds +
-			  '\n\n Type `!help <command>` for more info on a specific command.');
+			message.author.send('---\n( * - Denotes restricted access command. )' +
+			  ' Type `!help <command>` for more info on a specific command.');
 			}
 		},
 	help: '`!help`: for when you need somebody, not just anybody. '
 };
 //-----------------------------------------------------------------------------
 spongeBot.timer = {
+	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 
 		if (parms === '') {
-			message.channel.send('Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
+			chSend(message, 'Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
 		} else {
 			parms = parseInt(parms);
 			if ((parms >= 1) && (parms <=20)) {
 				setTimeout(function() {
-					message.channel.send('Ding ding! Time is up!');
+					chSend(message, 'Ding ding! Time is up!');
 				}, (parms * 1000));
 			} else {
-				message.channel.send('Timer has to be set for between 1-20 secs.');
+				chSend(message, 'Timer has to be set for between 1-20 secs.');
 			}
 		}
 	},
@@ -883,6 +1179,8 @@ spongeBot.timer = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.say = {
+	// refactor to use .access check someday
+	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 		
 		if (message.author.id === SPONGE_ID) {
@@ -902,43 +1200,48 @@ spongeBot.say = {
 			message.author.send('I don\'t speak for just anyone.');
 		}
 	},
-	help: '`!say <stuff>` Make me speak. (limited access command)'
+	help: '`!say <stuff>` Make me speak. (limited access command)',
+	access: true
 };
 //-----------------------------------------------------------------------------
 spongeBot.avote = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 
 		if (!acro.runState) {
-			message.channel.send(message.author + ', the game is not running.' +
+			chSend(message, message.author + ', the game is not running.' +
 			  ' You can start a new game with `!acro`');
 			return;
 		}
 		
 		if (acro.runState !== 'vote') {
-			message.channel.send(message.author + ', wait for the voting to start!');
+			chSend(message, message.author + ', wait for the voting to start!');
 			return;
 		}
 		
 		var theVote = parseInt(parms);
 		
 		if ((theVote > acro.entries.length - 1) || (theVote < 0) || (isNaN(theVote))) {
-			message.channel.send(':warning: Not a valid vote, ' + message.author);
+			chSend(message, ':warning: Not a valid vote, ' + message.author);
 			return;
 		}
 		
 		if (acro.entries[theVote].author === message.author.id && !acro.config.voteOwn) {
-			message.channel.send(message.author + ', you can\'t vote for yourself!');
+			chSend(message, message.author + ', you can\'t vote for yourself!');
 			return;
 		}
 		
 		if (typeof acro.votes[message.author.id] === 'undefined') {
-			message.channel.send(message.author + ' your vote was recorded.');
+			chSend(message, message.author + ' your vote was recorded.');
 		} else {
-			message.channel.send(message.author + ', I changed your vote for you.');
+			chSend(message, message.author + ', I changed your vote for you.');
 		}
 		acro.votes[message.author.id] = theVote;
 	},
-	help: 'Use `!avote` during an `!acro` game to vote for your favorite.'
+	help: 'Use `!avote` during an `!acro` game to vote for your favorite.',
+	longHelp: 'Use `!avote` during the _voting round_ of `!acro`, the acronym game\n' +
+	  ' to vote for your favorite entry from those shown. For more info, \n' +
+	  ' see `!acro help` or watch an acro game in play.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.stopacro = {
@@ -946,9 +1249,10 @@ spongeBot.stopacro = {
 		clearTimeout(acro.timer);
 		if (acro.voteTimer) {clearTimeout(acro.voteTimer);}
 		acro.runState = false;
-		message.channel.send(':octagonal_sign: `!acro` has been stopped if it was running.');
+		chSend(message, ':octagonal_sign: `!acro` has been stopped if it was running.');
 	},
-	help: '`!stopacro` stops the currently running `!acro` game.'
+	help: '`!stopacro` stops the currently running `!acro` game.',
+	access: true
 }
 //-----------------------------------------------------------------------------
 spongeBot.acrocfg = {
@@ -957,7 +1261,7 @@ spongeBot.acrocfg = {
 		
 		if (!parms[0]) {
 			for (var opt in acro.config) {
-				message.channel.send(opt + ': ' + acro.config[opt]);
+				chSend(message, opt + ': ' + acro.config[opt]);
 			}
 		} else {
 			if (acro.config.hasOwnProperty([parms[0]])) {
@@ -967,9 +1271,9 @@ spongeBot.acrocfg = {
 				else if (parms[1] === 'true') {parms[1] = true}
 				
 				acro.config[parms[0]] = parms[1];
-				message.channel.send('`!acro`: set ' + parms[0] + ' to ' + parms[1] + '.');
+				chSend(message, '`!acro`: set ' + parms[0] + ' to ' + parms[1] + '.');
 			} else {
-				message.channel.send('`!acro`: can\'t config ' + parms[0]);
+				chSend(message, '`!acro`: can\'t config ' + parms[0]);
 			}
 		}
 	},
@@ -978,11 +1282,12 @@ spongeBot.acrocfg = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.acro = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		parms = parms.split(' ');
 		
 		if (acro.runState) {
-			message.channel.send(':warning: I think the `!acro` is already running.');
+			chSend(message, ':warning: I think the `!acro` is already running.');
 			return;
 		}
 		
@@ -1008,7 +1313,7 @@ spongeBot.acro = {
 			letters += acro.letters.charAt(i).toUpperCase();
 		}
 		
-		message.channel.send(' Let\'s play the `!acro` game!\n' + 
+		chSend(message, ' Let\'s play the `!acro` game!\n' + 
 		  '\nLetters: ' + bigLetter(letters) + 
 		  '   Category: ' + category +
 		  '\nYou have ' + timeAllowed + 
@@ -1040,12 +1345,12 @@ spongeBot.acro = {
 			theText += '=-=-=-=-=-=-=-=-=\n';
 			theText += 'Vote for your favorite with `!avote`!';
 			theText += '\n You have ' + voteTimeAllowed + ' seconds.';
-			message.channel.send(theText);
+			chSend(message, theText);
 			acro.runState = 'vote';
 			acro.voteTimer = setTimeout(function() {
 				acro.runState = false;
 				clearTimeout(acro.voteTimer); 
-				message.channel.send(':stopwatch: `!acro` voting time is up!' + 
+				chSend(message, ':stopwatch: `!acro` voting time is up!' + 
 				  ':stopwatch: \n Here are the results:');
 				
 				//count the votes
@@ -1057,12 +1362,12 @@ spongeBot.acro = {
 				var winner = false;
 				var winArr = [];
 				for (var i = 0; i < acro.entries.length; i++) {
-					message.channel.send('`[#' + i +
+					chSend(message, '`[#' + i +
 					  '] ' + acro.entries[i].voteCount + 
 					  ' votes for: ' + acro.entries[i].entry +
 					  '` (by ' + makeTag(acro.entries[i].author) + ')\n');
 
-					if (!winner) {
+					if (winner === false) {
 						if (acro.entries[i].voteCount > 0) {
 							winner = i;
 							winArr.push(i);
@@ -1070,7 +1375,8 @@ spongeBot.acro = {
 					} else {
 						if (acro.entries[i].voteCount > acro.entries[winner].voteCount) {
 							winner = i;
-							winArr = [].push(i);
+							winArr = [];
+							winArr.push(i);
 						}
 						else if (acro.entries[i].voteCount === acro.entries[winner].voteCount) {
 							winArr.push(i);
@@ -1078,52 +1384,67 @@ spongeBot.acro = {
 					}
 				}
 
+				console.log('!acro: winArr = ' + winArr);
+				
 				if (winner === false) {
-					message.channel.send('Looks like no one won `!acro`. Sad!');
+					chSend(message, 'Looks like no one won `!acro`. Sad!');
 				} else {
-					//message.channel.send('Number of !acro winners: ' + winArr.length);
+					//chSend(message, 'Number of !acro winners: ' + winArr.length);
 					if (winArr.length === 1) {
-						message.channel.send(makeTag(acro.entries[winner].author) + ' won `!acro`!');
+						incStat(acro.entries[winner].author, 'acro', 'wins');
+						chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro`!' +
+						  ' That makes ' + gameStats[acro.entries[winner].author].acro.wins + ' wins!');
 					} else {
 						var winStr = 'Looks like we have a tie in `!acro`! Winners: ';
 						for (var i = 0; i < winArr.length; i++) {
 							winStr += makeTag(acro.entries[winArr[i]].author) + ' ';
 						}
-						message.channel.send(winStr);
+						chSend(message, winStr);
 					}
 					if ((acro.entries.length >= acro.config.minPlayersForCredits) && winArr.length === 1) {
-						message.channel.send(makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
+						chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
 						  'at least ' + acro.config.minPlayersForCredits + ' entries, and' +
 						  ' won ' + acro.config.winCredits + ' credits!');
-						  
-						if (!bankroll[acro.entries[winner].author]) {
-							bankroll[acro.entries[winner].author] = 0;
-							console.log('New bankroll made for ' + acro.entries[winner].author +
-							  ' via !acro credit win.');
-						}
-						bankroll[acro.entries[winner].author] += parseInt(acro.config.winCredits);
-						console.log(acro.entries[winner].author + ' got a crediting acro win.');
+						addBank(acro.entries[winner].author, acro.config.winCredits);						
+						incStat(acro.entries[winner].author, 'acro', 'credwins');
+						chSend(message, makeTag(acro.entries[winner].author) +
+						  ' got a crediting acro win and now has ' +
+						  gameStats[acro.entries[winner].author].acro.credwins +
+						  ' crediting acro wins!');
 					}
 				}
 			}, voteTimeAllowed * 1000);
 		} else {
-			message.channel.send('`!acro` has ended, and no one submitted an entry.');					
+			chSend(message, '`!acro` has ended, and no one submitted an entry.');					
 			acro.runState = false;
 		}
 	}, timeAllowed * 1000);},
-	help: '`!acro`: Starts up the acronym game'
+	help: '`!acro`: Starts up the acronym game',
+	longHelp: '`!acro`: Starts up the acronym game.\n' + 
+		' The acronym game consists of an acro-making round, and a voting round.\n' +
+		' In the _acro-making round_, players are given 3 to 6 letters, (eg: P A I F).\n' +
+		' Players then have a set amount of time to make an acronym using those initial\n' +
+		' letters (eg: Playing Acro Is Fun) and submit it using the `!a` command.\n\n' +
+		' In the _voting round_ which follows after the alloted time is up, the acronyms\n' +
+		' submitted are displayed, anonymized, and everyone in the channel can then\n' +
+		' vote on their favorite, using the `!avote` command. Players may or may not\n' +
+		' be allowed to be vote for their own acro, based on a configuration option.\n\n' +
+		' After the voting round timer ends, the acronym(s) with the most votes is shown\n' +
+		' along with the author(s). These are the winners. Depending on config options,\n' +
+		' winner(s) may receive some amount of server "credits".'
 };
 //-----------------------------------------------------------------------------
 spongeBot.a = {
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		
 		if (!acro.runState) {
-			message.channel.send('Acro not running. Start it with `!acro`.');
+			chSend(message, 'Acro not running. Start it with `!acro`.');
 			return;
 		}
 		
 		if (acro.runState === 'vote') {
-			message.channel.send('Too slow, ' + message.author +
+			chSend(message, 'Too slow, ' + message.author +
 			  ', voting has begun :slight_frown:');
 			  return;
 		}
@@ -1137,7 +1458,7 @@ spongeBot.a = {
 		var isLegit = true;
 		
 		if (theirAcro.length !== acro.letters.length) {
-			message.channel.send(message.author +
+			chSend(message, message.author +
 			  ', that acro is the wrong length!');
 			  isLegit = false;
 		}
@@ -1152,49 +1473,60 @@ spongeBot.a = {
 		
 		if (isLegit) {
 			if (acro.players[message.author]) {
-				message.channel.send(message.author + ', I am' +
+				chSend(message, message.author + ', I am' +
 				  'replacing your old submission.');
 			}
 			acro.entries[message.author.id] = message.content.slice(2);
-			message.channel.send('Got it, ' + message.author + '!');
+			chSend(message, 'Got it, ' + message.author + '!');
 		} else {
-			message.channel.send(':warning: ' + message.author +
+			chSend(message, ':warning: ' + message.author +
 			  ', your invalid acro was not accepted :.');
 		}
 	},
-	help: 'Submits your entry in `!acro`'
+	help: '`!a <Your Acronym Here>`: Submits your entry in `!acro`',
+	longHelp: '`!a <Your Acronym Here>`: Submits your entry in the acronym game,\n' +
+	  '`!acro`. For more info, see `!acro help` or watch an acro game in play.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.version = {
+	cmdGroup: 'Miscellaneous',
 	do: function(message) {
-		message.channel.send(':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
-		message.channel.send(SPONGEBOT_INFO);
+		chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
+		chSend(message, SPONGEBOT_INFO);
 	},
 	help: 'Outputs the current bot code version and other info.'
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
   console.log('Spongebot version ' + VERSION_STRING + ' READY!');
+  BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(SPAMCHAN_ID).send('I live!');}
   loadBanks();
+  loadStats();
 });
 //-----------------------------------------------------------------------------
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1);
 		var theCmd = botCmd.split(' ')[0];
+
+		if (!spongeBot.hasOwnProperty(theCmd)) {
+			// not a valid command
+			return;
+		}
+		
 		var parms = botCmd.replace(theCmd, '');
 		parms = parms.slice(1); // remove leading space
-			
+
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			console.log('  !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			console.log('  ' + message.author + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
 				
 				if (spongeBot[theCmd].access) {
 					// requires special access
 					if (message.author.id !== SPONGE_ID) {
-						message.channel.send('Your shtyle is too weak ' +
+						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
 						spongeBot[theCmd].do(message, parms);
@@ -1203,7 +1535,7 @@ BOT.on('message', message => {
 					spongeBot[theCmd].do(message, parms);
 				}
 			} else {
-				message.channel.send('Sorry, that is disabled.');
+				chSend(message, 'Sorry, that is disabled.');
 			}
 		} else {
 			// not a valid command
