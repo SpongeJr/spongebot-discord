@@ -1,4 +1,5 @@
-/* Copyright 2018 Josh Kline ("SpongeJr")
+/* Copyright 2018 Josh Kline ("SpongeJr"), 
+Loot box code Copyright 2018 by 0xABCDEF/Archcannon
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files
@@ -43,7 +44,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.94';
+const VERSION_STRING = '0.96a';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
   'can possibly be found at: http://www.spongejr.com/spongebot/spongebot.js' +
@@ -199,6 +200,71 @@ var giveaways = {
 		type: 'ebook'
 	}
 };
+//-----------------------------------------------------------------------------
+var loot = {
+        boxes: {
+            programmer: {
+                count: 255,
+                price:  1280,
+                items: [
+                    //127
+                    {   emoji: ':desktop:',             rarity: 1, value: 512       },
+                    {   emoji: ':computer:',            rarity: 2, value: 256       },
+                    {   emoji: ':keyboard:',            rarity: 4, value: 128       },
+                    {   emoji: ':mouse_three_button:',  rarity: 8,  value: 64       }, 
+                    {   emoji: ':floppy_disk:',         rarity: 16,  value: 8       },
+                    {   emoji: ':one:',                 rarity: 32,  value: 4       },
+                    {   emoji: ':zero:',                rarity: 64, value: 2        },
+                ],
+                description: 'A programmer\'s standard toolbox.'
+            },
+            emojispam: {
+                count:  36,
+                price:  750,
+                items: [
+                    {   emoji: ':thinking:',    rarity: 40, value: 200      },
+                    {   emoji: ':clap:',        rarity: 60, value: 160      },
+                    {   emoji: ':ok_hand:',     rarity: 80, value: 125      },
+                    {   emoji: ':100:',         rarity: 100, value: 100     },
+                    {   emoji: ':b:',           rarity: 120, value: 25      },
+                    {   emoji: ':poop:',        rarity: 140, value: 1       },
+                ],
+                description: 'You\'re guaranteed to find at least one :poop: emoji in here.'
+            },
+            alphabet: {
+                count:  26,
+                price:  260,
+                items: [
+                    {   emoji: ':regional_indicator_a:',    rarity: 100, value: 50  },
+                    {   emoji: ':regional_indicator_b:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_c:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_d:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_e:',    rarity: 100, value: 50  },
+                    {   emoji: ':regional_indicator_f:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_g:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_h:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_i:',    rarity: 100, value: 50  },
+                    {   emoji: ':regional_indicator_j:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_k:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_l:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_m:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_n:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_o:',    rarity: 100, value: 50  },
+                    {   emoji: ':regional_indicator_p:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_q:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_r:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_s:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_t:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_u:',    rarity: 100, value: 50  },
+                    {   emoji: ':regional_indicator_v:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_w:',    rarity: 100, value: 5   },
+                    {   emoji: ':regional_indicator_x:',    rarity: 5, value: 1000  },
+                    {   emoji: ':regional_indicator_z:',    rarity: 50, value: 100  },
+                ],
+                description: '***D o   y o u   k n o w   y o u r   A B C s ?***'
+            }
+        }
+    };
 //-----------------------------------------------------------------------------
 var makeStatFile = function() {
 	var theFile = JSON.stringify(gameStats);
@@ -469,6 +535,110 @@ var bigLetter = function(inp) {
 	}	
 	return outp;
 };
+//-----------------------------------------------------------------------------
+spongeBot.loot = {
+        cmdGroup: 'Fun and Games',
+        do: function(message, args) {
+            if (args === '') {
+                chSend(message, 'Try `!loot unbox <name>`.');
+                return;
+            }  
+           
+            args = args.toLowerCase();
+            args = args.split(' ');
+           
+            var action = args[0] || '';
+            if (action === 'unbox') {
+                var who = message.author.id;
+ 
+                if (!bankroll[who]) {
+                    chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
+                    return;
+                }
+                var boxName = args[1] || '';
+ 
+                if (boxName === '') {
+                    chSend(message, message.author + ', you can\'t unbox nothing.');
+                    return;
+                }
+               
+                var found = false;
+                for(var box in loot.boxes) {
+                    if(boxName === box) {
+                        found = true;
+                        var price = loot.boxes[box].price;
+						/*
+						chSend(message, 'unboxing a ' + box);
+						chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
+						*/
+						
+                        if(bankroll[who] >= price) {
+                            chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
+                            addBank(who, -price);
+                           
+                            //Accumulate total rarity value
+                            var totalRarity = 0;                //The total combined rarity of all items, used for choosing items
+                            var boxEntry = loot.boxes[box];     //The entry of the box, including the count, price, and item array
+                            var itemTable = boxEntry.items; //The item array in the box entry
+                            for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                                totalRarity += itemTable[itemIndex].rarity;
+                            }
+                           
+                            var dropCount = boxEntry.count;         //The total number of items that the box will drop
+                            var drops = [];                         //Indexes correspond to itemTable. The number of drops for each item
+                            //Initialize to 0
+                            for(var i = 0; i < itemTable.length; i++) {
+                                drops[i] = 0;
+                            }
+                           
+                            //Accumulate drops
+                            for(var i = 0; i < dropCount; i++) {
+                               
+                                var rarityRoll = Math.random() * totalRarity;
+                                var droppedIndex = 0;           //The entry of the item that the box dropped
+                                var droppedRarity = 0;
+                                //We check for the item with the highest rarity below the rolled rarity
+                                for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                                    var item = itemTable[itemIndex];    //The item entry at the index
+                                    var itemRarity = item.rarity;
+                                    if(itemRarity <= rarityRoll && itemRarity >= droppedRarity) {
+                                        droppedIndex = itemIndex;
+                                        droppedRarity = itemRarity;
+                                    }
+                                }
+                                drops[droppedIndex]++;
+                            }
+                            var resultMessage = message.author + " found...";
+                            //Accumulate value and print out results
+                            var valueTotal = 0;
+                            for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                                var count = drops[itemIndex];
+                                var item = itemTable[itemIndex];
+                                valueTotal += item.value * count;
+                                if(count > 0) {
+                                    resultMessage += '\nx' + count + ' ' + item.emoji;
+                                }
+                            }
+                            resultMessage += '\nTotal Value: ' + valueTotal;
+                            addBank(who, valueTotal);
+                            chSend(message, resultMessage);
+                        } else {
+                            chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
+                        }
+                        return;
+                    }
+                }
+               
+                if(!found) {
+                    chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
+                }
+ 
+               
+            }
+           
+        },
+        help: '`!loot`: Buy a loot box and see what\'s inside!'
+    }
 //-----------------------------------------------------------------------------
 spongeBot.roll = {
 	cmdGroup: 'Fun and Games',
@@ -1279,7 +1449,7 @@ spongeBot.timer = {
 			chSend(message, 'Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
 		} else {
 			parms = parseInt(parms);
-			if ((parms >= 1) && (parms <=20)) {
+			if ((parms >= 1) && (parms <= 20)) {
 				setTimeout(function() {
 					chSend(message, 'Ding ding! Time is up!');
 				}, (parms * 1000));
