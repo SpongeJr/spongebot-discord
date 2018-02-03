@@ -25,24 +25,25 @@ const CONFIG = require('./config.json');
 const MYPALS = require('./mypals.json');
 const SCRAMWORDS = require('./data/scramwords.json');
 const BOT = new Discord.Client();
+
 const FS = require('fs');
 const TESTFILENAME = 'testfile.dat';
 const BANK_FILENAME = 'data/banks.csv';
 const STATS_FILENAME = 'data/gamestats.json';
 
 // note: make sure SCRAM_DELAY - SCRAM_DELAY_VARIATION > SCRAM_GUESSTIME
-const SCRAM_DELAY = 300300;
-const SCRAM_DELAY_VARIATION = 42000;
+const SCRAM_DELAY = 70000;
+const SCRAM_DELAY_VARIATION = 10000;
 const SCRAM_AWARD = 300;
 const SCRAM_GUESSTIME = 29000;
-const SCRAM_EXTRA_TIME = 3000; // per letter
+const SCRAM_EXTRA_TIME = 1500; // per letter
 
 const SPONGE_ID = "167711491078750208";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.92';
+const VERSION_STRING = '0.94';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
   'can possibly be found at: http://www.spongejr.com/spongebot/spongebot.js' +
@@ -90,6 +91,114 @@ var scram = {
 var botStorage = {};
 var bankroll = {};
 var gameStats = {};
+//-----------------------------------------------------------------------------
+var giveaways = {
+	'Shelter': {
+		info: {
+			description: 'Shelter (game) gift on Steam.',
+			infoUrl: 'http://store.steampowered.com/app/244710/Shelter/'
+		},
+		enabled: true,
+		type: 'game'
+	},
+	'Shelter 2': {
+		info: {
+			description: 'Shelter 2 (game) gift on Steam.',
+			infoUrl: 'http://store.steampowered.com/app/275100/Shelter_2/'
+		},
+		enabled: true,
+		type: 'game'
+	},
+	'DiRT Showdown': {
+		info: {
+			description: 'DiRT Showdown (game) gift on Steam.',
+			infoUrl: 'https://en.wikipedia.org/wiki/Dirt:_Showdown'
+		},
+		enabled: true,
+		type: 'game'
+	},
+	'Splatter': {
+		info: {
+			description: 'Splatter: Blood red edition (game) gift on Steam.',
+			infoUrl: 'http://store.steampowered.com/app/281920/Splatter__Zombie_Apocalypse/'
+		},
+		enabled: true,
+		type: 'game'
+	},
+	'YAZD': {
+		info: {
+			description: 'Yet Another Zombie Defense (game) gift on Steam.',
+			infoUrl: 'http://store.steampowered.com/app/270550/Yet_Another_Zombie_Defense/'
+		},
+		enabled: true,
+		type: 'game'
+	},
+	'MusicMaker80s': {
+		info: {
+			description: 'Music Maker 80s edition + add-on(s)(?) by Magix',
+			infoUrl: 'http://www.magix.com/us/music-maker/80s-edition/'
+		},
+		enabled: true,
+		type: 'software'
+	},
+	'MusicMakerHipHop': {
+		info: {
+			description: 'Music Maker Hip Hop Beat Producer by Magix',
+			infoUrl: 'http://www.magix.com/us/music-maker/hip-hop-beat-producer-edition/ (I think?)'
+		},
+		enabled: true,
+		type: 'software'
+	},
+	'TwitchSub': {
+		info: {
+			description: 'Will subscribe to your Twitch channel if you are a Twitch partner. Will legit check your content regularly and stuff.',
+			infoUrl: 'http://www.twitch.tv'
+		},
+		type: 'other'
+	},
+	'Amazon3': {
+		info: {
+			description: '$3.00 USD Amazon gift code',
+			infoUrl: 'https://www.amazon.com/gc/redeem/'
+		},
+		type: 'gift card'
+	},
+	'Amazon5': {
+		info: {
+			description: '$5.00 USD Amazon gift code',
+			infoUrl: 'https://www.amazon.com/gc/redeem/'
+		},
+		type: 'gift card'
+	},
+	'nitro': {
+		info: {
+			description: 'One month of Discord Nitro',
+			infoUrl: 'https://discordapp.com/nitro'
+		},
+		type: 'other'
+	},
+	'GTAIII': {
+		info: {
+			description: 'Grand Theft Auto III (18+ or w/parents permssion)',
+			infoUrl: 'http://store.steampowered.com/app/12100/Grand_Theft_Auto_III/'
+		},
+		type: 'game'
+	},
+	'GTA: VC': {
+		info: {
+			description: 'Grand Theft Auto: Vice City (18+ or w/parents permssion)',
+			infoUrl: 'http://store.steampowered.com/app/12110/Grand_Theft_Auto_Vice_City/'
+		},
+		type: 'game'
+	},
+	'iOS10forBeginners': {
+		info: {
+			description: 'iOS 10 Programming for Beginners (ebook) (PDF, EPUB or MOBI format)',
+			infoUrl: 'https://www.packtpub.com/application-development/ios-10-programming-beginners'
+		},
+		type: 'ebook'
+	}
+};
 //-----------------------------------------------------------------------------
 var makeStatFile = function() {
 	var theFile = JSON.stringify(gameStats);
@@ -241,114 +350,10 @@ var makeBankFile = function(bankdata) {
 	return theFile;
 };
 //-----------------------------------------------------------------------------
-var giveaways = {
-	'Shelter': {
-		info: {
-			description: 'Shelter (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/244710/Shelter/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'Shelter 2': {
-		info: {
-			description: 'Shelter 2 (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/275100/Shelter_2/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'DiRT Showdown': {
-		info: {
-			description: 'DiRT Showdown (game) gift on Steam.',
-			infoUrl: 'https://en.wikipedia.org/wiki/Dirt:_Showdown'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'Splatter': {
-		info: {
-			description: 'Splatter: Blood red edition (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/281920/Splatter__Zombie_Apocalypse/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'YAZD': {
-		info: {
-			description: 'Yet Another Zombie Defense (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/270550/Yet_Another_Zombie_Defense/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'MusicMaker80s': {
-		info: {
-			description: 'Music Maker 80s edition + add-on(s)(?) by Magix',
-			infoUrl: 'http://www.magix.com/us/music-maker/80s-edition/'
-		},
-		enabled: true,
-		type: 'software'
-	},
-	'MusicMakerHipHop': {
-		info: {
-			description: 'Music Maker Hip Hop Beat Producer by Magix',
-			infoUrl: 'http://www.magix.com/us/music-maker/hip-hop-beat-producer-edition/ (I think?)'
-		},
-		enabled: true,
-		type: 'software'
-	},
-	'TwitchSub': {
-		info: {
-			description: 'Will subscribe to your Twitch channel if you are a Twitch partner. Will legit check your content regularly and stuff.',
-			infoUrl: 'http://www.twitch.tv'
-		}
-	},
-	'Amazon3': {
-		info: {
-			description: '$3.00 USD Amazon gift code.',
-			infoUrl: 'https://www.amazon.com/gc/redeem/'
-		}
-	}
-};
-//-----------------------------------------------------------------------------
 var listPick = function(theList) {
 	var choice = Math.random() * theList.length;
 	return theList.splice(choice, 1);
 };
-//-----------------------------------------------------------------------------
-var loot = {
-		boxes: {
-			programmer: {
-				count: 255,
-				price:  1280,
-				items: [
-					//127
-					{	emoji: ':desktop:', 			rarity: 64, value: 1024		},
-					{	emoji: ':computer:', 			rarity: 32, value: 512		},
-					{	emoji: ':keyboard:',			rarity: 16, value: 256		},
-					{	emoji: ':mouse_three_button:',	rarity: 8,	value: 128		},	
-					{	emoji: ':floppy_disk:',			rarity: 4,  value: 64		},
-					{	emoji: ':one:',					rarity: 2,  value: 16		},
-					{	emoji: ':zero:', 				rarity: 1,	value: 4		},
-				],
-				description: 'A programmer\'s standard toolbox.'
-			},
-			emojispam: {
-				count:	36,
-				price:	750,
-				items: [
-					{	emoji: ':thinking:',	rarity: 16, value: 200		},
-					{	emoji: ':clap:', 		rarity: 12, value: 160		},
-					{	emoji: ':ok_hand:', 	rarity: 8, value: 125		},
-					{	emoji: ':100:',			rarity: 5, value: 100		},
-					{	emoji: ':b:', 			rarity: 3, value: 25		},
-					{	emoji: ':poop:',		rarity: 1, value: 1		},
-				],
-				description: 'You\'re guaranteed to find at least one :poop: emoji in here.'
-			}
-		}
-	};
 //-----------------------------------------------------------------------------
 var makeId = function(inp) {
 	// strips out the first <@! and > in a string
@@ -442,6 +447,17 @@ var chSend = function(message, str) {
 		console.log('Error sending a channel message: ' + reason);
 	});
 };
+//-----------------------------------------------------------------------------
+var auSend = function(message, str) {
+	if (message.author.bot) {
+		console.log(' -- Blocked a bot-to-bot m.author.send');
+		return;
+	}
+	
+	message.author.send(str).catch(reason => {
+		console.log('Error sending a DM: ' + reason);
+	});
+}
 //-----------------------------------------------------------------------------
 var bigLetter = function(inp) {
 	var outp = '';
@@ -621,6 +637,8 @@ spongeBot.s = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		
+		parms = parms.toLowerCase();
+		
 		if (scram.runState !== 'guessing') {
 			chSend(message, 'You can\'t guess the scrambled word now! ' +
 			  'You need to wait for a new word to unscramble!');
@@ -664,7 +682,7 @@ spongeBot.scram = {
 			var guessTime = SCRAM_GUESSTIME + SCRAM_EXTRA_TIME * theWord.length;
 			  
 			chSend(message, 'You have ' + parseInt(guessTime / 1000) + 
-			  ' seconds to guess. Next word available in ' + 
+			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
 			  parseInt(theDelay / 1000) + ' seconds.');
 			scram.runState = 'guessing';
 			
@@ -715,39 +733,101 @@ spongeBot.giveaways = {
 	do: function(message, parms) {
 		
 		if (!parms) {
-			chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n There are currently no giveaways running.');
-			chSend(message, 'There are a few items that _may possibly_ someday go here, but no guarantees, at all! ' +
-			'You can see this list with `!giveaways list`. If giveaways actually do someday get implemented, there would ' +
-			'first need to be some system of earning them, or earning chances for them or something.');
+			chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n ' +
+			' FLASH GIVEAWAY NOTICE: Sponge has 2 raffle tickets. Sponge can\'t win raffles. Sponge will be giving away ' +
+			' both tickets in the #giveaways chan tonight, Feb. 2 between the hours of 1900 and 2300 EST. That\'s all I know.');
+			chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
+			' Items listed there will be options  you can pick if you win a weekly raffle. ' +
+			' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
+			' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
+			' :tickets: as you can get your hands on, to have the best chances! Type !stats to see how many you have.' +
+			'\n\n Also see `!help giveaways` for new options like `!giveaways addrole` and `!giveaways categories`.');
 			return;
 		}
 		
 		parms = parms.split(' ');
 		
 		if (parms[0] === 'list') {
-			var str = 'Use `!giveaways info <item>` for more info.';
-			str += '\n :warning: This is only a sample list, subject to change, and giveaways might not ever actually be implemented anyway.\n';
+			
+			parms.shift();
+			parms = parms.join(' ');
+			
+			var str = 'Use `!giveaways info <item>` for more info.\n';
+			
 			for (var item in giveaways) {
-				str += '`' + item + '`   ';
+				if ((giveaways[item].hasOwnProperty('type') && giveaways[item].type === parms) || parms === '') {
+					str += '`' + item + '`   ';
+				}
 			}
+
+			str += '\n List subject to change.';
 			chSend(message, str);
 		}
 		
 		if (parms[0] === 'info') {
 			parms.shift();
 			parms = parms.join(' ');
-			if (giveaways[parms]) {
+			if (giveaways.hasOwnProperty(parms)) {
 				var str = '`' + parms + '`: ';
 				str += giveaways[parms].info.description + '\n';
-				str += '  More info: ' + giveaways[parms].info.infoUrl;
+				str += ' **Category**: ' + (giveaways[parms].type || '(none)');
+				str += '   **More info**: ' + giveaways[parms].info.infoUrl;
 				chSend(message, str);
 			} else {
 				chSend(message, 'Couldn\'t find any info for that giveaway, ' + message.author +
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
+		} else if (parms[0] === 'addrole') {
+			var role = message.guild.roles.find('name', 'giveaways');
+			
+			if (message.member.roles.has('408789879590354944')) {
+				console.log('!giveaways addrole: Did not add role or award ticket because they had it already.');
+				chSend(message, message.author + ' I think you already had that role.');
+			} else {
+				message.member.addRole(role);
+				chSend(message, message.author + ', I\'ve given you the `giveaways` role. ' + 
+				' You might be pinged at any time of day for giveaways, raffles, and related announcements and info.' +
+				'\n If something went wrong, you don\'t have the role, or you didn\'t really want it, please ping ' +
+				' <@167711491078750208> to sort it out. And... good luck in the giveaways!');
+				chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
+				  alterStat(message.author.id, 'raffle', 'ticketCount', 1) + ' raffle tickets!');
+			}
+		} else if (parms[0] === 'whohasrole') {
+			chSend(message, 'Don\'t even.');
+			/*
+			var whoHas = message.guild.roles.get('408789879590354944').members;
+			chSend(message, 'These are the ' + whoHas.size + ' members with the giveaways role: ');
+			
+			var whoStr = ''
+			for (var who of whoHas.keys()) {
+				whoStr += makeTag(who) + '   ';
+				console.log(who);
+			}
+			chSend(message, whoStr);
+			*/
+
+		} else if (parms[0] === 'categories') {
+
+			var cats = {};
+			var theStr = ' Raffle item categories: ';
+			for (var item in giveaways) {
+				if (giveaways[item].hasOwnProperty('type')) {
+					cats[giveaways[item].type] = true;
+				}
+			}
+			
+			for (var cat in cats) {
+				theStr += '`' + cat + '` ';
+			}
+			chSend(message, theStr);
 		}
 	},
-	help: '`!giveaways` lists any currently running contests, giveaways, freebies, and other fun stuff'
+	help: '`!giveaways` lists any currently running contests, giveaways, freebies, and other fun stuff.' +
+	  '\n`!giveaways list` shows all the current choices for raffle prizes.' +
+	  '\n`!giveaways list <category>` lets you see all items on `!giveaways list` of a certain category.' +
+	  '\n`!giveaways categories` lets you see the categories on `!giveaways list.`' +
+  	  '\n`!giveaways addrole` gives you the "giveaways" role which means you will get pinged (at any time of day) ' +
+	  'when there\'s something interesting going on related to giveaways.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.sammich = {
@@ -935,102 +1015,6 @@ spongeBot.setStat = {
 	disabled: true
 }
 //-----------------------------------------------------------------------------
-spongeBot.loot = {
-		cmdGroup: 'Fun and Games',
-		do: function(message, args) {
-			if (args === '') {
-				chSend(message, 'Try `!loot unbox <name>`.');
-				return;
-			}	
-			
-			args = args.toLowerCase();
-			args = args.split(' ');
-			
-			var action = args[0] || '';
-			if (action === 'unbox') {
-				var who = message.author.id;
-
-				if (!bankroll[who]) {
-					chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
-					return;
-				}
-				var boxName = parms[1] || '';
-
-				if (boxName === '') {
-					chSend(message, message.author + ', you can\'t unbox nothing.');
-					return;
-				}
-				
-				var found = false;
-				for(var box in loot.boxes) {
-					if(boxName === box) {
-						found = true;
-						var price = box.price;
-						if(bankroll[who] >= price) {
-							chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
-							addBank(who, -price);
-							
-							//Accumulate total rarity value
-							var totalRarity = 0;				//The total combined rarity of all items, used for choosing items
-							var boxEntry = loot.boxes[box];		//The entry of the box, including the count, price, and item array
-							var itemTable = boxEntry.items;	//The item array in the box entry
-							for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
-								totalRarity += itemTable[itemIndex].rarity;
-							}
-							
-							var dropCount = boxEntry.count; 		//The total number of items that the box will drop
-							var drops = [];							//Indexes correspond to itemTable. The number of drops for each item
-							//Initialize to 0
-							for(var i = 0; i < itemTable.length; i++) {
-								drops[i] = 0;
-							}
-							
-							//Accumulate drops
-							for(var i = 0; i < dropCount; i++) {
-								
-								var rarityRoll = Math.random() * totalRarity;
-								var droppedIndex = 0;			//The entry of the item that the box dropped
-								//We check for the rarest item whose rarity is below the rolled rarity
-								for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
-									var item = itemTable[itemIndex];	//The item entry at the index
-									if(item.rarity <= rarityRoll) {
-										droppedIndex = itemIndex;
-									}
-								}
-								drops[droppedIndex]++;
-							}
-							var resultMessage = message.author + " found...";
-							//Accumulate value and print out results
-							var valueTotal = 0;
-							for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
-								var count = drops[itemIndex];
-								var item = itemTable[itemIndex];
-								valueTotal += item.value * count;
-								if(count > 0) {
-									resultMessage += '\nx' + count + ' ' + item.emoji;
-								}
-							}
-							resultMessage += '\nTotal Value: ' + valueTotal;
-							addBank(who, valueTotal);
-							chSend(message, result);
-						} else {
-							chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
-						}
-						return;
-					}
-				}
-				
-				if(!found) {
-					chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
-				}
-
-				
-			}
-			
-		},
-		help: '`!loot`: Buy a loot box and see what\'s inside!'
-	}
-//-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
@@ -1099,11 +1083,12 @@ spongeBot.slots = {
 		if (parms[0] === 'spin') {
 			var who = message.author.id;
 
-			if (!bankroll[who]) {
+			if (!bankroll.hasOwnProperty(who)) {
 				chSend(message, message.author + ', please open a `!bank` account before playing slots.');
 				return;
 			}
-			betAmt = parseInt(parms[1]) || 0;
+			
+			var betAmt = parseInt(parms[1]) || 0;
 
 			if (betAmt === 0) {
 				chSend(message, message.author + ', you can\'t play if you don\'t pay.');
@@ -1276,10 +1261,10 @@ spongeBot.help = {
 			// since help text is built, just regurgitate it
 			chSend(message, message.author + ', incoming DM spam!');
 			for (var cat in botStorage.fullHelp) {
-				message.author.send('\n**' + cat +'**\n');
-				message.author.send('---\n' + botStorage.fullHelp[cat]);
+				auSend(message, '\n**' + cat +'**\n');
+				auSend(message, '---\n' + botStorage.fullHelp[cat]);
 			}
-			message.author.send('---\n( * - Denotes restricted access command. )' +
+			auSend(message, '---\n( * - Denotes restricted access command. )' +
 			  ' Type `!help <command>` for more info on a specific command.');
 			}
 		},
@@ -1325,7 +1310,7 @@ spongeBot.say = {
 			BOT.channels.get(chan).send(parms);
 		} else {
 			console.log(message.author.id + ' tried to put words in my mouth!');
-			message.author.send('I don\'t speak for just anyone.');
+			auSend(message, 'I don\'t speak for just anyone.');
 		}
 	},
 	help: '`!say <stuff>` Make me speak. (limited access command)',
@@ -1660,7 +1645,12 @@ BOT.on('message', message => {
 						spongeBot[theCmd].do(message, parms);
 					}
 				} else {
-					spongeBot[theCmd].do(message, parms);
+					
+					if (message.author.bot) {
+						console.log('Blocked a bot-to-bot !command.');
+					} else {	
+						spongeBot[theCmd].do(message, parms);
+					}
 				}
 			} else {
 				chSend(message, 'Sorry, that is disabled.');
