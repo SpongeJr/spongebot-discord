@@ -245,13 +245,13 @@ var loot = {
                 price: 2048,
                 items: [
                     //127
-                    {   emoji: ':desktop:',             rarity: 1, value: 512       },
-                    {   emoji: ':computer:',            rarity: 2, value: 256       },
-                    {   emoji: ':keyboard:',            rarity: 4, value: 128       },
-                    {   emoji: ':mouse_three_button:',  rarity: 8,  value: 64       }, 
-                    {   emoji: ':floppy_disk:',         rarity: 16,  value: 8       },
-                    {   emoji: ':one:',                 rarity: 32,  value: 4       },
-                    {   emoji: ':zero:',                rarity: 64, value: 2        },
+                    {   emoji: ':desktop:',             rarity: 1, value: 256       },
+                    {   emoji: ':computer:',            rarity: 2, value: 128       },
+                    {   emoji: ':keyboard:',            rarity: 4, value: 64       },
+                    {   emoji: ':mouse_three_button:',  rarity: 8,  value: 8       }, 
+                    {   emoji: ':floppy_disk:',         rarity: 16,  value: 4       },
+                    {   emoji: ':one:',                 rarity: 32,  value: 2       },
+                    {   emoji: ':zero:',                rarity: 64, value: 1        },
                 ],
                 description: 'A programmer\'s standard toolbox.'
             },
@@ -638,7 +638,7 @@ spongeBot.loot = {
 				} else if (boxName === 'everything') {
 					chSend(message, message.author + ', that\'s impossible.');
 					return;
-				} else if (args[2] === 'the' && args[3] === 'pod' && args[4] === 'bay' && args[5] === 'doors') {
+				} else if (args[1] === 'the' && args[2] === 'pod' && args[3] === 'bay' && args[4] === 'doors') {
 					chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
 					return;
 				}
@@ -1913,6 +1913,169 @@ spongeBot.a = {
 	longHelp: '`!a <Your Acronym Here>`: Submits your entry in the acronym game,\n' +
 	  '`!acro`. For more info, see `!acro help` or watch an acro game in play.'
 };
+//-----------------------------------------------------------------------------
+var duelManager = {
+	challengerID: {
+		opponentID: 'opponentID',	//the ID of the @opponent whom the @challenger wants to duel
+		status:	'idle|challenging|ready|dueling',
+		/* status
+		 * idle:		@challenger is not dueling and not challenging anyone to a duel
+		 * challenging:	@challenger has challenged @opponent to a duel and is waiting for reciprocation
+		 * ready:		@challenger and @opponent are ready and waiting for the duel to start
+		 * dueling: 	@challenger and 
+		 */
+		duelTimer: {},				//shared by both @challenger and @opponent
+		targetNumber: 0,			//Random number between 0 and 1000. @challenger's hit chance depends on the difference between their input and this number
+	}
+};
+spongeBot.duel = {
+		cmdGroup: 'Fun and Games',
+		do: function(message, args) {
+			/*
+			 * args
+			 * 0	Opponent
+			 */
+			var challenger = message.author.id;
+			if (!args) {
+				chSend(message, 'Who are you trying to duel, ' + makeTag(challenger) + '? (`!help duel` for help)');
+				return;
+			}
+			
+			args = args.split(' ');
+			
+			//Make sure the player specified an opponent
+			if (!args[0]) {
+				chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
+				return;
+			}
+			var opponent = makeId(args[0]);
+			
+			//If the opponent isn't in the bank record, we assume they don't exist
+			if(!bankroll[opponent]) {
+				chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
+				return;
+			}
+			
+			//If the challenger isn't in the duelManager record, we initialize them
+			if(!duelManager[challenger]) {
+				duelManager[challenger] = {
+					status: 'idle'
+				}
+			}
+			//If opponent isn't in the duelManager record, we initialize them
+			if(!duelManager[opponent]) {
+				duelManager[opponent] = {
+					status: 'idle'
+				}
+			}
+			
+			var challengerEntry = duelManager[challenger];
+			//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
+			if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
+				chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
+				return;
+			} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID === opponent) {
+				//If @challenger already challenged the opponent, then this means they are canceling the challenge
+				chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
+				challengerEntry.status = 'idle';
+				delete challengerEntry.opponentID;
+				return;
+			}
+			
+			//If @challenger has already challenged someone else, then they cancel their previous challenge
+			if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
+				chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead!');
+				
+			}
+			//We allow the player to challenge people who are busy dueling
+			
+			challengerEntry.opponentID = opponent;
+			challengerEntry.status = 'challenging';
+			
+			var opponentEntry = duelManager[opponent];
+			//If @opponent previously sent @challenger a request, then the challenge is accepted
+			if(opponentEntry.status === 'challenging' && opponentEntry.opponentID === challenger) {
+				challengerEntry.status = 'ready';
+				opponentEntry.status = 'ready';
+				chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
+				chSend(message, makeTag(challenger) + ': Get ready!');
+				chSend(message, makeTag(opponent) + ': Get ready!');
+				chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
+				//Start the duel!
+				var duelTimer = setTimeout(function() {
+					chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
+					
+					challengerEntry.status = 'dueling';
+					opponentEntry.status = 'dueling';
+					
+					challengerEntry.targetNumber = Math.random() * 1000;
+					opponentEntry.targetNumber = Math.random() * 1000;
+				}, (10 * 1000) + Math.random() * 20 * 1000);
+				challengerEntry.duelTimer = duelTimer;
+				opponentEntry.duelTimer = duelTimer;
+				
+			} else {
+				//Opponent is either idle, ready, or dueling at this point
+				//We wait for the opponent to reciprocate @challenger's request
+				chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel!');
+				chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
+				if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
+					chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
+				}
+			}
+		},
+		help: '`!duel`: Challenge another player to a duel.',
+		longHelp: '`!duel`: Challenge another player to a duel. To play, the other player must challenge you back.'
+	};
+spongeBot.d = {
+		cmdGroup: 'Fun and Games',
+		do: function(message, args) {
+			if (args === '') {
+				chSend(message, 'Usage: `!d <number>` attempts to fire at your opponent. Chance to hit depends on difference between your input and your target number.');
+			} else {
+				var author = message.author.id;
+				var entry = duelManager[author];
+				if(!entry) {
+					chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
+				}
+				if(author === 'dueling') {
+					chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
+					
+					args = parseInt(args);
+					if ((args >= 0) && (args <= 1000)) {
+						var difference = Math.abs(args - entry.targetNumber);
+						var chance = 100 - Math.pow(difference/50, 2) * 5;
+						/* Difference	Chance
+						 * 50			95
+						 * 100			80
+						 * 150			55
+						 * 200			20
+						 * 250			0
+						 */
+						if(Math.random()*100 < chance) {
+							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
+							entry.status = 'idle';
+							delete entry.opponentID;
+							var opponentEntry = duelManager[entry.opponentID];
+							opponentEntry.status = 'idle';
+							delete opponentEntry.opponentID;
+						} else {
+							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
+						}
+					} else {
+						chSend(message, '<number> must be between 0 and 1000.');
+					}
+				}
+				else if(author === 'ready') {
+					chSend(message, makeTag(author) + ', *no cheating!*');
+				} else {
+					chSend(message, makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
+				}
+			}
+		},
+		help: '`!d <number>`: Fire at your duel opponent.',
+		longHelp: '`!d <number>`: TO DO: Help Text'
+}
 //-----------------------------------------------------------------------------
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
