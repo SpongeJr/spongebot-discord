@@ -28,7 +28,6 @@ const SCRAMWORDS = require('./data/scramwords.json');
 const BOT = new Discord.Client();
 
 const FS = require('fs');
-const TESTFILENAME = 'testfile.dat';
 const BANK_FILENAME = 'data/banks.csv';
 const STATS_FILENAME = 'data/gamestats.json';
 
@@ -1046,6 +1045,12 @@ spongeBot.giveaways = {
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
 		} else if (parms[0] === 'addrole') {
+			if (!message.hasOwnProperty('guild')) {
+				chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server not in DM, ' +
+				'because I don\'t know where to give you the giveaways role otherwise!');
+				return;
+			}
+			
 			var role = message.guild.roles.find('name', 'giveaways');
 			
 			if (message.member.roles.has('408789879590354944')) {
