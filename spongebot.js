@@ -685,7 +685,7 @@ spongeBot.loot = {
                                     var item = itemTable[itemIndex];    //The item entry at the index
                                     rarityRoll = rarityRoll - item.rarity;
                                     //Stop here
-                                    if(rarityRoll <= 0) {
+                                    if (rarityRoll <= 0) {
                                         drops[itemIndex]++;
 										break;
                                     }
@@ -717,20 +717,20 @@ spongeBot.loot = {
                 }
             } else if (action === 'box' || action === 'boxes') {
 				chSend(message, message.author + ', here are the loot boxes that I have in stock.');
-				for(var box in loot.boxes) {
+				for (var box in loot.boxes) {
 					var desc = '\nThe `' + box + '` box';
 					var boxEntry = loot.boxes[box];
 					desc += '\nDescription: ' + boxEntry.description;
-					desc += '\nPrice: " + boxEntry.price + ' credits';
+					desc += '\nPrice: ' + boxEntry.price + ' credits';
 					desc += '\nContains ' + boxEntry.count + ' items from the following selection.';
 					
 					//List out the items
 					var itemTable = boxEntry.items;
-					for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+					for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
 						var itemEntry = itemTable[itemIndex];
-						desc += '\n' + itemEntry + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
+						desc += '\n' + itemEntry.emoji + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
 					}
-					chMessage(message, desc);
+					chSend(message, desc);
 				}
 			}
            
