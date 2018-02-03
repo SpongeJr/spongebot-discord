@@ -40,11 +40,12 @@ const SCRAM_GUESSTIME = 29000;
 const SCRAM_EXTRA_TIME = 1500; // per letter
 
 const SPONGE_ID = "167711491078750208";
+const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.96a';
+const VERSION_STRING = '0.96b';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
   'can possibly be found at: http://www.spongejr.com/spongebot/spongebot.js' +
@@ -504,6 +505,22 @@ toppings = toppings.split(",");
 //-----------------------------------------------------------------------------
 var chSend = function(message, str) {
 	
+	// temporary stuff
+	if (typeof message === 'undefined') {
+		console.log('chSend: message is undefined!');
+		return
+	}
+	
+	if (!message.hasOwnProperty('author')) {
+		console.log('chSend: No .author property on message!');
+		return;
+	}
+	
+	if (!message.author.hasOwnProperty('bot')) {
+		console.log('chSend: no .bot property on message.author!');
+		return;
+	}
+	
 	if (message.author.bot) {
 		console.log(' -- Blocked a bot-to-bot m.channel.send');
 		return;
@@ -539,6 +556,12 @@ var bigLetter = function(inp) {
 spongeBot.loot = {
         cmdGroup: 'Fun and Games',
         do: function(message, args) {
+			
+			if ((message.author.id !== SPONGE_ID) && (message.author.id !== ARCH_ID)) {
+				chSend(' You must develop your shtyle further before using loot boxes!');
+				return;
+			}
+			
             if (args === '') {
                 chSend(message, 'Try `!loot unbox <name>`.');
                 return;
@@ -595,18 +618,16 @@ spongeBot.loot = {
                             for(var i = 0; i < dropCount; i++) {
                                
                                 var rarityRoll = Math.random() * totalRarity;
-                                var droppedIndex = 0;           //The entry of the item that the box dropped
-                                var droppedRarity = 0;
-                                //We check for the item with the highest rarity below the rolled rarity
+                                //Iterate through each item entry and decrement the rarityRoll until we hit zero. Then we stop at our current item and add it to the drops.
                                 for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
                                     var item = itemTable[itemIndex];    //The item entry at the index
-                                    var itemRarity = item.rarity;
-                                    if(itemRarity <= rarityRoll && itemRarity >= droppedRarity) {
-                                        droppedIndex = itemIndex;
-                                        droppedRarity = itemRarity;
+                                    rarityRoll = rarityRoll - item.rarity;
+                                    //Stop here
+                                    if(rarityRoll <= 0) {
+                                        drops[itemIndex]++;
+										break;
                                     }
                                 }
-                                drops[droppedIndex]++;
                             }
                             var resultMessage = message.author + " found...";
                             //Accumulate value and print out results
