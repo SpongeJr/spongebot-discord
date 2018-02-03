@@ -642,6 +642,7 @@ spongeBot.loot = {
 					return;
 				} else if (args[2] === 'the' && args[3] === 'pod' && args[4] === 'bay' && args[5] === 'doors') {
 					chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
+					return;
 				}
                
                 var found = false;
@@ -712,7 +713,7 @@ spongeBot.loot = {
                 if (!found) {
                     chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
                 }
-            } else if (action === 'box' || action === 'boxes) {
+            } else if (action === 'box' || action === 'boxes') {
 				chSend(message, message.author + ', here are the loot boxes that I have in stock.');
 				for(var box in loot.boxes) {
 					var desc = '\nThe `' + box + '` box';
