@@ -204,9 +204,49 @@ var giveaways = {
 //-----------------------------------------------------------------------------
 var loot = {
         boxes: {
+			sports: {
+				count: 7,
+				price: 70,
+				items: [
+					{	emoji: ':soccer:',			rarity:	10,	value: 10,	},
+					{	emoji: ':basketball:',		rarity:	10,	value: 10,	},
+					{	emoji: ':football:',		rarity:	10,	value: 10,	},
+					{	emoji: ':baseball:',		rarity:	10,	value: 10,	},
+					{	emoji: ':tennis:',			rarity:	10,	value: 10,	},
+					{	emoji: ':volleyball:',		rarity:	10,	value: 10,	},
+					{	emoji: ':rugby_football:',	rarity:	10,	value: 10,	},
+				],
+				description: 'Play ball!'
+			},
+			math: {
+				count: 20,
+				price: 400,
+				items: [
+					{	emoji: ':one:',		rarity: 1, value: 1	},
+					{	emoji: ':two:',		rarity: 2, value: 2	},
+					{	emoji: ':three:',	rarity: 3, value: 3	},
+					{	emoji: ':four:',	rarity: 4, value: 4	},
+					{	emoji: ':five:',	rarity: 5, value: 5	},
+					{	emoji: ':six:',		rarity: 6, value: 6	},
+					{	emoji: ':seven:',	rarity: 7, value: 7	},
+					{	emoji: ':eight:',	rarity: 8, value: 8	},
+					{	emoji: ':nine:',	rarity: 9, value: 9	},
+					{	emoji: ':zero:',	rarity: 0, value: 0	},
+				],
+				description: 'Did you finish your math homework?'
+			},
+			coolnew: {
+				count: 2,
+				price: 10000,
+				items: [
+					{	emoji: ':cool:',	rarity: 1, value: 0	},
+					{	emoji: ':new:',		rarity: 1, value: 0	},
+				],
+				description: 'Feel :cool: and/or :new: with this seriously overpriced box!'
+			},
             programmer: {
-                count: 255,
-                price:  1280,
+                count: 256,
+                price: 2048,
                 items: [
                     //127
                     {   emoji: ':desktop:',             rarity: 1, value: 512       },
@@ -221,7 +261,7 @@ var loot = {
             },
             emojispam: {
                 count:  36,
-                price:  750,
+                price:  1500,
                 items: [
                     {   emoji: ':thinking:',    rarity: 40, value: 200      },
                     {   emoji: ':clap:',        rarity: 60, value: 160      },
@@ -560,12 +600,13 @@ spongeBot.loot = {
 			if ((message.author.id !== SPONGE_ID) && (message.author.id !== ARCH_ID)) {
 				chSend(' You must develop your shtyle further before using loot boxes!');
 				return;
-			}
-			
-            if (args === '') {
+			} else if (args === '') {
                 chSend(message, 'Try `!loot unbox <name>`.');
                 return;
-            }  
+            } else if (args[0] === 'boxes' && args[1] === 'suck') {
+				chSend(message, 'But you gotta admit that they are *really* lucrative');
+				return;
+			}
            
             args = args.toLowerCase();
             args = args.split(' ');
@@ -581,13 +622,31 @@ spongeBot.loot = {
                 var boxName = args[1] || '';
  
                 if (boxName === '') {
+					chSend(message, message.author + ', what do you want to unbox?');
+					return;
+				} else if (boxName === 'nothing') {
                     chSend(message, message.author + ', you can\'t unbox nothing.');
                     return;
-                }
+                } else if (boxName === 'it') {
+			   		chSend(message, message.author + ', do it yourself!');
+					return;
+			   	} else if (boxName === 'yourself') {
+					chSend(message, message.author + ', okay then. ');
+					chSend(message, message.author + '*pelts ' + message.author + ' with a barrage of wrenches, screwdrivers, cogs, nails, washers, and other machine parts.*');
+					return;
+				} else if (boxName === 'me') {
+					chSend(message, message.author + ', that would be extremely painful for you.');
+					return;
+				} else if (boxName === 'everything') {
+					chSend(message, message.author + ', that\'s impossible.');
+					return;
+				} else if (args[2] === 'the' && args[3] === 'pod' && args[4] === 'bay' && args[5] === 'doors') {
+					chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
+				}
                
                 var found = false;
-                for(var box in loot.boxes) {
-                    if(boxName === box) {
+                for (var box in loot.boxes) {
+                    if (boxName === box) {
                         found = true;
                         var price = loot.boxes[box].price;
 						/*
@@ -595,7 +654,7 @@ spongeBot.loot = {
 						chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
 						*/
 						
-                        if(bankroll[who] >= price) {
+                        if (bankroll[who] >= price) {
                             chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
                             addBank(who, -price);
                            
@@ -603,23 +662,23 @@ spongeBot.loot = {
                             var totalRarity = 0;                //The total combined rarity of all items, used for choosing items
                             var boxEntry = loot.boxes[box];     //The entry of the box, including the count, price, and item array
                             var itemTable = boxEntry.items; //The item array in the box entry
-                            for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                            for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
                                 totalRarity += itemTable[itemIndex].rarity;
                             }
                            
                             var dropCount = boxEntry.count;         //The total number of items that the box will drop
                             var drops = [];                         //Indexes correspond to itemTable. The number of drops for each item
                             //Initialize to 0
-                            for(var i = 0; i < itemTable.length; i++) {
+                            for (var i = 0; i < itemTable.length; i++) {
                                 drops[i] = 0;
                             }
                            
                             //Accumulate drops
-                            for(var i = 0; i < dropCount; i++) {
+                            for (var i = 0; i < dropCount; i++) {
                                
                                 var rarityRoll = Math.random() * totalRarity;
                                 //Iterate through each item entry and decrement the rarityRoll until we hit zero. Then we stop at our current item and add it to the drops.
-                                for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                                for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
                                     var item = itemTable[itemIndex];    //The item entry at the index
                                     rarityRoll = rarityRoll - item.rarity;
                                     //Stop here
@@ -632,11 +691,11 @@ spongeBot.loot = {
                             var resultMessage = message.author + " found...";
                             //Accumulate value and print out results
                             var valueTotal = 0;
-                            for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+                            for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
                                 var count = drops[itemIndex];
                                 var item = itemTable[itemIndex];
                                 valueTotal += item.value * count;
-                                if(count > 0) {
+                                if (count > 0) {
                                     resultMessage += '\nx' + count + ' ' + item.emoji;
                                 }
                             }
@@ -650,12 +709,27 @@ spongeBot.loot = {
                     }
                 }
                
-                if(!found) {
+                if (!found) {
                     chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
                 }
- 
-               
-            }
+            } else if (action === 'box' || action === 'boxes) {
+				chSend(message, message.author + ', here are the loot boxes that I have in stock.');
+				for(var box in loot.boxes) {
+					var desc = '\nThe `' + box + '` box';
+					var boxEntry = loot.boxes[box];
+					desc += '\nDescription: ' + boxEntry.description;
+					desc += '\nPrice: " + boxEntry.price + ' credits';
+					desc += '\nContains ' + boxEntry.count + ' items from the following selection.';
+					
+					//List out the items
+					var itemTable = boxEntry.items;
+					for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+						var itemEntry = itemTable[itemIndex];
+						desc += '\n' + itemEntry + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
+					}
+					chMessage(message, desc);
+				}
+			}
            
         },
         help: '`!loot`: Buy a loot box and see what\'s inside!'
