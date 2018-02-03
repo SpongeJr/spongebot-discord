@@ -32,11 +32,11 @@ const BANK_FILENAME = 'data/banks.csv';
 const STATS_FILENAME = 'data/gamestats.json';
 
 // note: make sure SCRAM_DELAY - SCRAM_DELAY_VARIATION > SCRAM_GUESSTIME
-const SCRAM_DELAY = 70000;
-const SCRAM_DELAY_VARIATION = 10000;
-const SCRAM_AWARD = 300;
+const SCRAM_DELAY = 195000;
+const SCRAM_DELAY_VARIATION = 15000;
+const SCRAM_AWARD = 900;
 const SCRAM_GUESSTIME = 29000;
-const SCRAM_EXTRA_TIME = 1500; // per letter
+const SCRAM_EXTRA_TIME = 2000; // per letter
 
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
@@ -44,11 +44,12 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.96b';
+const VERSION_STRING = '0.97';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
-  'can possibly be found at: http://www.spongejr.com/spongebot/spongebot.js' +
-  '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
+  'can possibly be found at: https://github.com/SpongeJr/spongebot-discord OR ' +
+  'http://www.spongejr.com/spongebot/spongebot.js \n' +
+  'Made using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
 var spongeBot = {};
 //-----------------------------------------------------------------------------
@@ -83,11 +84,7 @@ var acro = {
 	]
 };
 //-----------------------------------------------------------------------------
-var scram = {
-	ready: true,
-	announce: true,
-	runState: 'ready'
-};
+var scram = {};
 //-----------------------------------------------------------------------------
 var botStorage = {};
 var bankroll = {};
@@ -900,20 +897,45 @@ spongeBot.disable = {
 	access: true
 };
 //-----------------------------------------------------------------------------
+spongeBot.server = {
+	cmdGroup: 'Miscellaneous',
+	do: function(message) {
+		var server = message.guild;
+		
+		if (!server) {
+			auSend(message, ' Doesn\'t look like you sent me that message on _any_ server!');
+			return;
+		}
+		
+		var str = ' You are on ' + server.name + ', which has the id: ' + 
+		  server.id + '. It was created on: ' + server.createdAt + '.';
+		
+		chSend(message, str);
+	},
+	help: 'Gives info about the server on which you send me the command.'
+}
+//-----------------------------------------------------------------------------
 spongeBot.s = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
+		var server = message.guild;
 		
+		if (!server) {
+			auSend(message, 'The word scramble game is meant to be played in public, and '+
+			'not direct messages. Sorry! It\'s more fun with others, anyway!');
+			return;
+		}
+
 		parms = parms.toLowerCase();
 		
-		if (scram.runState !== 'guessing') {
+		if (scram[server.id].runState !== 'guessing') {
 			chSend(message, 'You can\'t guess the scrambled word now! ' +
 			  'You need to wait for a new word to unscramble!');
 			return;
 		}
 		
-		if (parms === scram.word) {
-			scram.runState = 'gameover';
+		if (parms === scram[server.id].word) {
+			scram[server.id].runState = 'gameover';
 			addBank(message.author.id, SCRAM_AWARD);
 			chSend(message, message.author + ' just unscrambled ' +
 			  ' the word and wins ' + SCRAM_AWARD + ' credits!');
@@ -933,13 +955,31 @@ spongeBot.s = {
 spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
-		if (scram.runState === 'ready') {
+		
+		var server = message.guild;
+		
+		if (!server) {
+			auSend(message, 'The word scramble game is meant to be played in public, and '+
+			'not direct messages. Sorry! It\'s more fun with others, anyway!');
+			return;
+		}
+		
+		if (!scram.hasOwnProperty(server.id)) {
+			// key doesn't exist for this server, so init
+			console.log('!scram: Adding instance for ' + server.id + ' ('
+			  + server.name + ')');
+			scram[server.id] = {};
+			scram[server.id].announce = true;
+			scram[server.id].runState = 'ready';
+		}
+		
+		if (scram[server.id].runState === 'ready') {
 			
 			var keys = Object.keys(SCRAMWORDS);
 			
 			var theCat = keys[parseInt(Math.random() * keys.length)];
 			var theWord = listPick(SCRAMWORDS[theCat].split(','))[0];
-			scram.word = theWord;		
+			scram[server.id].word = theWord;		
 			var scramWord = scrambler(theWord);
 			chSend(message, 'Unscramble this: ' + bigLetter(scramWord) + 
 			  '   *Category*: ' + theCat);
@@ -951,22 +991,22 @@ spongeBot.scram = {
 			chSend(message, 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
 			  parseInt(theDelay / 1000) + ' seconds.');
-			scram.runState = 'guessing';
+			scram[server.id].runState = 'guessing';
 			
-			scram.timer = setTimeout(function() {
-				if (scram.runState !== 'ready') {
-					scram.runState = 'ready';
-					if (scram.announce) {
+			scram[server.id].timer = setTimeout(function() {
+				if (scram[server.id].runState !== 'ready') {
+					scram[server.id].runState = 'ready';
+					if (scram[server.id].announce) {
 						chSend(message, 'There\'s a new `!scram` word ready!');
 					}
 				}
 			}, theDelay);
 			
-			scram.guessTimer = setTimeout(function() {
-				if (scram.runState === 'guessing') {
+			scram[server.id].guessTimer = setTimeout(function() {
+				if (scram[server.id].runState === 'guessing') {
 					chSend(message, 'The `!scram` word was not guessed' +
-					' in time! The word was: ' + scram.word);
-					scram.runState = 'gameover';
+					' in time! The word was: ' + scram[server.id].word);
+					scram[server.id].runState = 'gameover';
 				}
 			}, guessTime);
 		} else {
