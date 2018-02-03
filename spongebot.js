@@ -2037,10 +2037,7 @@ spongeBot.d = {
 				var entry = duelManager[author];
 				if(!entry) {
 					chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
-				}
-				if(author === 'dueling') {
-					chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
-					
+				} else if(entry.status === 'dueling') {
 					args = parseInt(args);
 					if ((args >= 0) && (args <= 1000)) {
 						var difference = Math.abs(args - entry.targetNumber);
@@ -2066,8 +2063,10 @@ spongeBot.d = {
 						chSend(message, '<number> must be between 0 and 1000.');
 					}
 				}
-				else if(author === 'ready') {
+				else if(entry.status === 'ready') {
 					chSend(message, makeTag(author) + ', *no cheating!*');
+				} else if(entry.status === 'challenging') {
+					chSend(message, makeTag(author) + ', sorry, but shooting at your opponent before they even accept your challenge is just plain murder.');
 				} else {
 					chSend(message, makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
 				}
