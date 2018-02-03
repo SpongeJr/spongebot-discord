@@ -25,7 +25,6 @@ const CONFIG = require('./config.json');
 const MYPALS = require('./mypals.json');
 const SCRAMWORDS = require('./data/scramwords.json');
 const BOT = new Discord.Client();
-
 const FS = require('fs');
 const TESTFILENAME = 'testfile.dat';
 const BANK_FILENAME = 'data/banks.csv';
@@ -317,6 +316,39 @@ var listPick = function(theList) {
 	var choice = Math.random() * theList.length;
 	return theList.splice(choice, 1);
 };
+//-----------------------------------------------------------------------------
+var loot = {
+		boxes: {
+			programmer: {
+				count: 255,
+				price:  1280,
+				items: [
+					//127
+					{	emoji: ':desktop:', 			rarity: 64, value: 1024		},
+					{	emoji: ':computer:', 			rarity: 32, value: 512		},
+					{	emoji: ':keyboard:',			rarity: 16, value: 256		},
+					{	emoji: ':mouse_three_button:',	rarity: 8,	value: 128		},	
+					{	emoji: ':floppy_disk:',			rarity: 4,  value: 64		},
+					{	emoji: ':one:',					rarity: 2,  value: 16		},
+					{	emoji: ':zero:', 				rarity: 1,	value: 4		},
+				],
+				description: 'A programmer\'s standard toolbox.'
+			},
+			emojispam: {
+				count:	36,
+				price:	750,
+				items: [
+					{	emoji: ':thinking:',	rarity: 16, value: 200		},
+					{	emoji: ':clap:', 		rarity: 12, value: 160		},
+					{	emoji: ':ok_hand:', 	rarity: 8, value: 125		},
+					{	emoji: ':100:',			rarity: 5, value: 100		},
+					{	emoji: ':b:', 			rarity: 3, value: 25		},
+					{	emoji: ':poop:',		rarity: 1, value: 1		},
+				],
+				description: 'You\'re guaranteed to find at least one :poop: emoji in here.'
+			}
+		}
+	};
 //-----------------------------------------------------------------------------
 var makeId = function(inp) {
 	// strips out the first <@! and > in a string
@@ -902,6 +934,102 @@ spongeBot.setStat = {
 	access: true,
 	disabled: true
 }
+//-----------------------------------------------------------------------------
+spongeBot.loot = {
+		cmdGroup: 'Fun and Games',
+		do: function(message, args) {
+			if (args === '') {
+				chSend(message, 'Try `!loot unbox <name>`.');
+				return;
+			}	
+			
+			args = args.toLowerCase();
+			args = args.split(' ');
+			
+			var action = args[0] || '';
+			if (action === 'unbox') {
+				var who = message.author.id;
+
+				if (!bankroll[who]) {
+					chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
+					return;
+				}
+				var boxName = parms[1] || '';
+
+				if (boxName === '') {
+					chSend(message, message.author + ', you can\'t unbox nothing.');
+					return;
+				}
+				
+				var found = false;
+				for(var box in loot.boxes) {
+					if(boxName === box) {
+						found = true;
+						var price = box.price;
+						if(bankroll[who] >= price) {
+							chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
+							addBank(who, -price);
+							
+							//Accumulate total rarity value
+							var totalRarity = 0;				//The total combined rarity of all items, used for choosing items
+							var boxEntry = loot.boxes[box];		//The entry of the box, including the count, price, and item array
+							var itemTable = boxEntry.items;	//The item array in the box entry
+							for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+								totalRarity += itemTable[itemIndex].rarity;
+							}
+							
+							var dropCount = boxEntry.count; 		//The total number of items that the box will drop
+							var drops = [];							//Indexes correspond to itemTable. The number of drops for each item
+							//Initialize to 0
+							for(var i = 0; i < itemTable.length; i++) {
+								drops[i] = 0;
+							}
+							
+							//Accumulate drops
+							for(var i = 0; i < dropCount; i++) {
+								
+								var rarityRoll = Math.random() * totalRarity;
+								var droppedIndex = 0;			//The entry of the item that the box dropped
+								//We check for the rarest item whose rarity is below the rolled rarity
+								for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+									var item = itemTable[itemIndex];	//The item entry at the index
+									if(item.rarity <= rarityRoll) {
+										droppedIndex = itemIndex;
+									}
+								}
+								drops[droppedIndex]++;
+							}
+							var resultMessage = message.author + " found...";
+							//Accumulate value and print out results
+							var valueTotal = 0;
+							for(var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+								var count = drops[itemIndex];
+								var item = itemTable[itemIndex];
+								valueTotal += item.value * count;
+								if(count > 0) {
+									resultMessage += '\nx' + count + ' ' + item.emoji;
+								}
+							}
+							resultMessage += '\nTotal Value: ' + valueTotal;
+							addBank(who, valueTotal);
+							chSend(message, result);
+						} else {
+							chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
+						}
+						return;
+					}
+				}
+				
+				if(!found) {
+					chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
+				}
+
+				
+			}
+			
+		},
+		help: '`!loot`: Buy a loot box and see what\'s inside!'
+	}
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
