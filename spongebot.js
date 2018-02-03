@@ -601,16 +601,18 @@ spongeBot.loot = {
 				chSend(' You must develop your shtyle further before using loot boxes!');
 				return;
 			} else if (args === '') {
-                chSend(message, 'Try `!loot unbox <name>`.');
+                chSend(message, 'Try `!loot unbox <name>` or `!loot boxes`.');
                 return;
-            } else if (args[0] === 'boxes' && args[1] === 'suck') {
-				chSend(message, 'But you gotta admit that they are *really* lucrative');
-				return;
-			}
+            }
            
             args = args.toLowerCase();
             args = args.split(' ');
-           
+           	
+			if (args[0] === 'boxes' && args[1] === 'suck') {
+				chSend(message, 'But you gotta admit that they are *really* lucrative');
+				return;
+			}
+			
             var action = args[0] || '';
             if (action === 'unbox') {
                 var who = message.author.id;
