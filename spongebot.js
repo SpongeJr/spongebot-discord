@@ -44,7 +44,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.981';
+const VERSION_STRING = '0.982';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -82,13 +82,13 @@ var acro = {
 		'technology and science', 'memes and fads', 'fantasy', 'general/any'
 	]
 };
-//-----------------------------------------------------------------------------
+
 var scram = {};
-//-----------------------------------------------------------------------------
+
 var botStorage = {};
 var bankroll = {};
 var gameStats = {};
-//-----------------------------------------------------------------------------
+
 var giveaways = {
 	'Shelter': {
 		info: {
@@ -196,7 +196,7 @@ var giveaways = {
 		type: 'ebook'
 	}
 };
-//-----------------------------------------------------------------------------
+
 var loot = {
         boxes: {
 			sports: {
@@ -306,13 +306,11 @@ var makeStatFile = function() {
 	var theFile = JSON.stringify(gameStats);
 	return theFile;
 };
-//-----------------------------------------------------------------------------
 var parseStatFile = function() {
 	var outp = JSON.parse(botStorage.statloaddata);
 	console.log(outp);
 	return outp;
 };
-//-----------------------------------------------------------------------------
 var loadStats = function() {
 	var readStream = FS.createReadStream(STATS_FILENAME);
 	readStream
@@ -364,7 +362,7 @@ var incStat = function(who, game, stat) {
 };
 //-----------------------------------------------------------------------------
 var alterStat = function(who, game, stat, amt) {
-	// Increments an integer stat. Returns: the stat's new value
+	// Alters an integer stat. Returns: the stat's new value
 	// Does not check validity of who, game, or stat, and will make a new
 	// Object key (who), game, or stat as needed if it doesn't exist.
 	// Also does no validation on amount parameter, call with care.
@@ -417,7 +415,6 @@ var loadBanks = function() {
 			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
 		});
 };
-//-----------------------------------------------------------------------------
 var saveBanks = function() {
 	var writeStream = FS.createWriteStream(BANK_FILENAME, {autoClose: true});
 	writeStream.write(makeBankFile(bankroll));
@@ -425,7 +422,6 @@ var saveBanks = function() {
 		console.log(' Banks saved.');
 	});
 };
-//-----------------------------------------------------------------------------
 var addBank = function(who, amt) {
 	
 	if (!BOT.users.get(who)) {
@@ -442,7 +438,6 @@ var addBank = function(who, amt) {
 	saveBanks();
 	return true;
 };
-//-----------------------------------------------------------------------------
 var makeBankFile = function(bankdata) {
 	var theFile = '';
 	for (who in bankdata) {
@@ -586,6 +581,10 @@ var bigLetter = function(inp) {
 		outp += ':regional_indicator_' + ch + ': ';
 	}	
 	return outp;
+};
+//-----------------------------------------------------------------------------
+var hasAccess = function(who, accessArr) {
+	return (who === SPONGE_ID || who === ARCH_ID);
 };
 //-----------------------------------------------------------------------------
 spongeBot.loot = {
@@ -950,7 +949,6 @@ spongeBot.s = {
 	  + 'word scramble game.',
 	disabled: false
 };
-//-----------------------------------------------------------------------------
 spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
@@ -1084,11 +1082,13 @@ spongeBot.giveaways = {
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
 		} else if (parms[0] === 'addrole') {
+			/*
 			if (!message.hasOwnProperty('guild')) {
 				chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server not in DM, ' +
 				'because I don\'t know where to give you the giveaways role otherwise!');
 				return;
 			}
+			*/
 			
 			var role = message.guild.roles.find('name', 'giveaways');
 			
@@ -1668,7 +1668,6 @@ spongeBot.avote = {
 	  ' to vote for your favorite entry from those shown. For more info, \n' +
 	  ' see `!acro help` or watch an acro game in play.'
 };
-//-----------------------------------------------------------------------------
 spongeBot.stopacro = {
 	do: function(message) {
 		clearTimeout(acro.timer);
@@ -1679,7 +1678,6 @@ spongeBot.stopacro = {
 	help: '`!stopacro` stops the currently running `!acro` game.',
 	access: true
 }
-//-----------------------------------------------------------------------------
 spongeBot.acrocfg = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -1705,7 +1703,6 @@ spongeBot.acrocfg = {
 	help: 'Configures the acro game.',
 	access: true
 };
-//-----------------------------------------------------------------------------
 spongeBot.acro = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
@@ -1858,7 +1855,6 @@ spongeBot.acro = {
 		' along with the author(s). These are the winners. Depending on config options,\n' +
 		' winner(s) may receive some amount of server "credits".'
 };
-//-----------------------------------------------------------------------------
 spongeBot.a = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
@@ -2107,10 +2103,6 @@ BOT.on('ready', () => {
   loadBanks();
   loadStats();
 });
-//-----------------------------------------------------------------------------
-var hasAccess = function(who, accessArr) {
-	return (who === SPONGE_ID || who === ARCH_ID);
-};
 //-----------------------------------------------------------------------------
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
