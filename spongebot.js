@@ -1,5 +1,5 @@
 /* Copyright 2018 Josh Kline ("SpongeJr"), 
-Loot box code Copyright 2018 by 0xABCDEF/Archcannon
+Loot box and Duel code Copyright 2018 by 0xABCDEF/Archcannon
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files
@@ -44,12 +44,11 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.98';
-const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
-  '\n Bot source code (not necessarily up-to-date) ' +
-  'can possibly be found at: https://github.com/SpongeJr/spongebot-discord OR ' +
-  'http://www.spongejr.com/spongebot/spongebot.js \n' +
-  'Made using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
+const VERSION_STRING = '0.981';
+const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
+  '\nreleased under MIT license. Bot source code can be found at: ' +
+  '\n https://github.com/SpongeJr/spongebot-discord' +
+  '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
 var spongeBot = {};
 //-----------------------------------------------------------------------------
