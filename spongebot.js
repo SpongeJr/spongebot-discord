@@ -1987,6 +1987,8 @@ var duelManager = {
 		 */
 		duelTimer: {},				//shared by both @challenger and @opponent
 		targetNumber: 0,			//Random number between 0 and 1000. @challenger's hit chance depends on the difference between their input and this number
+		kills: 0,
+		deaths: 0
 	}
 };
 spongeBot.duel = {
@@ -1994,9 +1996,18 @@ spongeBot.duel = {
 		do: function(message, args) {
 			/*
 			 * args
-			 * 0	Opponent
+			 * 0	info		challenge
+			 * 1	opponent	subject
 			 */
 			var challenger = message.author.id;
+			//If the challenger isn't in the duelManager record, we initialize them
+			if(!duelManager[challenger]) {
+				duelManager[challenger] = {
+					status: 'idle',
+					kills: 0,
+					deaths: 0
+				}
+			}
 			if (!args) {
 				chSend(message, 'Who are you trying to duel, ' + makeTag(challenger) + '? (`!help duel` for help)');
 				return;
@@ -2004,89 +2015,148 @@ spongeBot.duel = {
 			
 			args = args.split(' ');
 			
-			//Make sure the player specified an opponent
-			if (!args[0]) {
-				chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
+			if(!args[0]) {
+				chSend(message, makeTag(challenger) + ', use `!help duel`');
 				return;
 			}
-			var opponent = makeId(args[0]);
+			var action = args[0];
 			
-			//If the opponent isn't in the bank record, we assume they don't exist
-			if(!bankroll[opponent]) {
-				chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
-				return;
-			}
-			
-			//If the challenger isn't in the duelManager record, we initialize them
-			if(!duelManager[challenger]) {
-				duelManager[challenger] = {
-					status: 'idle'
+			if(action === 'info') {
+				var subject = makeId(args[1]) || challenger;
+				var subjectEntry = duelManager[subject];
+				var subjectStatic = subjectEntry.status;
+				var reply = '`!duel` info about ' + makeTag(subject);
+				if(status === 'idle') {
+					reply += '\nStatus: Idle';
+				} else if(status === 'challenging') {
+					reply += '\nStatus: Waiting to duel ' + makeTag(subjectEntry.opponentID);
+				} else {
+					reply += '\nStatus: Currently dueling ' + makeTag(subjectEntry.opponentID);
 				}
-			}
-			//If opponent isn't in the duelManager record, we initialize them
-			if(!duelManager[opponent]) {
-				duelManager[opponent] = {
-					status: 'idle'
+				
+				for(var user in duelManager) {
+					var userEntry = duelManager[user];
+					if(userEntry.status === 'challenging' && userEntry.opponentID === subject) {
+						reply += '\nPending challenge from ' + makeTag(user); 
+					}
 				}
-			}
-			
-			var challengerEntry = duelManager[challenger];
-			//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
-			if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
-				chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
-				return;
-			} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID === opponent) {
-				//If @challenger already challenged the opponent, then this means they are canceling the challenge
-				chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
-				challengerEntry.status = 'idle';
-				delete challengerEntry.opponentID;
-				return;
-			}
-			
-			//If @challenger has already challenged someone else, then they cancel their previous challenge
-			if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
-				chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead!');
+				reply += '\nKills: ' + subjectEntry.kills;
+				reply += '\nDeaths: ' + subjectEntry.deaths;
+				reply += '\nKill/Death Ratio: ' + (subjectEntry.kills/subjectEntry.deaths);
+				chSend(message, reply);
+			} else if(action === 'challenge') {
+				if (!args[1]) {
+					chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
+					return;
+				}
+				var opponent = makeId(args[1]);
 				
-			}
-			//We allow the player to challenge people who are busy dueling
-			
-			challengerEntry.opponentID = opponent;
-			challengerEntry.status = 'challenging';
-			
-			var opponentEntry = duelManager[opponent];
-			//If @opponent previously sent @challenger a request, then the challenge is accepted
-			if(opponentEntry.status === 'challenging' && opponentEntry.opponentID === challenger) {
-				challengerEntry.status = 'ready';
-				opponentEntry.status = 'ready';
-				chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
-				chSend(message, makeTag(challenger) + ': Get ready!');
-				chSend(message, makeTag(opponent) + ': Get ready!');
-				chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
-				//Start the duel!
-				var duelTimer = setTimeout(function() {
-					chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
-					
-					challengerEntry.status = 'dueling';
-					opponentEntry.status = 'dueling';
-					
-					challengerEntry.targetNumber = Math.random() * 1000;
-					opponentEntry.targetNumber = Math.random() * 1000;
-				}, (10 * 1000) + Math.random() * 20 * 1000);
-				challengerEntry.duelTimer = duelTimer;
-				opponentEntry.duelTimer = duelTimer;
+				//If the opponent isn't in the bank record, we assume they don't exist
+				if(!bankroll[opponent]) {
+					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
+					return;
+				}
 				
+				var bet = args[2] || 0;
+				if(bet < 0) {
+					chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
+					return;
+				} else if(bet > 0) {
+					if(bankroll[challenger] < bet) {
+						chSend(message, makeTag(challenger) + ', you can\'t bet what you don\'t have!');
+						return;
+					} else {
+						addBank(challenger, -bet);
+					}
+				}
+				
+				//If opponent isn't in the duelManager record, we initialize them
+				if(!duelManager[opponent]) {
+					duelManager[opponent] = {
+						status: 'idle',
+						kills: 0,
+						deaths: 0
+					}
+				}
+				
+				var challengerEntry = duelManager[challenger];
+				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
+				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
+					chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
+					return;
+				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID === opponent) {
+					//If @challenger already challenged the opponent, then this means they are canceling the challenge
+					chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
+					challengerEntry.status = 'idle';
+					delete challengerEntry.opponentID;
+					delete challengerEntry.bet;
+					return;
+				}
+				
+				//If @challenger has already challenged someone else, then they cancel their previous challenge
+				if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
+					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead!');
+					challengerEntry.opponentID = opponent;
+					challengerEntry.bet = bet;
+				}
+				//We allow the player to challenge people who are busy dueling
+				
+				challengerEntry.opponentID = opponent;
+				challengerEntry.status = 'challenging';
+				
+				var opponentEntry = duelManager[opponent];
+				//If @opponent previously sent @challenger a request, then the challenge is accepted
+				if(opponentEntry.status === 'challenging' && opponentEntry.opponentID === challenger) {
+					challengerEntry.status = 'ready';
+					opponentEntry.status = 'ready';
+					chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
+					chSend(message, makeTag(challenger) + ': Get ready!');
+					chSend(message, makeTag(opponent) + ': Get ready!');
+					chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
+					//Start the duel!
+					var duelTimer = setTimeout(function() {
+						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
+						
+						challengerEntry.status = 'dueling';
+						opponentEntry.status = 'dueling';
+						
+						challengerEntry.targetNumber = Math.random() * 1000;
+						opponentEntry.targetNumber = Math.random() * 1000;
+						
+						
+					}, (10 * 1000) + Math.random() * 20 * 1000);
+					challengerEntry.duelTimer = duelTimer;
+					opponentEntry.duelTimer = duelTimer;
+					
+					var stalemateTimer = setTimeout(function() {
+						//If nobody wins, we don't pay out any bets
+						chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalement! All bets have been claimed by me.');
+						//addBank(challenger, challengerEntry.bet);
+						//addBank(opponent, opponentEntry.bet);
+						delete challengerEntry.bet;
+						delete opponentEntry.bet;
+						delete challengerEntry.stalementTimer;
+						delete opponentEntry.stalementTimer;
+					}, 300 * 1000);
+					challengerEntry.stalemateTimer = stalemateTimer;
+					opponentEntry.stalemateTimer = stalemateTimer;
+				} else {
+					//Opponent is either idle, ready, or dueling at this point
+					//We wait for the opponent to reciprocate @challenger's request
+					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel!');
+					chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
+					if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
+						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
+					}
+				}
 			} else {
-				//Opponent is either idle, ready, or dueling at this point
-				//We wait for the opponent to reciprocate @challenger's request
-				chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel!');
-				chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
-				if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
-					chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
-				}
+				chSend(message, makeTag(challenger) + ', use `!help duel`');
 			}
 		},
-		help: '`!duel`: Challenge another player to a duel.',
-		longHelp: '`!duel`: Challenge another player to a duel. To play, the other player must challenge you back.'
+		help: '`!duel challenge <user>`: Challenge another user to a duel.\n'
+			+ '`!duel info <user>`: Shows duel info about user.',
+		longHelp: '`!duel challenge <user>`: Challenge another user to a duel. To play, the other user must challenge you back.'
+			+ '`!duel info <user>`: Shows duel info about user.'
 	};
 spongeBot.d = {
 		cmdGroup: 'Fun and Games',
@@ -2115,11 +2185,34 @@ spongeBot.d = {
 						if(Math.random()*100 < chance) {
 							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
 							chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
+							
+							var reward = entry.bet;
+							chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
+							addBank(author, reward);
+							
+							var opponent = entry.opponentID;
+							var opponentEntry = duelManager[opponent];
+							
+							reward = opponentEntry.bet;
+							chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
+							addBank(author, reward);
+							
+							//We also take up to our bet amount in credits from the opponent
+							reward = Math.min(entry.bet, bankroll[opponent]);
+							chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
+							addBank(author, reward);
+							addBank(opponent, -reward);
+							
 							entry.status = 'idle';
-							var opponentEntry = duelManager[entry.opponentID];
 							opponentEntry.status = 'idle';
-							delete opponentEntry.opponentID;
+							
 							delete entry.opponentID;
+							delete opponentEntry.opponentID;
+							delete entry.bet;
+							delete opponentEntry.bet;
+							
+							entry.kills++;
+							opponentEntry.deaths++;
 						} else {
 							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
 							if(difference < 50) {
