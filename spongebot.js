@@ -578,8 +578,17 @@ var bigLetter = function(inp) {
 	var ch = '';
 	for (var i = 0; i < inp.length; i++) {
 		ch = inp.charAt(i);
-		ch = ch.toLowerCase();
-		outp += ':regional_indicator_' + ch + ': ';
+		
+		if (ch === ' ') {
+			console.log('yea');
+			//TODO: figure out how to do this bit:
+			//outp += ':blank1: ';
+			
+			outp += '    ';
+		} else {
+			ch = ch.toLowerCase();
+			outp += ':regional_indicator_' + ch + ': ';
+		}
 	}	
 	return outp;
 };
@@ -1944,6 +1953,28 @@ spongeBot.a = {
 	longHelp: '`!a <Your Acronym Here>`: Submits your entry in the acronym game,\n' +
 	  '`!acro`. For more info, see `!acro help` or watch an acro game in play.'
 };
+//-----------------------------------------------------------------------------
+spongeBot.biglet = {
+	cmdGroup: 'miscellanous',
+	do: function(message, txt) {
+		
+		console.log(txt);
+		
+		if (txt === '') {
+			chSend(message, message.author + ', I have nothing to supersize.');
+			return;
+		}
+		
+		if (txt.length > 80) {
+			chSend(message, message.author + ', message too big!');
+			return;
+		}
+		console.log(txt);
+		console.log(bigLetter(txt));
+		chSend(message, bigLetter(txt));
+	},
+	help: '`!biglet <message>` says your message back in big letters'
+}
 //-----------------------------------------------------------------------------
 var duelManager = {
 	challengerID: {
