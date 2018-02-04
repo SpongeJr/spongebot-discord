@@ -2132,7 +2132,7 @@ BOT.on('message', message => {
 				
 				if (spongeBot[theCmd].access) {
 					// requires special access
-					if (!hasAccess(message.author.id, spongeBot[theCmd].access) {
+					if (!hasAccess(message.author.id, spongeBot[theCmd].access)) {
 						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
