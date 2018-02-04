@@ -1591,16 +1591,27 @@ spongeBot.timer = {
 			chSend(message, 'Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
 		} else {
 			parms = parseInt(parms);
-			if ((parms >= 1) && (parms <= 20)) {
+			if ((parms >= 1) && (parms <= 255)) {
 				setTimeout(function() {
 					chSend(message, 'Ding ding! Time is up!');
 				}, (parms * 1000));
 			} else {
-				chSend(message, 'Timer has to be set for between 1-20 secs.');
+				chSend(message, 'Timer has to be set for between 1-255 secs.');
 			}
 		}
 	},
 	help: '`!timer <sec>` sets a timer to go off in _<sec>_ seconds.'
+};
+//-----------------------------------------------------------------------------
+spongeBot.time = {
+	
+	cmdGroup: 'Miscellaneous',
+	do: function(message, parms) {
+		var now = new Date();
+		
+		chSend(message, now.toString());
+	},
+	help: 'Shows current time.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.say = {
