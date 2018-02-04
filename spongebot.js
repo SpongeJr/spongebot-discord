@@ -1447,7 +1447,7 @@ spongeBot.savestats = {
 	access: [],
 	disabled: true	
 }
-spongeBot.delStat = {
+spongeBot.delstat = {
 	cmdGroup: 'admin',
 	do: function(message, parms) {
 		// forreal user game [stat]
@@ -1494,7 +1494,7 @@ spongeBot.delStat = {
 	access: true,
 	disabled: true
 };
-spongeBot.setStat = {
+spongeBot.setstat = {
 	cmdGroup: 'admin',
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -1509,7 +1509,7 @@ spongeBot.setStat = {
 	access: true,
 	disabled: true
 };
-spongeBot.alterStat = {
+spongeBot.alterstat = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
 		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
@@ -2485,6 +2485,7 @@ spongeBot.d = {
 }
 //-----------------------------------------------------------------------------
 spongeBot.version = {
+	
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
 		chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
@@ -2505,7 +2506,7 @@ BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1);
 		var theCmd = botCmd.split(' ')[0];
-
+		var theCmd = theCmd.toLowerCase();
 		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
 			return;
