@@ -35,6 +35,7 @@ const STATS_FILENAME = '../data/gamestats.json';
 const SCRAM_DELAY = 195000;
 const SCRAM_DELAY_VARIATION = 15000;
 const SCRAM_AWARD = 900;
+const SCRAM_AWARD_LETTER_BONUS = 150; // per letter
 const SCRAM_GUESSTIME = 29000;
 const SCRAM_EXTRA_TIME = 2000; // per letter
 
@@ -44,7 +45,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.982';
+const VERSION_STRING = '0.983';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -468,7 +469,7 @@ var makeTag = function(inp) {
 var slots = {
 	config: {
 		symbols: {
-			kiwi: {emo: ':kiwifruit:', rarity: 1},
+			btcn: {emo: ':rhino:', rarity: 1},
 			peng: {emo: ':penguin:', rarity: 3},
 			dolr: {emo: ':dollar:', rarity: 4},
 			sevn: {emo: ':seven:', rarity: 6},
@@ -477,8 +478,8 @@ var slots = {
 			tato: {emo: ':potato:', rarity: 11},
 		},
 		payTable: [
-			{payout: 3200, pattern: ['kiwi', 'kiwi', 'kiwi']},
-			{payout: 160, pattern: ['kiwi', 'kiwi', 'any']},
+			{payout: 3200, pattern: ['btcn', 'btcn', 'btcn']},
+			{payout: 160, pattern: ['btcn', 'btcn', 'any']},
 			{payout: 108, pattern: ['peng', 'peng', 'peng']},
 			{payout: 32, pattern: ['peng', 'peng', 'any']},
 			{payout: 21, pattern: ['dolr', 'dolr', 'dolr']},
@@ -934,9 +935,9 @@ spongeBot.s = {
 		
 		if (parms === scram[server.id].word) {
 			scram[server.id].runState = 'gameover';
-			addBank(message.author.id, SCRAM_AWARD);
+			addBank(message.author.id, parseInt(SCRAM_AWARD + SCRAM_AWARD_LETTER_BONUS * scram[server.id].word.length));
 			chSend(message, message.author + ' just unscrambled ' +
-			  ' the word and wins ' + SCRAM_AWARD + ' credits!');
+			  ' the word and wins ' + parseInt(SCRAM_AWARD + SCRAM_AWARD_LETTER_BONUS * scram[server.id].word.length ) + ' credits!');
 			incStat(message.author.id, 'scram', 'wins');
 			
 			chSend(message, message.author + ' has now unscrambled ' +
@@ -1319,10 +1320,15 @@ spongeBot.loadbanks = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.setStat = {
-	do: function() {
-		// alterStat()
+	do: function(message, parms) {
+		
+		parms = parms.split(' ');
+		alterStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]));
 	},
 	help: 'sets a game stat. limited access.',
+	longHelp: 'Listen, be careful and look at ' + 
+	  ' the source for `alterStat (who, game, stat, amt) as well as ' +
+	  ' `spongeBot.setStat`!',
 	access: true,
 	disabled: true
 }
@@ -1352,8 +1358,7 @@ spongeBot.slots = {
 		}	
 		
 		parms = parms.toLowerCase();
-		parms = parms.split(' ');
-		
+		parms = parms.split(' ');		
 		
 		if (parms[0] === 'paytable') {
 	
