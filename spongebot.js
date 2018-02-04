@@ -643,7 +643,7 @@ var msToTime = function(inp) {
 };
 //-----------------------------------------------------------------------------
 spongeBot.loot = {
-		disabled: true,
+		disabled: false,
 		access: false,
 		timedCmd: {
 			howOften: ONE_HOUR,
