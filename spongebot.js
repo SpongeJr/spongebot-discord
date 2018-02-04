@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = 'v.0.996';
+const VERSION_STRING = '0.996½';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -488,7 +488,6 @@ var makeId = function(inp) {
 	var outp = inp.replace('<', '').replace('>', '').replace('!', '').replace('@', '');
 	return outp;
 };
-//-----------------------------------------------------------------------------
 var makeTag = function(inp) {
 	// wraps a string in <@>
 	var outp = '<@' + inp + '>';
@@ -642,6 +641,37 @@ var msToTime = function(inp) {
     }
 };
 //-----------------------------------------------------------------------------
+spongeBot.tree = {
+	disabled: true,
+	access: false,
+	timedCmd: {
+		howOften: ONE_DAY / 2,
+		gracePeriod: 300000,
+		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
+		  'is nothing to harvest on it yet. It looks like it\'ll yielf fruit in ' +
+		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		if (parms[0].toLowerCase() === 'check') {
+			var who = message.author.id;
+			var now = new Date();
+			var timedCmd = spongeBot.tree.timedCmd;
+			var lastCol = alterStat(makeId(who), 'lastUsed', 'tree', 0);
+			var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+			now = now.valueOf();
+			
+			if (now < nextCol) {
+				chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
+				  ' with `!tree harvest` and get your goodies!');
+			} else {
+				chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
+				'about ' + (nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod) +
+				  '% grown. It ought to be fully grown in about ' + msToTime(nextCol - now));
+			}
+		}
+	}
+}
+
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -2547,7 +2577,6 @@ spongeBot.d = {
 }
 //-----------------------------------------------------------------------------
 spongeBot.version = {
-	
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
 		chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
