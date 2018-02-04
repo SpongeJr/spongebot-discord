@@ -45,7 +45,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.984';
+const VERSION_STRING = '0.985';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -580,7 +580,6 @@ var bigLetter = function(inp) {
 		ch = inp.charAt(i);
 		
 		if (ch === ' ') {
-			console.log('yea');
 			//TODO: figure out how to do this bit:
 			//outp += ':blank1: ';
 			
