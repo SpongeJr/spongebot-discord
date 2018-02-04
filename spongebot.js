@@ -2284,7 +2284,23 @@ spongeBot.duel = {
 			var action = args[0];
 			
 			if(action === 'info') {
-				var subject = makeId(args[1]) || challenger;
+				var subject = challenger;
+				if(args[1]) {
+					subject = makeId(args[1]);
+				}
+				//Quit if the subject isn't in the bank record
+				if(!bankroll[subject]) {
+					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?');
+					return;
+				}
+				//If subject isn't in the duelManager record, we initialize them
+				if(!duelManager[subject]) {
+					duelManager[subject] = {
+						status: 'idle',
+						kills: 0,
+						deaths: 0
+					}
+				}
 				var subjectEntry = duelManager[subject];
 				var status = subjectEntry.status;
 				var reply = '`!duel` info about ' + makeTag(subject);
@@ -2299,7 +2315,7 @@ spongeBot.duel = {
 				for(var user in duelManager) {
 					var userEntry = duelManager[user];
 					if(userEntry.status === 'challenging' && userEntry.opponentID === subject) {
-						reply += '\nPending challenge from ' + makeTag(user) + 'with a bet of ' + duelManager[userEntry.opponentID].bet + ' credits.'; 
+						reply += '\nPending challenge from ' + makeTag(user) + 'with a bet of ' + userEntry.bet + ' credits.'; 
 					}
 				}
 				reply += '\nKills: ' + subjectEntry.kills;
