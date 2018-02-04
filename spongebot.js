@@ -2108,6 +2108,10 @@ BOT.on('ready', () => {
   loadStats();
 });
 //-----------------------------------------------------------------------------
+var hasAccess = function(who, accessArr) {
+	return (who === SPONGE_ID || who === ARCH_ID);
+};
+//-----------------------------------------------------------------------------
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1);
@@ -2128,7 +2132,7 @@ BOT.on('message', message => {
 				
 				if (spongeBot[theCmd].access) {
 					// requires special access
-					if (message.author.id !== SPONGE_ID) {
+					if (!hasAccess(message.author.id, spongeBot[theCmd].access) {
 						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
