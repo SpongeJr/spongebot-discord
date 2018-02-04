@@ -2355,6 +2355,9 @@ spongeBot.duel = {
 						deaths: 0
 					}
 				}
+				
+				var challengeChanged = false;
+				
 				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
 				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
 					chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
@@ -2371,7 +2374,7 @@ spongeBot.duel = {
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
 					//If @challenger has already challenged someone else, then they cancel their previous challenge
-					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead with a bet of ' + bet + ' credits!');
+					chSend(message, makeTag(challenger) + ' has found a more worthy opponent to replace ' + makeTag(challengerEntry.opponentID) + '!');
 					challengerEntry.opponentID = opponent;
 					//Return bet
 					chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
@@ -2380,6 +2383,8 @@ spongeBot.duel = {
 					//Update the bet
 					addBank(challenger, -bet);
 					challengerEntry.bet = bet;
+					
+					challengeChanged = true;
 				}
 				//We allow the player to challenge people who are busy dueling
 				
@@ -2397,7 +2402,8 @@ spongeBot.duel = {
 					chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
 					//Start the duel!
 					var duelTimer = setTimeout(function() {
-						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
+						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': *Draw!*');
+						chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has begun!');
 						
 						challengerEntry.status = 'dueling';
 						opponentEntry.status = 'dueling';
@@ -2423,9 +2429,12 @@ spongeBot.duel = {
 					challengerEntry.stalemateTimer = stalemateTimer;
 					opponentEntry.stalemateTimer = stalemateTimer;
 				} else {
-					//Update the bet
-					addBank(challenger, -bet);
-					challengerEntry.bet = bet;
+					//If we changed our challenge, then we already updated the bet
+					if(!challengeChanged) {
+						//Update the bet
+						addBank(challenger, -bet);
+						challengerEntry.bet = bet;
+					}
 					
 					//Opponent is either idle, ready, or dueling at this point
 					//We wait for the opponent to reciprocate @challenger's request
