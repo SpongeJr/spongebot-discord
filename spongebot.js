@@ -39,13 +39,17 @@ const SCRAM_AWARD_LETTER_BONUS = 150; // per letter
 const SCRAM_GUESSTIME = 29000;
 const SCRAM_EXTRA_TIME = 2000; // per letter
 
+const ONE_DAY = 86400000;
+const ONE_WEEK = 604800000;
+const COLLECT_GRACE_PERIOD = 900000;
+
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.985';
+const VERSION_STRING = '0.986';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -596,6 +600,22 @@ var hasAccess = function(who, accessArr) {
 	return (who === SPONGE_ID || who === ARCH_ID);
 };
 //-----------------------------------------------------------------------------
+var msToTime = function(inp) {
+	var sec = Math.floor(inp / 1000);
+	var min = Math.floor(inp / (1000 * 60));
+	var hr = Math.floor(inp / (1000 * 3600));
+	var day = Math.floor(inp / (1000 * 3600 * 24));
+
+	if (sec < 60) {
+		return sec + ' sec ';
+	} else if (min < 60) {
+		return min + ' min ' + sec % 60 + ' sec ';
+	} else if (hr < 24) {
+		return hr + ' hr ' + min % 60 + ' min ' + sec % 60 + ' sec ';
+    } else {
+		return day + ' days ' + hr % 24 + ' hr ' + min % 60 + ' min ' + sec % 60 + ' sec ';
+    }
+};
 spongeBot.loot = {
         cmdGroup: 'Fun and Games',
         do: function(message, args) {
@@ -1639,12 +1659,40 @@ spongeBot.time = {
 			return;
 		}
 		
+		if (parms[0] === 'raw') {
+			chSend(message, '`' + now.valueOf() + '`');
+			return;
+		}
+		
+		if (parms[0] === 'diff') {
+			// <t1, t2>, returns difference between the two -- either order (abs value)
+			var timeElapsed = msToTime(Math.abs(parseInt(parms[1]) - parseInt(parms[2])));
+			chSend(message, timeElapsed);
+			return;
+		}
+		
+		if ((parms[0] === 'nextWeek') || (parms[0] === 'nextDay')) {
+			// <time> tells how long from now until <time + (1 day | 1 week)> or if it's already passed
+			var howMuch;
+			var when;
+			if (parms[0] === 'nextWeek') {howMuch = ONE_WEEK;} else {howMuch = ONE_DAY;};
+			when = parseInt(parms[1]) + howMuch - now.valueOf();
+			if (when < 0) {
+				chSend(message, 'That was ' + msToTime(Math.abs(when)) + ' ago');
+				return;
+			} else {
+				chSend(message, 'Coming up in ' + msToTime(when));
+				return;
+			}
+		};
+		
 		chSend(message, now.toString());
 	},
 	help: '`time [long | iso]`: Shows current time.`',
 	longHelp: '`time [long | iso]`: Shows current time.' +
 	  '`!time long` includes the date. ' + 
-	  '`!time iso` gives an ISO standard time and date'
+	  '`!time iso` gives an ISO standard time and date',
+	access: []
 };
 //-----------------------------------------------------------------------------
 spongeBot.say = {
