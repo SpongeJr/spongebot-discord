@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.986';
+const VERSION_STRING = '0.99a';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -334,7 +334,6 @@ var loadStats = function() {
 			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
 		});	
 };
-//-----------------------------------------------------------------------------
 var saveStats = function() {
 	var writeStream = FS.createWriteStream(STATS_FILENAME, {autoClose: true});
 	writeStream.write(makeStatFile(gameStats));
@@ -342,11 +341,11 @@ var saveStats = function() {
 		console.log(' Game stats saved.');
 	});
 };
-//-----------------------------------------------------------------------------
 var incStat = function(who, game, stat) {
 	// Increments an integer stat. Returns: the new, incremented value
 	// Does not check validity of who, game, or stat, and will make a new
 	// Object key (who), game, or stat as needed if it doesn't exist.
+	// POSSIBLY DEPRECATE and use alterStat()
 	
 	if (!gameStats[who]) {
 		gameStats[who] = {};
@@ -365,11 +364,11 @@ var incStat = function(who, game, stat) {
 	saveStats();
 	return gameStats[who][game][stat];
 };
-//-----------------------------------------------------------------------------
-var alterStat = function(who, game, stat, amt) {
-	// Alters an integer stat. Returns: the stat's new value
+var setStat = function(who, game, stat, amt) {
+	// Sets an integer stat. Returns: the stat's new value
 	// Does not check validity of who, game, or stat, and will make a new
 	// Object key (who), game, or stat as needed if it doesn't exist.
+	// If stat didn't exist, sets this new stat to 0;
 	// Also does no validation on amount parameter, call with care.
 	
 	if (!gameStats[who]) {
@@ -385,7 +384,31 @@ var alterStat = function(who, game, stat, amt) {
 		console.log('!alterStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
-	gameStats[who][game][stat] += amt;
+	gameStats[who][game][stat] = parseInt(amt);
+	saveStats();
+	return gameStats[who][game][stat];
+};
+var alterStat = function(who, game, stat, amt) {
+	// Alters an integer stat. Returns: the stat's new value
+	// Does not check validity of who, game, or stat, and will make a new
+	// Object key (who), game, or stat as needed if it doesn't exist.
+	// If stat didn't exist, sets this new stat to 0;
+	// Also does no validation on amount parameter, call with care.
+	
+	if (!gameStats[who]) {
+		gameStats[who] = {};
+	}
+	
+	if (!gameStats[who][game]) {
+		gameStats[who][game] = {};
+	}
+	
+	if (!gameStats[who][game].hasOwnProperty(stat)) {
+		gameStats[who][game][stat] = 0;
+		console.log('!alterStat: Made a new ' + game + ' stat for ' + who);
+	}
+	
+	gameStats[who][game][stat] += parseInt(amt);
 	saveStats();
 	return gameStats[who][game][stat];
 };
@@ -400,7 +423,6 @@ var parseBankfile = function(inp) {
 	}
 	return outp;
 };
-//-----------------------------------------------------------------------------
 var loadBanks = function() {
 	var readStream = FS.createReadStream(BANK_FILENAME);
 	readStream
@@ -459,6 +481,9 @@ var listPick = function(theList) {
 //-----------------------------------------------------------------------------
 var makeId = function(inp) {
 	// strips out the first <@! and > in a string
+	// if you send it a string that is alread legit id, it won't be harmed
+	// if not passed a String, sends the input back
+	// should always return a String
 	if (typeof(inp) !== 'string') {return inp};
 	var outp = inp.replace('<', '').replace('>', '').replace('!', '').replace('@', '');
 	return outp;
@@ -616,6 +641,7 @@ var msToTime = function(inp) {
 		return day + ' days ' + hr % 24 + ' hr ' + min % 60 + ' min ' + sec % 60 + ' sec ';
     }
 };
+//-----------------------------------------------------------------------------
 spongeBot.loot = {
         cmdGroup: 'Fun and Games',
         do: function(message, args) {
@@ -1171,9 +1197,62 @@ spongeBot.giveaways = {
 	  'when there\'s something interesting going on related to giveaways.'
 };
 //-----------------------------------------------------------------------------
+var checkTimer = function(message, who, command) {
+	// who: (String) an id, or a tag (will be sent through makeId() )
+	// command: String that !!!should be a valid command!!!
+	// checks to see if this user can use this command yet, and if not...
+	//   it sends them either .failResponse from command.timedCmd or a default response
+	//   failResponse can include these substitutions:
+	//   <<next>> <<last>> <<nextDate>> <<lastDate>> <<cmd>> <<howOften>>
+	//  and returns false;
+	// If check succeeds (user can !command), returns true
+	// If user has never collected (id.lastUsed.command does not exist)
+	// then a new id.lastUsed.command will be created and set to now, and check
+	// succeeds.
+		
+	var now = new Date();
+	var timedCmd = spongeBot[command].timedCmd;
+	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
+	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+	now = now.valueOf();
+	
+	if (now > nextCol) {
+		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		setStat(makeId(who), 'lastUsed', command, now);
+		return true;
+	} else {
+		var failStr;
+		if (!timedCmd.failResponse) {
+			failStr = 'Ya can\'t do that yet.';
+			return false;
+		} else {
+			failStr = timedCmd.failResponse
+			  .replace('<<next>>', msToTime(nextCol - now))
+			  .replace('<<last>>', msToTime(now - lastCol))
+			  .replace('<<nextDate>>', new Date(nextCol).toString())
+			  .replace('<<lastDate>>', new Date(lastCol).toString())
+			  .replace('<<howOften>>', msToTime(timedCmd.howOften - timedCmd.gracePeriod))
+			  .replace('<<cmd>>', command);
+			  
+			chSend(message, failStr);
+			return false;
+		}
+	}
+}
+//-----------------------------------------------------------------------------
 spongeBot.sammich = {
+	timedCmd: {
+		howOften: 1000 * 60 * 3, 
+		gracePeriod: 10000,
+		failResponse: 'Hey! You can only have a <<cmd>> every <<howOften>> ! ' +
+		' And that\'s not for like, <<next>> yet, which would be at <<nextDate>>. ' +
+		' You last had me make you a `!sammich` at <<lastDate>>, which was <<last>> ago.'
+	},
 	cmdGroup: 'Fun and Games',
 	do: function(message) {
+		if (!checkTimer(message, message.author.id, 'sammich')) {
+			return false; // can't use it yet!
+		}
 		chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
 	},
 	help: '`!sammich` whips you up a tasty random sandwich (65% chance) or smoothie (35% chance)'
@@ -1560,7 +1639,6 @@ spongeBot.ticket = {
 			var who = makeId(parms[0]);
 			var str;
 			
-			console.log('!ticket: parms[1] is: ' + parms[1]);
 			if (parms[1] === '' || typeof parms[1] === 'undefined') {
 				amt = 1;
 			} else {
@@ -1635,7 +1713,6 @@ spongeBot.timer = {
 	},
 	help: '`!timer <sec>` sets a timer to go off in _<sec>_ seconds.'
 };
-//-----------------------------------------------------------------------------
 spongeBot.time = {
 	
 	cmdGroup: 'Miscellaneous',
