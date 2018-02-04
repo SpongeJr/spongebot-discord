@@ -1327,7 +1327,7 @@ spongeBot.setStat = {
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
-	  ' the source for `alterStat (who, game, stat, amt) as well as ' +
+	  ' the source for `alterStat (who, game, stat, amt)` as well as ' +
 	  ' `spongeBot.setStat`!',
 	access: true,
 	disabled: true
