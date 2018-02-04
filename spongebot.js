@@ -2040,7 +2040,10 @@ spongeBot.d = {
 				} else if(entry.status === 'dueling') {
 					args = parseInt(args);
 					if ((args >= 0) && (args <= 1000)) {
-					var difference = Math.min(Math.abs(args - entry.targetNumber), Math.min(Math.abs((1000+args) - entry.targetNumber), Math.abs(1000-args - entry.targetnumber)));						var chance = 100 - Math.pow(difference/50, 2) * 5;
+                        //var difference = (args - entry.targetNumber);
+                        //difference = Math.min(Math.abs(difference), Math.abs(difference + 1000), Math.abs(difference - 1000));
+						var difference = Math.abs(args - entry.targetNumber);
+                        var chance = 100 - Math.pow(difference/50, 2) * 5;
 						/* Difference	Chance
 						 * 50			95
 						 * 100			80
