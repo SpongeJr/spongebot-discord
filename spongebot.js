@@ -897,9 +897,8 @@ spongeBot.enable = {
 			chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
-		if (parms === 'disable') {
-			chSend(message, 'Don\'t disable `!enable`. Just don\'t.');
-			return;
+		if (parms === 'enable') {
+			chSend(message, ':yodawg:');
 		}
 		spongeBot[parms].disabled = false;
 		chSend(message, parms + '.disabled: '
@@ -916,6 +915,9 @@ spongeBot.disable = {
 		}
 		if (parms === 'disable') {
 			chSend(message, ':yodawg:');
+		} else if (parms === 'enable') {
+			chSend(message, 'Don\'t disable enable. Just don\'t.');
+			return;
 		}
 		spongeBot[parms].disabled = true;
 		chSend(message, parms + '.disabled: '
@@ -2566,8 +2568,7 @@ BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1);
 		var theCmd = botCmd.split(' ')[0];
-		var theCmd = theCmd.toLowerCase();
-		if (!spongeBot.hasOwnProperty(theCmd)) {
+		if (!spongeBot.hasOwnProperty(theCmd.toLowerCase())) {
 			// not a valid command
 			return;
 		}
@@ -2585,14 +2586,14 @@ BOT.on('message', message => {
 						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
-						spongeBot[theCmd].do(message, parms);
+						spongeBot[theCmd.toLowerCase()].do(message, parms);
 					}
 				} else {
 					
 					if (message.author.bot) {
 						console.log('Blocked a bot-to-bot !command.');
 					} else {	
-						spongeBot[theCmd].do(message, parms);
+						spongeBot[theCmd.toLowerCase()].do(message, parms);
 					}
 				}
 			} else {
