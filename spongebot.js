@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.99a';
+const VERSION_STRING = '0.99b';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -1222,8 +1222,9 @@ var checkTimer = function(message, who, command) {
 		return true;
 	} else {
 		var failStr;
-		if (!timedCmd.failResponse) {
-			failStr = 'Ya can\'t do that yet.';
+		if (!timedCmd.hasOwnProperty('failResponse')) {
+			failStr = 'Ya can\'t do that yet. ' + makeTag(message.author.id);
+			chSend(message, failStr);
 			return false;
 		} else {
 			failStr = timedCmd.failResponse
