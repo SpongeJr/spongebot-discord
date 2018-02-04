@@ -2258,7 +2258,7 @@ spongeBot.duel = {
 		do: function(message, args) {
 			/*
 			 * args
-			 * 0	info		challenge
+			 * 0	challenge	info
 			 * 1	opponent	subject
 			 */
 			var challenger = message.author.id;
@@ -2286,7 +2286,7 @@ spongeBot.duel = {
 			if(action === 'info') {
 				var subject = makeId(args[1]) || challenger;
 				var subjectEntry = duelManager[subject];
-				var subjectStatic = subjectEntry.status;
+				var status = subjectEntry.status;
 				var reply = '`!duel` info about ' + makeTag(subject);
 				if(status === 'idle') {
 					reply += '\nStatus: Idle';
@@ -2299,7 +2299,7 @@ spongeBot.duel = {
 				for(var user in duelManager) {
 					var userEntry = duelManager[user];
 					if(userEntry.status === 'challenging' && userEntry.opponentID === subject) {
-						reply += '\nPending challenge from ' + makeTag(user); 
+						reply += '\nPending challenge from ' + makeTag(user) + 'with a bet of ' + duelManager[userEntry.opponentID].bet + ' credits.'; 
 					}
 				}
 				reply += '\nKills: ' + subjectEntry.kills;
@@ -2318,7 +2318,7 @@ spongeBot.duel = {
 					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
 					return;
 				}
-				
+				var challengerEntry = duelManager[challenger];
 				var bet = args[2] || 0;
 				if(bet < 0) {
 					chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
@@ -2327,9 +2327,8 @@ spongeBot.duel = {
 					if(bankroll[challenger] < bet) {
 						chSend(message, makeTag(challenger) + ', you can\'t bet what you don\'t have!');
 						return;
-					} else {
-						addBank(challenger, -bet);
 					}
+					//If everything's good, then we prepare the bets later
 				}
 				
 				//If opponent isn't in the duelManager record, we initialize them
@@ -2340,8 +2339,6 @@ spongeBot.duel = {
 						deaths: 0
 					}
 				}
-				
-				var challengerEntry = duelManager[challenger];
 				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
 				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
 					chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
@@ -2350,15 +2347,22 @@ spongeBot.duel = {
 					//If @challenger already challenged the opponent, then this means they are canceling the challenge
 					chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
 					challengerEntry.status = 'idle';
+					//Return bet
+					chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+					addBank(challenger, challengerEntry.bet);
 					delete challengerEntry.opponentID;
 					delete challengerEntry.bet;
 					return;
-				}
-				
-				//If @challenger has already challenged someone else, then they cancel their previous challenge
-				if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
-					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead!');
+				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
+					//If @challenger has already challenged someone else, then they cancel their previous challenge
+					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead with a bet of ' + bet + ' credits!');
 					challengerEntry.opponentID = opponent;
+					//Return bet
+					chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+					addBank(challenger, challengerEntry.bet);
+					
+					//Update the bet
+					addBank(challenger, -bet);
 					challengerEntry.bet = bet;
 				}
 				//We allow the player to challenge people who are busy dueling
@@ -2403,9 +2407,13 @@ spongeBot.duel = {
 					challengerEntry.stalemateTimer = stalemateTimer;
 					opponentEntry.stalemateTimer = stalemateTimer;
 				} else {
+					//Update the bet
+					addBank(challenger, -bet);
+					challengerEntry.bet = bet;
+					
 					//Opponent is either idle, ready, or dueling at this point
 					//We wait for the opponent to reciprocate @challenger's request
-					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel!');
+					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel with a bet of ' + bet + ' credits!');
 					chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
 					if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
 						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
@@ -2455,15 +2463,20 @@ spongeBot.d = {
 							var opponent = entry.opponentID;
 							var opponentEntry = duelManager[opponent];
 							
-							reward = opponentEntry.bet;
-							chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
-							addBank(author, reward);
+							//Prevent credit duplication here
+							if(author !== opponent) {
+								reward = opponentEntry.bet;
+								chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
+								addBank(author, reward);
+								
+								//We also take up to our bet amount in credits from the opponent
+								reward = Math.min(entry.bet, bankroll[opponent]);
+								chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
+								addBank(author, reward);
+								addBank(opponent, -reward);
+							}
 							
-							//We also take up to our bet amount in credits from the opponent
-							reward = Math.min(entry.bet, bankroll[opponent]);
-							chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
-							addBank(author, reward);
-							addBank(opponent, -reward);
+							
 							
 							entry.status = 'idle';
 							opponentEntry.status = 'idle';
@@ -2472,6 +2485,13 @@ spongeBot.d = {
 							delete opponentEntry.opponentID;
 							delete entry.bet;
 							delete opponentEntry.bet;
+							
+							//clear out stalemate timer
+							clearTimeout(entry.stalemateTimer);
+							clearTimeout(opponentEntry.stalemateTimer);
+							
+							delete entry.stalemateTimer;
+							delete opponentEntry.stalemateTimer;
 							
 							entry.kills++;
 							opponentEntry.deaths++;
