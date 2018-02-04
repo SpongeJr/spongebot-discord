@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = 'v.0.995';
+const VERSION_STRING = 'v.0.996';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -924,6 +924,30 @@ spongeBot.disable = {
 	help: 'Disables a bot command. Restricted access.',
 	access: true
 };
+spongeBot.restrict = {
+	access: true,
+	cmdGroup: 'Admin',
+	do: function(message, parms) {
+		if (!spongeBot[parms]) {
+			chSend(message, 'Can\'t find command ' + parms + '!');
+			return;
+		}
+		if (parms === 'restrict') {
+			chSend(message, ':yodawg: you can\'t !restrict .restrict');
+			return;
+		}
+		
+		if (spongeBot[parms].hasOwnProperty('access')) {
+			spongeBot[parms].access = !spongeBot[parms].access;
+		} else {
+			spongeBot[parms].access = false;
+		}
+		chSend(message, '!' + parms + ' needs special access:  '
+		  + spongeBot[parms].access);
+	},
+	help: ':warning: Toggles whether commands require special access.'
+	
+}
 //-----------------------------------------------------------------------------
 spongeBot.server = {
 	cmdGroup: 'Miscellaneous',
@@ -1428,7 +1452,7 @@ spongeBot.loadbanks = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.loadstats = {
-	cmdGroup: 'admin',
+	cmdGroup: 'Admin',
 	do: function(message) {
 		loadStats();
 		chSend(message, 'OK. Stats loaded manually.');
@@ -1438,7 +1462,7 @@ spongeBot.loadstats = {
 	disabled: true
 }
 spongeBot.savestats = {
-	cmdGroup: 'admin',
+	cmdGroup: 'Admin',
 	do: function(message) {
 		saveStats();
 		chSend(message, 'OK. Stats saved manually.');
@@ -1448,7 +1472,7 @@ spongeBot.savestats = {
 	disabled: true	
 }
 spongeBot.delstat = {
-	cmdGroup: 'admin',
+	cmdGroup: 'Admin',
 	do: function(message, parms) {
 		// forreal user game [stat]
 		parms = parms.split(' ');
@@ -1495,7 +1519,7 @@ spongeBot.delstat = {
 	disabled: true
 };
 spongeBot.setstat = {
-	cmdGroup: 'admin',
+	cmdGroup: 'Admin',
 	do: function(message, parms) {
 		parms = parms.split(' ');
 		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
