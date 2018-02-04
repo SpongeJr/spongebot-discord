@@ -2256,13 +2256,13 @@ spongeBot.duel = {
 					
 					var stalemateTimer = setTimeout(function() {
 						//If nobody wins, we don't pay out any bets
-						chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalement! All bets have been claimed by me.');
+						chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalemate! All bets have been claimed by me.');
 						//addBank(challenger, challengerEntry.bet);
 						//addBank(opponent, opponentEntry.bet);
 						delete challengerEntry.bet;
 						delete opponentEntry.bet;
-						delete challengerEntry.stalementTimer;
-						delete opponentEntry.stalementTimer;
+						delete challengerEntry.stalemateTimer;
+						delete opponentEntry.stalemateTimer;
 					}, 300 * 1000);
 					challengerEntry.stalemateTimer = stalemateTimer;
 					opponentEntry.stalemateTimer = stalemateTimer;
