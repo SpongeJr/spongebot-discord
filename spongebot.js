@@ -2501,10 +2501,9 @@ BOT.on('message', message => {
 		parms = parms.slice(1); // remove leading space
 
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			console.log('  ' + message.author + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			console.log('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
-				
 				if (spongeBot[theCmd].access) {
 					// requires special access
 					if (!hasAccess(message.author.id, spongeBot[theCmd].access)) {
