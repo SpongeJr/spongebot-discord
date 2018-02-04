@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.99b';
+const VERSION_STRING = 'v.0.995';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -902,36 +902,24 @@ spongeBot.exchange = {
 	help: '`!exchange iamsure` trades 100,000 credits for a raffle ticket. Make sure you really want to do this.'
 };
 //-----------------------------------------------------------------------------
-spongeBot.stats = {
-	cmdGroup: 'Fun and Games',
+//-----------------------------------------------------------------------------
+spongeBot.enable = {
 	do: function(message, parms) {
-		var who;
-		
-		if (!parms) {
-			//chSend(message, message.author + ', specify a <user> for `!stats`.');
-			who = message.author.id;
-		} else {
-			who = makeId(parms);
-		}
-		
-		if (!gameStats[who]) {
-			chSend(message, message.author + ', I don\'t have any stats for them.');
+		if (!spongeBot[parms]) {
+			chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
-		
-		var theStr = ' :bar_chart:  STATS FOR ' + makeTag(who) + '  :bar_chart:\n```';
-		for (var game in gameStats[who]) {
-			theStr += '> ' + game + ':\n';
-			for (var stat in gameStats[who][game]) {
-				theStr += '    ' + stat + ': ' + gameStats[who][game][stat] + '\n';
-			}
+		if (parms === 'disable') {
+			chSend(message, 'Don\'t disable `!enable`. Just don\'t.');
+			return;
 		}
-		theStr += '```';
-		chSend(message, theStr);
+		spongeBot[parms].disabled = false;
+		chSend(message, parms + '.disabled: '
+		  + spongeBot[parms].disabled);
 	},
-	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
+	help: 'Enables a bot command. Restricted access.',
+	access: true
 };
-//-----------------------------------------------------------------------------
 spongeBot.disable = {
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
@@ -939,14 +927,13 @@ spongeBot.disable = {
 			return;
 		}
 		if (parms === 'disable') {
-			chSend(message, 'Don\'t disable `!disable`. Just don\'t.');
-			return;
+			chSend(message, ':yodawg:');
 		}
-		spongeBot[parms].disabled = !(spongeBot[parms].disabled);
+		spongeBot[parms].disabled = true;
 		chSend(message, parms + '.disabled: '
 		  + spongeBot[parms].disabled);
 	},
-	help: 'Disables/enables a bot command. Restricted access.',
+	help: 'Disables a bot command. Restricted access.',
 	access: true
 };
 //-----------------------------------------------------------------------------
@@ -1418,7 +1405,6 @@ spongeBot.savebanks = {
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true
 }
-//-----------------------------------------------------------------------------
 spongeBot.loadbanks = {
 	do: function() {
 		loadBanks();
@@ -1427,19 +1413,131 @@ spongeBot.loadbanks = {
 	disabled: true
 };
 //-----------------------------------------------------------------------------
-spongeBot.setStat = {
+spongeBot.loadstats = {
+	cmdGroup: 'admin',
+	do: function(message) {
+		loadStats();
+		chSend(message, 'OK. Stats loaded manually.');
+	},
+	help: 'force a stat reload from persistent storage',
+	access: [],
+	disabled: true
+}
+spongeBot.savestats = {
+	cmdGroup: 'admin',
+	do: function(message) {
+		saveStats();
+		chSend(message, 'OK. Stats saved manually.');
+	},
+	help: 'force a stat save to persistent storage',
+	access: [],
+	disabled: true	
+}
+spongeBot.delStat = {
+	cmdGroup: 'admin',
 	do: function(message, parms) {
-		
+		// forreal user game [stat]
 		parms = parms.split(' ');
-		alterStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]));
+		if (parms[0] !== 'forreal') {
+			chSend(message, 'Are you **for real** ' + message.author);
+			return;
+		} else {
+			var who = makeId(parms[1]);
+			var game = parms[2];
+			var stat = parms[3];
+			
+			if(!gameStats.hasOwnProperty(who)) {
+				chSend(message, 'Can\'t find uid ' + who);
+				return;
+			}
+				
+			if (!gameStats[who].hasOwnProperty(game)) {
+				chSend(message, 'Can\'t find game `' + game + '` for uid ' + who);
+				return;
+			}
+
+			if (!parms[3]) {
+				console.log(who + ', ' + game + ', ' + stat);
+				chSend(message, 'Deleting GAME ' + game + ' from USER ' + who);
+				delete gameStats[who][game];
+				return;
+			} else {
+				if (!gameStats[who][game].hasOwnProperty(stat)) {
+					chSend(message, 'Can\'t find stat `' + stat + '` for game ' +
+					game + ' for uid ' + who);
+					return;
+				}
+				chSend(message, 'Deleting STAT ' + stat + ' from GAME ' + game + 
+				  ' from USER ' + who);
+				delete gameStats[who][game][stat];
+			}
+		}
+	},
+	help: 'sets a game stat. limited access.',
+	longHelp: 'Listen, be careful and look at ' + 
+	  ' the source for `setStat (who, game, stat, amt)` as well as ' +
+	  ' `spongeBot.alterStat()`!',
+	access: true,
+	disabled: true
+};
+spongeBot.setStat = {
+	cmdGroup: 'admin',
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
+		  '  STAT: ' + parms[2] + ' is now ' +
+		  setStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
+	},
+	help: 'sets a game stat. limited access.',
+	longHelp: 'Listen, be careful and look at ' + 
+	  ' the source for `setStat (who, game, stat, amt)` as well as ' +
+	  ' `spongeBot.alterStat()`!',
+	access: true,
+	disabled: true
+};
+spongeBot.alterStat = {
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
+		  '  STAT: ' + parms[2] + ' is now ' +
+		  alterStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
 	  ' the source for `alterStat (who, game, stat, amt)` as well as ' +
-	  ' `spongeBot.setStat`!',
+	  ' `spongeBot.alterStat()`!',
 	access: true,
 	disabled: true
-}
+};
+spongeBot.stats = {
+	cmdGroup: 'Fun and Games',
+	do: function(message, parms) {
+		var who;
+		
+		if (!parms) {
+			//chSend(message, message.author + ', specify a <user> for `!stats`.');
+			who = message.author.id;
+		} else {
+			who = makeId(parms);
+		}
+		
+		if (!gameStats[who]) {
+			chSend(message, message.author + ', I don\'t have any stats for them.');
+			return;
+		}
+		
+		var theStr = ' :bar_chart:  STATS FOR ' + makeTag(who) + '  :bar_chart:\n```';
+		for (var game in gameStats[who]) {
+			theStr += '> ' + game + ':\n';
+			for (var stat in gameStats[who][game]) {
+				theStr += '    ' + stat + ': ' + gameStats[who][game][stat] + '\n';
+			}
+		}
+		theStr += '```';
+		chSend(message, theStr);
+	},
+	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
+};
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
