@@ -45,7 +45,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.983';
+const VERSION_STRING = '0.984';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -1614,9 +1614,29 @@ spongeBot.time = {
 	do: function(message, parms) {
 		var now = new Date();
 		
+		parms = parms.split(' ');
+		
+		if (!parms[0]) {
+			chSend(message, now.toTimeString());
+			return;
+		}
+		
+		if (parms[0] === 'long') {
+			chSend(message, now.toString());
+			return;
+		}
+		
+		if (parms[0] === 'iso') {
+			chSend(message, now.toISOString());
+			return;
+		}
+		
 		chSend(message, now.toString());
 	},
-	help: 'Shows current time.'
+	help: '`time [long | iso]`: Shows current time.`',
+	longHelp: '`time [long | iso]`: Shows current time.' +
+	  '`!time long` includes the date. ' + 
+	  '`!time iso` gives an ISO standard time and date'
 };
 //-----------------------------------------------------------------------------
 spongeBot.say = {
