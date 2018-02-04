@@ -2003,7 +2003,9 @@ spongeBot.duel = {
 			//If the challenger isn't in the duelManager record, we initialize them
 			if(!duelManager[challenger]) {
 				duelManager[challenger] = {
-					status: 'idle'
+					status: 'idle',
+					kills: 0,
+					deaths: 0
 				}
 			}
 			if (!args) {
@@ -2071,7 +2073,9 @@ spongeBot.duel = {
 				//If opponent isn't in the duelManager record, we initialize them
 				if(!duelManager[opponent]) {
 					duelManager[opponent] = {
-						status: 'idle'
+						status: 'idle',
+						kills: 0,
+						deaths: 0
 					}
 				}
 				
