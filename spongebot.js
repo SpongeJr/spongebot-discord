@@ -22,14 +22,14 @@ IN THE SOFTWARE.
 */
 
 const Discord = require('discord.js');
-const CONFIG = require('./config.json');
-const MYPALS = require('./mypals.json');
-const SCRAMWORDS = require('./data/scramwords.json');
+const CONFIG = require('../config.json');
+const MYPALS = require('../mypals.json');
+const SCRAMWORDS = require('../data/scramwords.json');
 const BOT = new Discord.Client();
 
 const FS = require('fs');
-const BANK_FILENAME = 'data/banks.csv';
-const STATS_FILENAME = 'data/gamestats.json';
+const BANK_FILENAME = '../data/banks.csv';
+const STATS_FILENAME = '../data/gamestats.json';
 
 // note: make sure SCRAM_DELAY - SCRAM_DELAY_VARIATION > SCRAM_GUESSTIME
 const SCRAM_DELAY = 195000;
@@ -44,7 +44,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.97';
+const VERSION_STRING = '0.98';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline, released under MIT license' +
   '\n Bot source code (not necessarily up-to-date) ' +
   'can possibly be found at: https://github.com/SpongeJr/spongebot-discord OR ' +
@@ -2040,8 +2040,7 @@ spongeBot.d = {
 				} else if(entry.status === 'dueling') {
 					args = parseInt(args);
 					if ((args >= 0) && (args <= 1000)) {
-						var difference = Math.abs(args - entry.targetNumber);
-						var chance = 100 - Math.pow(difference/50, 2) * 5;
+					var difference = Math.min(Math.abs(args - entry.targetNumber), Math.min(Math.abs((1000+args) - entry.targetNumber), Math.abs(1000-args - entry.targetnumber)));						var chance = 100 - Math.pow(difference/50, 2) * 5;
 						/* Difference	Chance
 						 * 50			95
 						 * 100			80
@@ -2051,13 +2050,27 @@ spongeBot.d = {
 						 */
 						if(Math.random()*100 < chance) {
 							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
+							chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
 							entry.status = 'idle';
-							delete entry.opponentID;
 							var opponentEntry = duelManager[entry.opponentID];
 							opponentEntry.status = 'idle';
 							delete opponentEntry.opponentID;
+							delete entry.opponentID;
 						} else {
 							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
+							if(difference < 50) {
+                                chSend(message, makeTag(author) + ', you were so close!');
+                            } else if(difference < 100) {
+                                chSend(message, makeTag(author) + ', your shot just barely missed!');
+                            } else if(difference < 150) {
+                                chSend(message, makeTag(author) + ', your aim is getting closer!');
+                            } else if(difference < 200) {
+                                chSend(message, makeTag(author) + ', your aim could be better!');
+                            } else if(difference < 250) {
+                                chSend(message, makeTag(author) + ', try aiming at your opponent!');
+                            } else {
+                                chSend(message, makeTag(author) + ', you\'re aiming in the wrong direction!');
+                            }
 						}
 					} else {
 						chSend(message, '<number> must be between 0 and 1000.');
