@@ -41,7 +41,7 @@ const SCRAM_EXTRA_TIME = 2000; // per letter
 
 const ONE_DAY = 86400000;
 const ONE_WEEK = 604800000;
-const COLLECT_GRACE_PERIOD = 900000;
+const ONE_HOUR = 3600000;
 
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
@@ -643,17 +643,29 @@ var msToTime = function(inp) {
 };
 //-----------------------------------------------------------------------------
 spongeBot.loot = {
+		disabled: true,
+		access: false,
+		timedCmd: {
+			howOften: ONE_HOUR,
+			gracePeriod: 60000,
+			failResponse: '`!loot` boxes take about an hour to recharge. ' +
+			' You still have about <<next>> to wait. :watch:'
+		},
         cmdGroup: 'Fun and Games',
         do: function(message, args) {
 			
+			// should be handled by standard .access check
+			// custom message is cool though, we should add that
+			/*
 			if ((message.author.id !== SPONGE_ID) && (message.author.id !== ARCH_ID)) {
 				chSend(' You must develop your shtyle further before using loot boxes!');
 				return;
-			} else if (args === '') {
+			} else */
+			if (args === '') {
                 chSend(message, 'Try `!loot unbox <name>` or `!loot boxes`.');
                 return;
             }
-           
+
             args = args.toLowerCase();
             args = args.split(' ');
            	
@@ -707,6 +719,11 @@ spongeBot.loot = {
 						*/
 						
                         if (bankroll[who] >= price) {
+							
+							if (!checkTimer(message, message.author.id, 'loot')) {
+								return false; // can't unbox yet!
+							}	
+							
                             chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
                             addBank(who, -price);
                            
@@ -874,35 +891,6 @@ spongeBot.rot13 = {
 	disabled: false
 }
 //-----------------------------------------------------------------------------
-spongeBot.exchange = {
-	cmdGroup: 'Giveaways and Raffle',
-	do: function(message, parms) {
-		if (parms  === 'iamsure') {
-			
-			if (!bankroll.hasOwnProperty(message.author.id)) {
-				chSend(message, message.author + ', you have no bank ' +
-				'account.  You can open one with `!bank`.');
-				return;
-			}
-			
-			if (bankroll[message.author.id] < 100000) {
-				chSend(message, message.author + ', you don\'t have enough credits.');
-				return;
-			}
-			
-			addBank(message.author.id, -100000);
-			var newTix = incStat(message.author.id, 'raffle', 'ticketCount');
-			chSend(message, message.author + ', you now have ' +
-			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
-		} else {
-			chSend(message, message.author + ', be sure you want to tade 100K ' +
-			  'credits for one raffle ticket, then type `!exchange iamsure` to do so.');
-		}
-	},
-	help: '`!exchange iamsure` trades 100,000 credits for a raffle ticket. Make sure you really want to do this.'
-};
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 spongeBot.enable = {
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
@@ -953,6 +941,17 @@ spongeBot.server = {
 		chSend(message, str);
 	},
 	help: 'Gives info about the server on which you send me the command.'
+}
+//-----------------------------------------------------------------------------
+spongeBot.showCode = {
+	do: function(message, parms) {
+		var theCode = spongeBot[parms];
+		
+		chSend(message, theCode);
+		console.log(theCode);
+	},
+	help: 'shows code.',
+	disabled: true
 }
 //-----------------------------------------------------------------------------
 spongeBot.s = {
@@ -1192,7 +1191,8 @@ var checkTimer = function(message, who, command) {
 	//   failResponse can include these substitutions:
 	//   <<next>> <<last>> <<nextDate>> <<lastDate>> <<cmd>> <<howOften>>
 	//  and returns false;
-	// If check succeeds (user can !command), returns true
+	// If check succeeds (user can !command),
+	//   returns true, and sets the lastUsed to now
 	// If user has never collected (id.lastUsed.command does not exist)
 	// then a new id.lastUsed.command will be created and set to now, and check
 	// succeeds.
@@ -1312,7 +1312,6 @@ spongeBot.give = {
 	help: '`!give <user> <amount>` gives someone some of your credits.',
 	disabled: false
 };
-//-----------------------------------------------------------------------------
 spongeBot.gift = {
 	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
@@ -1343,7 +1342,6 @@ spongeBot.gift = {
 	help: 'If you are a sponge, `!gift <user> <amount>` gives someone some credits.',
 	access: true
 };
-//-----------------------------------------------------------------------------
 spongeBot.bank = {
 	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
@@ -1386,17 +1384,33 @@ spongeBot.bank = {
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
 	  'will either show your own bank, or create a new account for you.'
 };
-//-----------------------------------------------------------------------------
-spongeBot.showCode = {
+spongeBot.exchange = {
+	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		var theCode = spongeBot[parms];
-		
-		chSend(message, theCode);
-		console.log(theCode);
+		if (parms  === 'iamsure') {
+			
+			if (!bankroll.hasOwnProperty(message.author.id)) {
+				chSend(message, message.author + ', you have no bank ' +
+				'account.  You can open one with `!bank`.');
+				return;
+			}
+			
+			if (bankroll[message.author.id] < 100000) {
+				chSend(message, message.author + ', you don\'t have enough credits.');
+				return;
+			}
+			
+			addBank(message.author.id, -100000);
+			var newTix = incStat(message.author.id, 'raffle', 'ticketCount');
+			chSend(message, message.author + ', you now have ' +
+			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
+		} else {
+			chSend(message, message.author + ', be sure you want to tade 100K ' +
+			  'credits for one raffle ticket, then type `!exchange iamsure` to do so.');
+		}
 	},
-	help: 'shows code.',
-	disabled: true
-}
+	help: '`!exchange iamsure` trades 100,000 credits for a raffle ticket. Make sure you really want to do this.'
+};
 //-----------------------------------------------------------------------------
 spongeBot.savebanks = {
 	do: function() {
