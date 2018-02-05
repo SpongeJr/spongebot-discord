@@ -1356,6 +1356,11 @@ spongeBot.s = {
 };
 spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
+	subCmd: {
+		config: function(message, parms) {
+			chSend(message, 'Configuring scram ' + parms);
+		}
+	},
 	do: function(message, parms) {
 		
 		var server = message.guild;
@@ -1369,9 +1374,10 @@ spongeBot.scram = {
 		parms = parms.split(' ');
 		if (parms[0] !== '') {
 			parms[0] = parms[0].toLowerCase();
-			if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
+			if (spongeBot.scram.subCmd.hasOwnProperty(parms[0])) {
 				//we've found a found sub-command, so do it...
-				spongeBot.tree.subCmd[parms[0]](message);
+				spongeBot.scram.subCmd[parms[0]](message, parms); // we're passing parms up as an array, but it doesn't have to be, can parms.join(' ') it back together instead
+				return; // we're done here
 			} else {
 				chSend(message, 'Just `!scram` by itself ok?');
 			}
