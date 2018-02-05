@@ -2531,8 +2531,10 @@ spongeBot.d = {
 							//Prevent credit duplication here
 							if(author !== opponent) {
 								reward = opponentEntry.bet;
-								chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
-								addBank(author, reward);
+								if(reward > 0) {
+									chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
+									addBank(author, reward);
+								}
 								
 								//We also take up to our bet amount in credits from the opponent
 								reward = Math.min(entry.bet, bankroll[opponent]);
