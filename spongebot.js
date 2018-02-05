@@ -2346,9 +2346,9 @@ spongeBot.duel = {
 				if(status === 'idle') {
 					reply += '\nStatus: Idle';
 				} else if(status === 'challenging') {
-					reply += '\nStatus: Waiting to duel ' + makeTag(subjectEntry.opponentID);
+					reply += '\nStatus: Waiting to duel ' + makeTag(subjectEntry.opponentID) + ' with a bet of ' + subjectEntry.bet + ' credits';
 				} else {
-					reply += '\nStatus: Currently dueling ' + makeTag(subjectEntry.opponentID);
+					reply += '\nStatus: Currently dueling ' + makeTag(subjectEntry.opponentID + ' with a bet of ' + subjectEntry.bet + ' credits');
 				}
 				
 				for(var user in duelManager) {
@@ -2367,14 +2367,18 @@ spongeBot.duel = {
 					return;
 				}
 				var opponent = makeId(args[1]);
-				
+				NaN
 				//If the opponent isn't in the bank record, we assume they don't exist
 				if(!bankroll[opponent]) {
 					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
 					return;
 				}
 				var challengerEntry = duelManager[challenger];
-				var bet = args[2] || 0;
+				var bet = parseInt(args[2]);
+				//Check for NaN
+				if(isNaN(bet)) {
+					bet = 0;
+				}
 				if(bet < 0) {
 					chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
 					return;
@@ -2403,18 +2407,24 @@ spongeBot.duel = {
 					chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
 					challengerEntry.status = 'idle';
 					//Return bet
-					chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
-					addBank(challenger, challengerEntry.bet);
+					if(challengerEntry.bet > 0) {
+						chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						addBank(challenger, challengerEntry.bet);
+					}
+					
 					delete challengerEntry.opponentID;
 					delete challengerEntry.bet;
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
 					//If @challenger has already challenged someone else, then they cancel their previous challenge
-					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead with a bet of ' + bet + ' credits!');
+					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
 					challengerEntry.opponentID = opponent;
 					//Return bet
-					chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
-					addBank(challenger, challengerEntry.bet);
+					if(challengerEntry.bet > 0) {
+						chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						addBank(challenger, challengerEntry.bet);
+					}
+					
 					
 					//Update the bet
 					addBank(challenger, -bet);
@@ -2443,8 +2453,6 @@ spongeBot.duel = {
 						
 						challengerEntry.targetNumber = Math.random() * 1000;
 						opponentEntry.targetNumber = Math.random() * 1000;
-						
-						
 					}, (10 * 1000) + Math.random() * 20 * 1000);
 					challengerEntry.duelTimer = duelTimer;
 					opponentEntry.duelTimer = duelTimer;
@@ -2468,7 +2476,7 @@ spongeBot.duel = {
 					
 					//Opponent is either idle, ready, or dueling at this point
 					//We wait for the opponent to reciprocate @challenger's request
-					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel with a bet of ' + bet + ' credits!');
+					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
 					chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
 					if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
 						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
@@ -2512,8 +2520,10 @@ spongeBot.d = {
 							chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
 							
 							var reward = entry.bet;
-							chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
-							addBank(author, reward);
+							if(reward > 0) {
+								chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
+								addBank(author, reward);
+							}
 							
 							var opponent = entry.opponentID;
 							var opponentEntry = duelManager[opponent];
@@ -2526,9 +2536,11 @@ spongeBot.d = {
 								
 								//We also take up to our bet amount in credits from the opponent
 								reward = Math.min(entry.bet, bankroll[opponent]);
-								chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
-								addBank(author, reward);
-								addBank(opponent, -reward);
+								if(reward > 0) {
+									chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
+									addBank(author, reward);
+									addBank(opponent, -reward);
+								}
 							}
 							
 							
