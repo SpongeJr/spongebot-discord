@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.996+1001/2000';
+const VERSION_STRING = '0.996 build 1002/2000 experimental alpha';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -2611,10 +2611,19 @@ spongeBot.d = {
 //-----------------------------------------------------------------------------
 var sponge = {};
 spongeBot.sponge = {
+	timedCmd: {
+		howOften: 20000,
+		gracePeriod: 0
+	},
 	cmdGroup: 'Miscellaneous',
 	do: function(message, args) {
 		var author = message.author.id;
 		var found = false;
+		if (!checkTimer(message, author, 'sponge')) {
+			return false; // can't use it yet!
+		}		
+		
+		
 		for(var key in sponge) {
 			if(key === author) {
 				found = true;
