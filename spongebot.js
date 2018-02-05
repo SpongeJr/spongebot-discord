@@ -1366,6 +1366,18 @@ spongeBot.scram = {
 			return;
 		}
 		
+		parms = parms.split(' ');
+		if (parms[0] !== '') {
+			parms[0] = parms[0].toLowerCase();
+			if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
+				//we've found a found sub-command, so do it...
+				spongeBot.tree.subCmd[parms[0]](message);
+			} else {
+				chSend(message, 'Just `!scram` by itself ok?');
+			}
+			return; // so I don't have to wrap everything below in else {}
+		}
+		
 		if (!scram.hasOwnProperty(server.id)) {
 			// key doesn't exist for this server, so init
 			console.log('!scram: Adding instance for ' + server.id + ' ('
