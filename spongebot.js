@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.997.tree build 1004';
+const VERSION_STRING = '0.997.tree-point-one';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -87,7 +87,20 @@ var acro = {
 		'technology and science', 'memes and fads', 'fantasy', 'general/any'
 	]
 };
-
+/* tree.config: {
+		treeVal: how many credits are awarded upon harvesting,
+		ticketRarity: how rare (really) tickets are, as in 1 in this value chance
+		magicSeedRarity: how rare seeds are, as above (1000 means 1/1000 chance)
+		harvestMessages: [] Array of strings of things that might be said during harvesting
+*/
+var tree = {
+	config: {
+		treeVal: 3000,
+		ticketRarity: 100,
+		magicSeedRarity: 1000,
+		harvestMessages: ['Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
+	}
+}
 var scram = {};
 
 var botStorage = {};
@@ -752,7 +765,6 @@ var collectTimer = function(message, who, command) {
 }
 //-----------------------------------------------------------------------------
 spongeBot.tree = {
-	treeVal: 3000,
 	disabled: false,
 	access: false,
 	timedCmd: {
@@ -785,9 +797,11 @@ spongeBot.tree = {
 			var who = message.author.id;
 			if (collectTimer(message, who, 'tree')) {
 				chSend(message, ':deciduous_tree: Loot tree Harvested!  :moneybag:\n ' +
-				  makeTag(who) + ' walks away ' + spongeBot.tree.treeVal + ' credits richer!');
-				addBank(who, spongeBot.tree.treeVal);
+				  makeTag(who) + ' walks away ' + tree.config.treeVal + ' credits richer!');
+				addBank(who, tree.config.treeVal);
 			}
+			
+			
 		}
 	}
 }
