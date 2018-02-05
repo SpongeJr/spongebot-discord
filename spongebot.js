@@ -388,7 +388,6 @@ var getStat = function(who, game, stat) {
 			if (!gameStats[who][game].hasOwnProperty(stat)) {
 				return; // game exists, stat doesn't
 			} else {
-				console.log('all de wai');
 				return gameStats[who][game][stat];
 			}
 		}	
@@ -765,10 +764,17 @@ var collectTimer = function(message, who, command) {
 }
 //-----------------------------------------------------------------------------
 spongeBot.tree = {
+	cmdGroup: 'Fun and Games',
+	help: 'Interact with your loot `!tree` and collect regular rewards!',
+	longHelp: 'Loot trees are a _brand new_ feature springing up on the server!\n' +
+	  ' You can currently `!tree check` your tree, or `!tree collect` from it.\n' +
+	  ' They normally pay out every 12 hours, but are currently growing like mad!\n' +
+	  ' \n Loot trees will always award credit when harvested, and sometimes other ' +
+	  ' surprises! \n :deciduous_tree: :deciduous_tree: Good luck! :moneybag: :moneybag:',
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 270000,
+		howOften: 295000,
 		gracePeriod: 30000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
 		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
@@ -803,7 +809,7 @@ spongeBot.tree = {
 				// if we're here, it's time to collect, and collectTime has been updated to now
 				var messStr = '';
 				messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-				  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer!';
+				  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer! ';
 				addBank(who, tree.config.treeVal);
 				
 				//random saying extra bit on end: 
@@ -827,7 +833,7 @@ spongeBot.tree = {
 				//raffle ticket! DOES award, be careful with rarity!
 				if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
 					chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
-					':tickets: fell out of the tree! (`!giveways` for more info.');
+					':tickets: fell out of the tree! (`!giveways` for more info.)');
 					alterStat(who, 'raffle', 'ticketCount', 1);
 				}
 			}
@@ -1567,6 +1573,7 @@ spongeBot.bank = {
 			  
 		} else {
 			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');	
+			chSend(message, makeTag(who) + ' has ' + getStat(who, 'raffle', 'ticketCount') + ' :tickets: s.');	
 		}
 	},
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
