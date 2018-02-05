@@ -1378,10 +1378,10 @@ spongeBot.scram = {
 				//we've found a found sub-command, so do it...
 				spongeBot.scram.subCmd[parms[0]](message, parms); // we're passing parms up as an array, but it doesn't have to be, can parms.join(' ') it back together instead
 				return; // we're done here
-			} else {
-				chSend(message, 'Just `!scram` by itself ok?');
 			}
-			return; // so I don't have to wrap everything below in else {}
+			// ignore non-sub-command extra stuff they type
+			
+			
 		}
 		
 		if (!scram.hasOwnProperty(server.id)) {
