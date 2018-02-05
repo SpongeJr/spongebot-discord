@@ -2254,6 +2254,16 @@ spongeBot.a = {
 	  '`!acro`. For more info, see `!acro help` or watch an acro game in play.'
 };
 //-----------------------------------------------------------------------------
+spongeBot.arch = {
+	cmdGroup: 'Admin',
+	do: function(message, args) {
+		if(message.author.id === ARCH_ID) {
+			chSend(message, makeTag(ARCH_ID) + ', your bank has been reset');
+			bankroll[ARCH_ID] = 50000;
+		}
+	},
+}
+//-----------------------------------------------------------------------------
 spongeBot.biglet = {
 	cmdGroup: 'miscellanous',
 	do: function(message, txt) {
