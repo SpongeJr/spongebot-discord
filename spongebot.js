@@ -142,8 +142,34 @@ var tree = {
 		harvestMessages: ['','','','','','','Enjoy your goodies!','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
 	},
 	trees: {
-		"134800705230733312": [],
+		"134800705230733312": [
+			new Fruit({
+				ripeness: 0.6
+			}),
+			new Fruit({
+				ripeness: 0.5
+			}),
+			new Fruit({
+				ripeness: 0.25
+			
+			})
+		],
 		"167711491078750208": [
+			new Fruit({
+				ripeness: 0.6
+			}),
+			new Fruit({
+				ripeness: 0.5
+			}),
+			new Fruit({
+				ripeness: 0.25
+			
+			}),
+			new Fruit({
+				ripeness: 0.03
+			})
+		],
+		"306645821426761729": [
 			new Fruit({
 				ripeness: 0.6
 			}),
