@@ -764,30 +764,8 @@ var collectTimer = function(message, who, command) {
 }
 //-----------------------------------------------------------------------------
 spongeBot.tree = {
-	cmdGroup: 'Fun and Games',
-	help: 'Interact with your loot `!tree` and collect regular rewards!',
-	longHelp: 'Loot trees are a _brand new_ feature springing up on the server!\n' +
-	  ' You can currently `!tree check` your tree, or `!tree harvest` from it.\n' +
-	  ' They normally pay out every 12 hours, but are currently growing like mad!\n' +
-	  ' \n Loot trees will always award credit when harvested, and sometimes other ' +
-	  ' surprises! \n :deciduous_tree: :deciduous_tree: Good luck! :moneybag: :moneybag:',
-	disabled: false,
-	access: false,
-	timedCmd: {
-		howOften: 885000,
-		gracePeriod: 10000,
-		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
-		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
-		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
-	do: function(message, parms) {
-		parms = parms.split(' ');
-		
-		if (parms[0] === '') {
-			chSend(message, 'Please see `!help tree` for help with your loot tree.');
-			return;
-		}
-		
-		if (parms[0].toLowerCase() === 'check') {
+	subCmd : {
+		check: function(message) {
 			var who = message.author.id;
 			var now = new Date();
 			var timedCmd = spongeBot.tree.timedCmd;
@@ -802,10 +780,10 @@ spongeBot.tree = {
 				percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
 				chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
 				'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
-				' in about ' + msToTime(nextCol - now));
+				' in about ' + msToTime(nextCol - now))
 			}
-		} else if (parms[0].toLowerCase() === 'harvest') {
-			
+		},
+		harvest: function(message) {
 			var who = message.author.id;	
 			if (!collectTimer(message, who, 'tree')) {
 				// not time yet. since we used collectTimer();, the rejection message
@@ -844,6 +822,44 @@ spongeBot.tree = {
 				}
 			}
 		}
+	},
+	cmdGroup: 'Fun and Games',
+	help: 'Interact with your loot `!tree` and collect regular rewards!',
+	longHelp: 'Loot trees are a _brand new_ feature springing up on the server!\n' +
+	  ' You can currently `!tree check` your tree, or `!tree harvest` from it.\n' +
+	  ' They normally pay out every 12 hours, but are currently growing like mad!\n' +
+	  ' \n Loot trees will always award credit when harvested, and sometimes other ' +
+	  ' surprises! \n :deciduous_tree: :deciduous_tree: Good luck! :moneybag: :moneybag:',
+	disabled: false,
+	access: false,
+	timedCmd: {
+		howOften: 885000,
+		gracePeriod: 10000,
+		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
+		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
+		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		
+		if (parms[0] === '') {
+			chSend(message, 'Please see `!help tree` for help with your loot tree.');
+			return;
+		}
+		
+		parms[0] = parms[0].toLowerCase();
+		
+		if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
+			//we've found a found sub-command, so do it...
+			spongeBot.tree.subCmd[parms[0]](message);
+		}
+		
+		/*
+		if (parms[0] === 'check') {
+			spongeBot.tree.subCmd.check(message);
+		} else if (parms[0].toLowerCase() === 'harvest') {
+			spongeBot.tree.subCmd.harvest(message);
+		}
+		*/
 	}
 }
 spongeBot.loot = {
