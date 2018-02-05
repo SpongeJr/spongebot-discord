@@ -725,7 +725,7 @@ spongeBot.loot = {
 					return;
 			   	} else if (boxName === 'yourself') {
 					chSend(message, message.author + ', okay then. ');
-					chSend(message, message.author + '*pelts ' + message.author + ' with a barrage of wrenches, screwdrivers, cogs, nails, washers, and other machine parts.*');
+					chSend(message, '*pelts ' + message.author + ' with a barrage of wrenches, screwdrivers, cogs, nails, washers, and other machine parts.*');
 					return;
 				} else if (boxName === 'me') {
 					chSend(message, message.author + ', that would be extremely painful for you.');
