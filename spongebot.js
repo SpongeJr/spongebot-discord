@@ -43,13 +43,15 @@ const ONE_DAY = 86400000;
 const ONE_WEEK = 604800000;
 const ONE_HOUR = 3600000;
 
+const FRUIT_VAL = 300; // temporary!
+
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.997.tree-fiddy++';
+const VERSION_STRING = '0.997.tree-tousand';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -94,26 +96,44 @@ var acro = {
 		harvestMessages: [] Array of strings of things that might be said during harvesting
 */
 var Fruit = function(stats) {
-	this.stats = stats;
+	this.stats = {};
+	this.stats.ripeness = stats.ripeness || 0;
+	this.stats.name = stats.name || 'A loot fruit bud';
 };
-Fruit.prototype.pick = function() {
-	this.stats.ripeness = 0;
-	this.stats.name = 'a budding loot fruit'
-},
-Fruit.prototype.age = function() {
-	this.stats.ripeness += 12;
-		
-	if (this.stats.ripness < 25) {
-		this.stats.name = 'a growing loot fruit'
-	} else if (this.stats.ripeness > 75) {
-		this.stats.name = 'a ripe loot fruit'
+Fruit.prototype.pick = function(message) {
+
+	if (Math.random() < 0.08) {
+		chSend(message, this.stats.name + ' got squished!');
+		this.stats.name = 'a squished loot fruit';
+		this.stats.valueMult = 0;
 	}
 	
-	if (this.stats.ripeness > 1) {
-		this.name = 'A very ripe loot fruit'
+	chSend(message, this.stats.name + ' was picked for ' + FRUIT_VAL * this.stats.valueMult + '!');
+		
+	this.stats.ripeness = 0;
+	this.stats.name = 'a budding loot fruit';
+	this.stats.valueMult = 0;
+},
+Fruit.prototype.age = function() {
+	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
+	
+	 if (this.stats.ripeness > 1.3) {
+		this.stats.name = 'A rotten loot fruit';
+		this.stats.valueMult = 0;
+	} else if (this.stats.ripeness > 1.1 && this.stats.ripeness <= 1.3) {
+		this.stats.valueMult = 0.8;
+		this.stats.name = 'A very ripe loot fruit';
+	} else if (this.stats.ripeness > 0.8 && this.stats.ripeness <= 1.1) {
+		this.stats.name = 'A perfectly ripe loot fruit'
+		this.stats.valueMult = 1;
+	} else if (this.stats.ripeness > 0.4 && this.stats.ripeness <= 0.8) {
+		this.stats.name = 'An unripe loot fruit'
+		this.stats.valueMult = 0.1;
+	} else if (this.stats.ripeness <= 0.4) {
+		this.stats.name = 'A budding loot fruit';
+		this.stats.valueMult = 0;
 	}
 };
-
 var tree = {
 	config: {
 		treeVal: 1200,
@@ -122,11 +142,22 @@ var tree = {
 		harvestMessages: ['','','','','','','Enjoy your goodies!','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
 	},
 	trees: {
-		"134800705230733312": {},
-		"167711491078750208": new Fruit({
-			name: 'loot fruit',
-			ripeness: 0.6
-		})
+		"134800705230733312": [],
+		"167711491078750208": [
+			new Fruit({
+				ripeness: 0.6
+			}),
+			new Fruit({
+				ripeness: 0.5
+			}),
+			new Fruit({
+				ripeness: 0.25
+			
+			}),
+			new Fruit({
+				ripeness: 0.03
+			})
+		]
 	}
 }
 var scram = {};
@@ -808,7 +839,7 @@ spongeBot.tree = {
 				percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
 				chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
 				'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
-				' in about ' + msToTime(nextCol - now))
+				' in about ' + msToTime(nextCol - now));
 			}
 		},
 		harvest: function(message) {
@@ -851,7 +882,35 @@ spongeBot.tree = {
 			}
 		},
 		tend: function(message) {
+			//var fruit = getStat(message.author.id, tree, ...
+			var who = message.author.id;
+			if (tree.trees.hasOwnProperty(who)) {
+				var fruit = tree.trees[who];
+				
+				// tend to each Fruit
+				for (var i = 0; i < fruit.length; i++) {
+					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
+					if (ageIt) {fruit[i].age();}
+						
+					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.name + 
+					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
+					if (ageIt) {fruitMess += ' (tended)';}
+					chSend(message, fruitMess);	
+				}
+			} else {
+				chSend(message, 'I see no trees you can tend to.');
+			}
+		},
+		pick: function(message) {
+			var who = message.author.id;
+			if (tree.trees.hasOwnProperty(who)) {
+				var fruit = tree.trees[who];
 			
+				// .pick() each Fruit
+				for (var i = 0; i < fruit.length; i++) {
+					fruit[i].pick(message);
+				}
+			}
 		}
 	},
 	cmdGroup: 'Fun and Games',
