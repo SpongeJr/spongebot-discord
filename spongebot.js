@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.996 build 1004';
+const VERSION_STRING = '0.997.tree build 1004';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -203,6 +203,7 @@ var giveaways = {
 };
 
 var loot = {
+		discountPercent: 75,
         boxes: {
 			sports: {
 				count: 7,
@@ -341,6 +342,47 @@ var saveStats = function() {
 		console.log(' Game stats saved.');
 	});
 };
+var getStat = function(who, game, stat) {
+	// returns if something does not exist, otherwise...
+	// if stat is unspecified, returns all of gameStats[who][stat] object
+	// if game unspecified returns all of gameStats[who] object
+	// otherwise, returns the stat as stored on gameStats
+	
+	who = makeId(who);
+	console.log(who);
+	
+	if (!gameStats.hasOwnProperty(who)) {
+		return; // user doesn't exist
+	} else {
+		
+		// no game sent up, return whole player object
+		if (typeof game === 'undefined') {
+			return gameStats[who];
+		}
+		
+		// no stat sent up, return game object
+		if (typeof stat === 'undefined') { 
+			if (!gameStats[who].hasOwnProperty(game)) {
+				return; // game doesn't exist
+			} else {
+				return gameStats[who][game];
+			}
+		}	
+		
+		// return stat if possible
+		if (!gameStats[who].hasOwnProperty(game)) {
+			return; // game doesn't exist
+		} else {
+			if (!gameStats[who][game].hasOwnProperty(stat)) {
+				return; // game exists, stat doesn't
+			} else {
+				console.log('all de wai');
+				return gameStats[who][game][stat];
+			}
+		}	
+	}
+	
+}
 var incStat = function(who, game, stat) {
 	// Increments an integer stat. Returns: the new, incremented value
 	// Does not check validity of who, game, or stat, and will make a new
@@ -641,14 +683,83 @@ var msToTime = function(inp) {
     }
 };
 //-----------------------------------------------------------------------------
+var checkTimer = function(message, who, command) {
+	// who: (String) an id, or a tag (will be sent through makeId() )
+	// command: String that !!!should be a valid command!!!
+	// checks to see if this user can use this command yet, and if not, returns false.
+	// If check succeeds (user can !command), returns true, and DOES NOT ALTER lastUsed 
+	// If user has never collected (id.lastUsed.command does not exist)
+	// then a new id.lastUsed.command will be created and set to 0, and check
+	// succeeds.
+		
+	var now = new Date();
+	var timedCmd = spongeBot[command].timedCmd;
+	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
+	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+	now = now.valueOf();
+	
+	if (now > nextCol) {
+		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		//setStat(makeId(who), 'lastUsed', command, 0);
+		return true;
+	} else {
+		return false;
+	}
+}
+var collectTimer = function(message, who, command) {
+	// who: (String) an id, or a tag (will be sent through makeId() )
+	// command: String that !!!should be a valid command!!!
+	// checks to see if this user can use this command yet, and if not...
+	//   it sends them either .failResponse from command.timedCmd or a default response
+	//   failResponse can include these substitutions:
+	//   <<next>> <<last>> <<nextDate>> <<lastDate>> <<cmd>> <<howOften>>
+	//  and returns false;
+	// If check succeeds (user can !command),
+	//   returns true, and sets the lastUsed to now
+	// If user has never collected (id.lastUsed.command does not exist)
+	// then a new id.lastUsed.command will be created and set to now, and check
+	// succeeds.
+		
+	var now = new Date();
+	var timedCmd = spongeBot[command].timedCmd;
+	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
+	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+	now = now.valueOf();
+	
+	if (now > nextCol) {
+		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		setStat(makeId(who), 'lastUsed', command, now);
+		return true;
+	} else {
+		var failStr;
+		if (!timedCmd.hasOwnProperty('failResponse')) {
+			failStr = 'Ya can\'t do that yet. ' + makeTag(message.author.id);
+			chSend(message, failStr);
+			return false;
+		} else {
+			failStr = timedCmd.failResponse
+			  .replace('<<next>>', msToTime(nextCol - now))
+			  .replace('<<last>>', msToTime(now - lastCol))
+			  .replace('<<nextDate>>', new Date(nextCol).toString())
+			  .replace('<<lastDate>>', new Date(lastCol).toString())
+			  .replace('<<howOften>>', msToTime(timedCmd.howOften - timedCmd.gracePeriod))
+			  .replace('<<cmd>>', command);
+			  
+			chSend(message, failStr);
+			return false;
+		}
+	}
+}
+//-----------------------------------------------------------------------------
 spongeBot.tree = {
-	disabled: true,
+	treeVal: 3000,
+	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: ONE_DAY / 2,
-		gracePeriod: 300000,
+		howOften: 900000,
+		gracePeriod: 30000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
-		  'is nothing to harvest on it yet. It looks like it\'ll yielf fruit in ' +
+		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
 		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -656,22 +767,30 @@ spongeBot.tree = {
 			var who = message.author.id;
 			var now = new Date();
 			var timedCmd = spongeBot.tree.timedCmd;
-			var lastCol = alterStat(makeId(who), 'lastUsed', 'tree', 0);
+			var lastCol = alterStat(who, 'lastUsed', 'tree', 0);
 			var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 			now = now.valueOf();
 			
-			if (now < nextCol) {
+			if (checkTimer(message, who, 'tree')) {
 				chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
 				  ' with `!tree harvest` and get your goodies!');
 			} else {
+				percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
 				chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
-				'about ' + (nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod) +
-				  '% grown. It ought to be fully grown in about ' + msToTime(nextCol - now));
+				'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
+				' in about ' + msToTime(nextCol - now));
+			}
+		} else if (parms[0].toLowerCase() === 'harvest') {
+			
+			var who = message.author.id;
+			if (collectTimer(message, who, 'tree')) {
+				chSend(message, ':deciduous_tree: Loot tree Harvested!  :moneybag:\n ' +
+				  makeTag(who) + ' walks away ' + spongeBot.tree.treeVal + ' credits richer!');
+				addBank(who, spongeBot.tree.treeVal);
 			}
 		}
 	}
 }
-
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -743,6 +862,7 @@ spongeBot.loot = {
                     if (boxName === box) {
                         found = true;
                         var price = loot.boxes[box].price;
+						var discountPercent = loot.discountPercent || 0;
 						/*
 						chSend(message, 'unboxing a ' + box);
 						chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
@@ -750,12 +870,18 @@ spongeBot.loot = {
 						
                         if (bankroll[who] >= price) {
 							
-							if (!checkTimer(message, message.author.id, 'loot')) {
+							if (!collectTimer(message, message.author.id, 'loot')) {
 								return false; // can't unbox yet!
 							}	
 							
-                            chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
-                            addBank(who, -price);
+							if (discountPercent > 0) {
+								chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price * (1 - discountPercent / 100) + ' credits,' +
+								  ' and got a great deal since loot boxes are ' + discountPercent + '% off right now!');
+							} else {
+								chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
+							}
+							
+                            addBank(who, -price * ( 1 - discountPercent / 100));
                            
                             //Accumulate total rarity value
                             var totalRarity = 0;                //The total combined rarity of all items, used for choosing items
@@ -1239,51 +1365,6 @@ spongeBot.giveaways = {
 	  'when there\'s something interesting going on related to giveaways.'
 };
 //-----------------------------------------------------------------------------
-var checkTimer = function(message, who, command) {
-	// who: (String) an id, or a tag (will be sent through makeId() )
-	// command: String that !!!should be a valid command!!!
-	// checks to see if this user can use this command yet, and if not...
-	//   it sends them either .failResponse from command.timedCmd or a default response
-	//   failResponse can include these substitutions:
-	//   <<next>> <<last>> <<nextDate>> <<lastDate>> <<cmd>> <<howOften>>
-	//  and returns false;
-	// If check succeeds (user can !command),
-	//   returns true, and sets the lastUsed to now
-	// If user has never collected (id.lastUsed.command does not exist)
-	// then a new id.lastUsed.command will be created and set to now, and check
-	// succeeds.
-		
-	var now = new Date();
-	var timedCmd = spongeBot[command].timedCmd;
-	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
-	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
-	now = now.valueOf();
-	
-	if (now > nextCol) {
-		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		setStat(makeId(who), 'lastUsed', command, now);
-		return true;
-	} else {
-		var failStr;
-		if (!timedCmd.hasOwnProperty('failResponse')) {
-			failStr = 'Ya can\'t do that yet. ' + makeTag(message.author.id);
-			chSend(message, failStr);
-			return false;
-		} else {
-			failStr = timedCmd.failResponse
-			  .replace('<<next>>', msToTime(nextCol - now))
-			  .replace('<<last>>', msToTime(now - lastCol))
-			  .replace('<<nextDate>>', new Date(nextCol).toString())
-			  .replace('<<lastDate>>', new Date(lastCol).toString())
-			  .replace('<<howOften>>', msToTime(timedCmd.howOften - timedCmd.gracePeriod))
-			  .replace('<<cmd>>', command);
-			  
-			chSend(message, failStr);
-			return false;
-		}
-	}
-}
-//-----------------------------------------------------------------------------
 spongeBot.sammich = {
 	timedCmd: {
 		howOften: 1000 * 60 * 3, 
@@ -1294,7 +1375,7 @@ spongeBot.sammich = {
 	},
 	cmdGroup: 'Fun and Games',
 	do: function(message) {
-		if (!checkTimer(message, message.author.id, 'sammich')) {
+		if (!collectTimer(message, message.author.id, 'sammich')) {
 			return false; // can't use it yet!
 		}
 		chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
@@ -1556,6 +1637,33 @@ spongeBot.delstat = {
 	  ' `spongeBot.alterStat()`!',
 	access: true,
 	disabled: true
+};
+spongeBot.getstat = {
+	access: [],
+	disabled: false,
+	cmdGroup: 'Admin',
+	do: function(message, parms) {
+		
+		parms = parms.split(' ');
+		who = parms[0];
+		game = parms[1];
+		stat = parms[2];
+		
+		if (typeof parms[0] === 'undefined') {
+			chSend(mesage, '!getstat: No user specified');
+			return
+		}
+		
+		var results = getStat(who, game, stat);
+		
+		if (typeof results === 'object') {
+			chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat +
+			  ' is:\n' + JSON.stringify(results));
+		} else {
+			chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat + ' is:\n' + results);
+		}
+	},
+	help: 'gets a stat'
 };
 spongeBot.setstat = {
 	cmdGroup: 'Admin',
@@ -2619,7 +2727,7 @@ spongeBot.sponge = {
 	do: function(message, args) {
 		var author = message.author.id;
 		var found = false;
-		if (!checkTimer(message, author, 'sponge')) {
+		if (!collectTimer(message, author, 'sponge')) {
 			return false; // can't use it yet!
 		}		
 		
