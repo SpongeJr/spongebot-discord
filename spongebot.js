@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.996 build 1003';
+const VERSION_STRING = '0.996 build 1004';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -2661,9 +2661,9 @@ BOT.on('message', message => {
 		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
 		var theCmd = botCmd.split(' ')[0];
 
-		var parms = botCmd.replace(theCmd, ''); //remove the command itself
-		theCmd = theCmd.toLowerCase;
-		if (!spongeBot.hasOwnProperty(theCmd) {
+		var parms = botCmd.replace(theCmd, ''); // remove the command itself, rest is parms
+		theCmd = theCmd.toLowerCase();
+		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
 			return;
 		}
