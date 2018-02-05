@@ -2260,6 +2260,8 @@ spongeBot.arch = {
 		if(message.author.id === ARCH_ID) {
 			chSend(message, makeTag(ARCH_ID) + ', your bank has been reset');
 			bankroll[ARCH_ID] = 50000;
+		} else {
+			chSend(message, makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
 }
@@ -2607,6 +2609,27 @@ spongeBot.d = {
 		longHelp: '`!d <number>`: TO DO: Help Text'
 }
 //-----------------------------------------------------------------------------
+var sponge = {};
+spongeBot.sponge = {
+	cmdGroup: 'Miscellaneous',
+	do: function(message, args) {
+		var author = message.author.id;
+		var found = false;
+		for(var key in sponge) {
+			if(key === author) {
+				found = true;
+				delete sponge[key];
+			}
+		}
+		if(!found) {
+			sponge[author] = true;
+			chSend(message, makeTag(author) + ', you have been polymorphed into a sponge!');
+		} else {
+			chSend(message, makeTag(author) + ', you have been polymorphed back to normal!');
+		}
+	}
+}
+//-----------------------------------------------------------------------------
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
@@ -2661,6 +2684,10 @@ BOT.on('message', message => {
 			}
 		} else {
 			// not a valid command
+		}
+	} else {
+		if(sponge[message.author.id]) {
+			chSend(message, makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
 		}
 	}
 });
