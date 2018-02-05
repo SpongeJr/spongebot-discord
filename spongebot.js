@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.997.tree-point-one';
+const VERSION_STRING = '0.997.tree-fiddy';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -95,10 +95,10 @@ var acro = {
 */
 var tree = {
 	config: {
-		treeVal: 3000,
-		ticketRarity: 100,
-		magicSeedRarity: 1000,
-		harvestMessages: ['Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
+		treeVal: 1200,
+		ticketRarity: 10,
+		magicSeedRarity: 6,
+		harvestMessages: ['','','','','','','','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
 	}
 }
 var scram = {};
@@ -214,7 +214,6 @@ var giveaways = {
 		type: 'ebook'
 	}
 };
-
 var loot = {
 		discountPercent: 75,
         boxes: {
@@ -530,6 +529,7 @@ var makeBankFile = function(bankdata) {
 };
 //-----------------------------------------------------------------------------
 var listPick = function(theList) {
+	// takes Array, returns a random element destructively pulled from it
 	var choice = Math.random() * theList.length;
 	return theList.splice(choice, 1);
 };
@@ -768,7 +768,7 @@ spongeBot.tree = {
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 900000,
+		howOften: 270000,
 		gracePeriod: 30000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
 		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
@@ -794,14 +794,43 @@ spongeBot.tree = {
 			}
 		} else if (parms[0].toLowerCase() === 'harvest') {
 			
-			var who = message.author.id;
-			if (collectTimer(message, who, 'tree')) {
-				chSend(message, ':deciduous_tree: Loot tree Harvested!  :moneybag:\n ' +
-				  makeTag(who) + ' walks away ' + tree.config.treeVal + ' credits richer!');
+			var who = message.author.id;	
+			if (!collectTimer(message, who, 'tree')) {
+				// not time yet. since we used collectTimer();, the rejection message
+				// is automatic, and we can just return; here if we want
+				return;
+			} else {
+				// if we're here, it's time to collect, and collectTime has been updated to now
+				var messStr = '';
+				messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
+				  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer!';
 				addBank(who, tree.config.treeVal);
+				
+				//random saying extra bit on end: 
+				
+				// so we don't hurt the original
+				var sayings = JSON.stringify(tree.config.harvestMessages);
+				sayings = JSON.parse(sayings);
+
+				messStr += listPick(sayings);
+				chSend(message, messStr);
+					
+				//magic seeds ... (do nothing right now unfortunately) =(
+				//since I'm testing and will have them set common, we're calling them "regularSeeds"
+				if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
+					chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
+					'loot tree seed in your harvest! Looks useful! You save it.');
+					
+					alterStat(who, 'tree', 'regularSeeds', 1);
+				}
+
+				//raffle ticket! DOES award, be careful with rarity!
+				if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
+					chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
+					':tickets: fell out of the tree! (`!giveways` for more info.');
+					alterStat(who, 'raffle', 'ticketCount', 1);
+				}
 			}
-			
-			
 		}
 	}
 }
@@ -971,7 +1000,8 @@ spongeBot.loot = {
 			}
            
         },
-        help: '`!loot`: Buy a loot box and see what\'s inside!'
+        help: '`!loot`: Buy a loot box and see what\'s inside!',
+		longHelp: 'Try `!loot unbox <name>` or `!loot boxes`.'
     }
 //-----------------------------------------------------------------------------
 spongeBot.roll = {
