@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.997.tree-fiddy';
+const VERSION_STRING = '0.997.tree-fiddy++';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -93,12 +93,40 @@ var acro = {
 		magicSeedRarity: how rare seeds are, as above (1000 means 1/1000 chance)
 		harvestMessages: [] Array of strings of things that might be said during harvesting
 */
+var Fruit = function(stats) {
+	this.stats = stats;
+};
+Fruit.prototype.pick = function() {
+	this.stats.ripeness = 0;
+	this.stats.name = 'a budding loot fruit'
+},
+Fruit.prototype.age = function() {
+	this.stats.ripeness += 12;
+		
+	if (this.stats.ripness < 25) {
+		this.stats.name = 'a growing loot fruit'
+	} else if (this.stats.ripeness > 75) {
+		this.stats.name = 'a ripe loot fruit'
+	}
+	
+	if (this.stats.ripeness > 1) {
+		this.name = 'A very ripe loot fruit'
+	}
+};
+
 var tree = {
 	config: {
 		treeVal: 1200,
 		ticketRarity: 12,
 		magicSeedRarity: 8,
-		harvestMessages: ['','','','','','','','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
+		harvestMessages: ['','','','','','','Enjoy your goodies!','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
+	},
+	trees: {
+		"134800705230733312": {},
+		"167711491078750208": new Fruit({
+			name: 'loot fruit',
+			ripeness: 0.6
+		})
 	}
 }
 var scram = {};
@@ -821,6 +849,9 @@ spongeBot.tree = {
 					alterStat(who, 'raffle', 'ticketCount', 1);
 				}
 			}
+		},
+		tend: function(message) {
+			
 		}
 	},
 	cmdGroup: 'Fun and Games',
@@ -851,15 +882,9 @@ spongeBot.tree = {
 		if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
 			//we've found a found sub-command, so do it...
 			spongeBot.tree.subCmd[parms[0]](message);
+		} else {
+			chSend(message, 'What are you trying to do to that tree?!');
 		}
-		
-		/*
-		if (parms[0] === 'check') {
-			spongeBot.tree.subCmd.check(message);
-		} else if (parms[0].toLowerCase() === 'harvest') {
-			spongeBot.tree.subCmd.harvest(message);
-		}
-		*/
 	}
 }
 spongeBot.loot = {
@@ -1795,6 +1820,44 @@ spongeBot.stats = {
 		chSend(message, theStr);
 	},
 	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
+};
+spongeBot.topstats = {
+	disabled: false,
+	cmdGroup: 'Fun and Games',
+	do: function(message, parms) {
+		if (parms === '') {
+			chSend(message, 'Type `!topStats` followed by the game name.');
+			return;
+		}
+		
+		parms = parms.split(' ');
+		
+		// iterates over the whole gameStats array, probably very expensive
+
+		var gameData = {};
+		for (var who in gameStats) {
+			for (var game in gameStats[who]) {
+				if (game === parms[0]) {				
+					for (var stat in gameStats[who][game]) {	
+						if (!gameData.hasOwnProperty(stat)) {
+							gameData[stat] = {};
+						}
+						gameData[stat][who] = gameStats[who][game][stat];
+					}
+				}
+			}
+		}
+		var outStr = '  **`' + parms[0] +'`**';
+		for (var stat in gameData) {
+			outStr = '```\n'+ parms[0] + ' stat: "' + stat + '"```\n';
+			for (var who in gameData[stat]) {
+				outStr += gameData[stat][who] + ': @' + who + '\n';
+			}
+			chSend(message, outStr + '\n');
+		}
+	},
+	help: 'Shows the top players for a SpongeBot game, and other stats.',
+	longHelp: 'Use !topStats <game name>'
 };
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
