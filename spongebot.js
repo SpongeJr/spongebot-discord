@@ -2369,7 +2369,7 @@ spongeBot.duel = {
 				var opponent = makeId(args[1]);
 				NaN
 				//If the opponent isn't in the bank record, we assume they don't exist
-				if(!bankroll[opponent]) {
+				if(!(bankroll[opponent] >= 0)) {
 					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
 					return;
 				}
