@@ -31,14 +31,6 @@ const FS = require('fs');
 const BANK_FILENAME = '../data/banks.csv';
 const STATS_FILENAME = '../data/gamestats.json';
 
-// note: make sure SCRAM_DELAY - SCRAM_DELAY_VARIATION > SCRAM_GUESSTIME
-const SCRAM_DELAY = 195000;
-const SCRAM_DELAY_VARIATION = 15000;
-const SCRAM_AWARD = 900;
-const SCRAM_AWARD_LETTER_BONUS = 150; // per letter
-const SCRAM_GUESSTIME = 29000;
-const SCRAM_EXTRA_TIME = 2000; // per letter
-
 const ONE_DAY = 86400000;
 const ONE_WEEK = 604800000;
 const ONE_HOUR = 3600000;
@@ -188,6 +180,16 @@ var tree = {
 }
 var scram = {};
 
+// should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
+// note: make sure wordDelay - wordDelayVariation > guessTime to prevent overlap!
+var scramConfig = {
+	wordDelay: 195000,
+	wordDelayVariation: 15000,
+	baseAward: 900,
+	letterBounus: 150, 
+	guessTime: 29000,
+	extraGuessTime: 2000
+}
 var botStorage = {};
 var bankroll = {};
 var gameStats = {};
@@ -1339,9 +1341,9 @@ spongeBot.s = {
 		
 		if (parms === scram[server.id].word) {
 			scram[server.id].runState = 'gameover';
-			addBank(message.author.id, parseInt(SCRAM_AWARD + SCRAM_AWARD_LETTER_BONUS * scram[server.id].word.length));
+			addBank(message.author.id, parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length));
 			chSend(message, message.author + ' just unscrambled ' +
-			  ' the word and wins ' + parseInt(SCRAM_AWARD + SCRAM_AWARD_LETTER_BONUS * scram[server.id].word.length ) + ' credits!');
+			  ' the word and wins ' + parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!');
 			incStat(message.author.id, 'scram', 'wins');
 			
 			chSend(message, message.author + ' has now unscrambled ' +
@@ -1358,7 +1360,8 @@ spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
 	subCmd: {
 		config: function(message, parms) {
-			chSend(message, 'Configuring scram ' + parms);
+			
+			
 		}
 	},
 	do: function(message, parms) {
@@ -1380,8 +1383,6 @@ spongeBot.scram = {
 				return; // we're done here
 			}
 			// ignore non-sub-command extra stuff they type
-			
-			
 		}
 		
 		if (!scram.hasOwnProperty(server.id)) {
@@ -1404,9 +1405,9 @@ spongeBot.scram = {
 			chSend(message, 'Unscramble this: ' + bigLetter(scramWord) + 
 			  '   *Category*: ' + theCat);
 			  
-			var theDelay = parseInt(SCRAM_DELAY - (SCRAM_DELAY_VARIATION / 2) +
-			  Math.random() * SCRAM_DELAY_VARIATION);
-			var guessTime = SCRAM_GUESSTIME + SCRAM_EXTRA_TIME * theWord.length;
+			var theDelay = parseInt(scramConfig.wordDelay - (scramConfig.wordDelayVariation / 2) +
+			  Math.random() * scramConfig.wordDelayVariation);
+			var guessTime = scramConfig.guessTime + scramConfig.extraGuessTime * theWord.length;
 			  
 			chSend(message, 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
