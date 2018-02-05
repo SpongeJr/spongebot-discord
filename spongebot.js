@@ -96,8 +96,8 @@ var acro = {
 var tree = {
 	config: {
 		treeVal: 1200,
-		ticketRarity: 10,
-		magicSeedRarity: 6,
+		ticketRarity: 12,
+		magicSeedRarity: 8,
 		harvestMessages: ['','','','','','','','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
 	}
 }
@@ -767,20 +767,26 @@ spongeBot.tree = {
 	cmdGroup: 'Fun and Games',
 	help: 'Interact with your loot `!tree` and collect regular rewards!',
 	longHelp: 'Loot trees are a _brand new_ feature springing up on the server!\n' +
-	  ' You can currently `!tree check` your tree, or `!tree collect` from it.\n' +
+	  ' You can currently `!tree check` your tree, or `!tree harvest` from it.\n' +
 	  ' They normally pay out every 12 hours, but are currently growing like mad!\n' +
 	  ' \n Loot trees will always award credit when harvested, and sometimes other ' +
 	  ' surprises! \n :deciduous_tree: :deciduous_tree: Good luck! :moneybag: :moneybag:',
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 295000,
-		gracePeriod: 30000,
+		howOften: 885000,
+		gracePeriod: 10000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
 		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
 		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
 	do: function(message, parms) {
 		parms = parms.split(' ');
+		
+		if (parms[0] === '') {
+			chSend(message, 'Please see `!help tree` for help with your loot tree.');
+			return;
+		}
+		
 		if (parms[0].toLowerCase() === 'check') {
 			var who = message.author.id;
 			var now = new Date();
