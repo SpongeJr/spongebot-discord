@@ -49,7 +49,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.996 build 1002/2000 experimental alpha';
+const VERSION_STRING = '0.996 build 1003';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -2658,16 +2658,17 @@ BOT.on('ready', () => {
 //-----------------------------------------------------------------------------
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
-		var botCmd = message.content.slice(1);
+		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
 		var theCmd = botCmd.split(' ')[0];
-		if (!spongeBot.hasOwnProperty(theCmd.toLowerCase())) {
+
+		var parms = botCmd.replace(theCmd, ''); //remove the command itself
+		theCmd = theCmd.toLowerCase;
+		if (!spongeBot.hasOwnProperty(theCmd) {
 			// not a valid command
 			return;
 		}
-		
-		var parms = botCmd.replace(theCmd, '');
 		parms = parms.slice(1); // remove leading space
-
+		
 		if (typeof spongeBot[theCmd] !== 'undefined') {
 			console.log('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
@@ -2678,14 +2679,14 @@ BOT.on('message', message => {
 						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
-						spongeBot[theCmd.toLowerCase()].do(message, parms);
+						spongeBot[theCmd].do(message, parms);
 					}
 				} else {
 					
 					if (message.author.bot) {
 						console.log('Blocked a bot-to-bot !command.');
 					} else {	
-						spongeBot[theCmd.toLowerCase()].do(message, parms);
+						spongeBot[theCmd].do(message, parms);
 					}
 				}
 			} else {
