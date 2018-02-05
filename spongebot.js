@@ -1433,6 +1433,13 @@ spongeBot.bank = {
 		
 		if (typeof bankroll[who] === 'undefined') {
 			chSend(message, message.author + ', they don\'t have a bank account.');
+		} else if (isNaN(bankroll[who])) {
+			chSend(message, message.author + ' that bank account looks weird, thanks' +
+			  ' for pointing it out. I\'ll reset it to ' + START_BANK);
+			bankroll[who] = START_BANK;
+			saveBanks();
+			console.log('Corrupted bankroll fixed for ' + who + ' via !bank.');
+			  
 		} else {
 			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');	
 		}
