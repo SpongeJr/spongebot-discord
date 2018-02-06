@@ -43,15 +43,17 @@ const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
+const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9982.fruit';
+const VERSION_STRING = '0.9982.fruit.by.the.foot+debug.tools';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
   '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
 var debugMode = true;
+var enableDebugChan = true;
 var spongeBot = {};
 var story = '';
 //-----------------------------------------------------------------------------
@@ -410,8 +412,16 @@ var debugPrint = function(inpString){
 	// for now, just checks if the global debugMode is true. If it isn't,
 	// doesn't output, just returns
 	
-	if (debugMode === true) {
+	if (debugMode) {
 		console.log(inpString);
+		if (enableDebugChan) {
+			if ((inpString !== '') && (typeof inpString === 'string')) {
+				// todo: rate limiter?
+				if (inpString.length < 1024) { 
+					BOT.channels.get(DEBUGCHAN_ID).send(inpString);
+				}
+			}
+		}
 	}
 };
 var makeStatFile = function() {
@@ -865,6 +875,13 @@ var collectTimer = function(message, who, command) {
 	}
 }
 //-----------------------------------------------------------------------------
+spongeBot.debug = {
+	do: function(message) {
+		enableDebugChan = !enableDebugChan;
+		chSend(message, 'debugging to channel is: ' + enableDebugChan);
+	},
+	help: 'Toggles debugging to #debug-print on Planet Insomnia.'
+}
 spongeBot.backup = {
 	cmdGroup: 'Admin',
 	disabled: true,
@@ -923,6 +940,7 @@ spongeBot.tree = {
 				} else {
 					// if we're here, it's time to collect, and collectTime has been updated to now
 					var messStr = '';
+					var collectVal = 0;
 					var fruitBonus = 0;
 					//fruit bonus
 					if (tree.trees.hasOwnProperty(who)) {
@@ -933,11 +951,10 @@ spongeBot.tree = {
 						*/
 						fruitBonus += 125 * tree.trees[who].length;
 					}
-					
+					collectVal = tree.config.treeVal + fruitBonus
 					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-					  makeTag(who) +  ' walks away ' + tree.config.treeVal + fruitBonus +
-					 ' credits richer! ';
-					addBank(who, tree.config.treeVal);
+					  makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ';
+					addBank(who, collectVal);
 					
 					//random saying extra bit on end: 
 					
@@ -1397,7 +1414,7 @@ spongeBot.restrict = {
 		} else {
 			spongeBot[parms].access = false;
 		}
-		chSend(message, '!' + parms + ' needs special access:  '
+		chSend(message, '`!' + parms + '` needs special access:  '
 		  + spongeBot[parms].access);
 	},
 	help: ':warning: Toggles whether commands require special access.'
