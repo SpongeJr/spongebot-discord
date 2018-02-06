@@ -2424,16 +2424,11 @@ spongeBot.acro = {
 			chSend(message, ':warning: I think the `!acro` is already running.');
 			return;
 		}
-		
-		// start a new game
-		acro.votes = {};
-		acro.players = {};
-		acro.runState = 'main';
 		var letters = '';
 		var timeAllowed = 0;
 		var CATEGORY_DEFAULT = 'None / General'
 		var category = CATEGORY_DEFAULT;
-		acro.entries = [];
+		
 		var acroLen = 3 + Math.floor(Math.random() * 3);
 		var table = '';
 		
@@ -2485,6 +2480,13 @@ spongeBot.acro = {
 				chSend(message, makeTag(message.author.id) + ', unknown parameter');
 			}
 		}
+		
+		// start a new game after we know the arguments work
+		acro.votes = {};
+		acro.players = {};
+		acro.runState = 'main';
+		acro.entries = [];
+		
 		//Check if we have a custom category before assigning one
 		if (acro.config.categories && category === CATEGORY_DEFAULT) {
 			var catNo = Math.floor(Math.random() * acro.categories.length);
