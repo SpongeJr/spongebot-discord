@@ -2441,24 +2441,39 @@ spongeBot.acro = {
 					acroLen = letters.length;
 				} else {
 					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
+					return;
 				}
 			} else if(parameter === 'table') {
 				if(/^[a-z]+$/.test(argument)) {
+					//We only change "table" if we haven't yet set the letters
+					if(letters !== '') {
+						chSend(message, makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
+						continue;
+					}
 					table = argument;
 				} else {
-					chSend(message, makeTag(message.author.id) + ', invalid table argument');
+					chSend(message, makeTag(message.author.id) + ', invalid `table` argument');
+					return;
 				}
 			} else if(parameter === 'playtime') {
 				timeAllowed = parseInt(argument);
 				if(!timeAllowed) {
-					chSend(message, makeTag(message.author.id) + ', invalid playtime argument');
+					chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
+					return;
 				}
 			} else if(parameter === 'length') {
+				
 				var argument = parseInt(argument);
 				if(argument) {
+					//We only change "table" if we haven't yet set the letters
+					if(letters !== '') {
+						chSend(message, makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
+						continue;
+					}
 					acroLen = argument;
 				} else {
-					chSend(message, makeTag(message.author.id) + ', invalid length argument');
+					chSend(message, makeTag(message.author.id) + ', invalid `length` argument');
+					return;
 				}
 			} else if(parameter === 'category') {
 				category = argument;
@@ -2604,19 +2619,23 @@ spongeBot.acro = {
 			acro.runState = false;
 		}
 	}, timeAllowed * 1000);},
-	help: '`!acro`: Starts up the acronym game',
-	longHelp: '`!acro`: Starts up the acronym game.\n' + 
-		' The acronym game consists of an acro-making round, and a voting round.\n' +
-		' In the _acro-making round_, players are given 3 to 6 letters, (eg: P A I F).\n' +
-		' Players then have a set amount of time to make an acronym using those initial\n' +
-		' letters (eg: Playing Acro Is Fun) and submit it using the `!a` command.\n\n' +
-		' In the _voting round_ which follows after the alloted time is up, the acronyms\n' +
-		' submitted are displayed, anonymized, and everyone in the channel can then\n' +
-		' vote on their favorite, using the `!avote` command. Players may or may not\n' +
-		' be allowed to be vote for their own acro, based on a configuration option.\n\n' +
-		' After the voting round timer ends, the acronym(s) with the most votes is shown\n' +
-		' along with the author(s). These are the winners. Depending on config options,\n' +
-		' winner(s) may receive some amount of server "credits".'
+	help:	'`!acro`: Starts up the acronym game. Set custom options with the format `<parameter>:<argument>`, where' +
+		'where parameter is one of `letters`, `table`, `length`, `playtime`, or `category` and `<argument>` is the ' +
+		'value that you want to assign to that parameter.',
+	longHelp:	'`!acro`: Starts up the acronym game. Set custom options with the format `<parameter>:<argument>`, where' +
+			'where parameter is one of `letters`, `table`, `length`, `playtime`, or `category`, and `<argument>` is the ' +
+			'value that you want to assign to that parameter.' + '\n' +
+			' The acronym game consists of an acro-making round, and a voting round.\n' +
+			' In the _acro-making round_, players are given 3 to 6 letters, (eg: P A I F).\n' +
+			' Players then have a set amount of time to make an acronym using those initial\n' +
+			' letters (eg: Playing Acro Is Fun) and submit it using the `!a` command.\n\n' +
+			' In the _voting round_ which follows after the alloted time is up, the acronyms\n' +
+			' submitted are displayed, anonymized, and everyone in the channel can then\n' +
+			' vote on their favorite, using the `!avote` command. Players may or may not\n' +
+			' be allowed to be vote for their own acro, based on a configuration option.\n\n' +
+			' After the voting round timer ends, the acronym(s) with the most votes is shown\n' +
+			' along with the author(s). These are the winners. Depending on config options,\n' +
+			' winner(s) may receive some amount of server "credits".'
 };
 spongeBot.a = {
 	cmdGroup: 'Fun and Games',
