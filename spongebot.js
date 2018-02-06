@@ -109,19 +109,23 @@ var Fruit = function(stats) {
 	  + ' ' + listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
 Fruit.prototype.pick = function(message) {
-
+	// returns some text about what happened
+	var outP = '';
+	
 	if (Math.random() < 0.08) {
-		chSend(message, this.stats.name + ' got squished!');
+		outP += ':poop:' + this.stats.name + ' got squished! ';
 		this.stats.name = 'a squished loot fruit';
 		this.stats.valueMult = 0;
 	}
 	
-	chSend(message, this.stats.name + ' was picked for ' + FRUIT_VAL +
-	  ' x ' + (this.stats.valueMult * 100) + '% =' + FRUIT_VAL * this.stats.valueMult);
+	outP += this.stats.name + ' was picked for ' + FRUIT_VAL +
+	  ' x ' + (this.stats.valueMult * 100) + '% = ' + FRUIT_VAL * this.stats.valueMult;
 		
 	this.stats.ripeness = 0;
 	this.stats.name = 'a budding loot fruit';
 	this.stats.valueMult = 0;
+	
+	return outP;
 },
 Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
@@ -902,15 +906,17 @@ spongeBot.tree = {
 				var fruit = tree.trees[who];
 				
 				// tend to each Fruit
+				var fruitMess = '';
 				for (var i = 0; i < fruit.length; i++) {
 					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
 					if (ageIt) {fruit[i].age();}
 						
-					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
+					fruitMess += 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
 					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
 					if (ageIt) {fruitMess += ' (tended)';}
-					chSend(message, fruitMess);	
+					fruitMess += '\n';
 				}
+				chSend(message, fruitMess);
 			} else {
 				chSend(message, 'I see no trees you can tend to.');
 			}
@@ -921,9 +927,11 @@ spongeBot.tree = {
 				var fruit = tree.trees[who];
 			
 				// .pick() each Fruit
+				var pickMess = '';
 				for (var i = 0; i < fruit.length; i++) {
-					fruit[i].pick(message);
+					pickMess += fruit[i].pick(message) + '\n';
 				}
+				chSend(message, pickMess);
 			}
 		}
 	},
