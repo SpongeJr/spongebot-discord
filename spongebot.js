@@ -975,6 +975,13 @@ spongeBot.z = {
 		chSend(message, '```' + story + '```');
 	}
 }
+spongeBot.zclear = {
+	do: function(message, parms) {
+		story = '';
+		chSend(message, '`Story cleared.`');
+	}
+}
+
 spongeBot.loot = {
 		disabled: false,
 		access: false,
