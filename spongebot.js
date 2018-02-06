@@ -45,7 +45,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9982';
+const VERSION_STRING = '0.9982.fruit';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -104,9 +104,9 @@ var listPick = function(theList) {
 */
 //-----------------------------------------------------------------------------
 var Fruit = function(stats) {
-	this.stats = {};
+	this.stats = stats || {};
 	this.stats.ripeness = stats.ripeness || 0;
-	this.stats.name = stats.name || 'loot fruit bud';
+	this.stats.name = stats.name || ':seedling: budding';
 	this.stats.valueMult = stats.valueMult || 0
 	this.stats.special = {},
 	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
@@ -117,16 +117,15 @@ Fruit.prototype.pick = function(message) {
 	var outP = '';
 	
 	if (Math.random() < 0.08) {
-		outP += ':poop:' + this.stats.name + ' got squished! ';
-		this.stats.name = 'a squished loot fruit';
+		outP += this.stats.name + ' loot fruit got squished! ';
+		this.stats.name = ':grapes: a squished';
 		this.stats.valueMult = 0;
-	}
-	
-	outP += this.stats.name + ' was picked for ' + FRUIT_VAL +
+	}	
+	outP += this.stats.name + ' loot fruit was picked for ' + FRUIT_VAL +
 	  ' x ' + (this.stats.valueMult * 100) + '% = ' + FRUIT_VAL * this.stats.valueMult;
 		
-	this.stats.ripeness = 0;
-	this.stats.name = 'a budding loot fruit';
+	this.stats.ripeness = Math.random() * 0.04;
+	this.stats.name = ':seedling: budding';
 	this.stats.valueMult = 0;
 	
 	return outP;
@@ -135,19 +134,19 @@ Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
 	
 	 if (this.stats.ripeness > 1.3) {
-		this.stats.name = 'rotten loot fruit';
+		this.stats.name = ':nauseated_face: rotten';
 		this.stats.valueMult = 0;
 	} else if (this.stats.ripeness > 1.1 && this.stats.ripeness <= 1.3) {
 		this.stats.valueMult = 0.8;
-		this.stats.name = 'very ripe loot fruit';
+		this.stats.name = ':eggplant: very ripe';
 	} else if (this.stats.ripeness > 0.8 && this.stats.ripeness <= 1.1) {
-		this.stats.name = 'perfectly ripe loot fruit'
+		this.stats.name = ':eggplant: perfectly ripe'
 		this.stats.valueMult = 1;
 	} else if (this.stats.ripeness > 0.4 && this.stats.ripeness <= 0.8) {
-		this.stats.name = 'unripe loot fruit'
+		this.stats.name = ':pineapple: unripe'
 		this.stats.valueMult = 0.1;
 	} else if (this.stats.ripeness <= 0.4) {
-		this.stats.name = 'budding loot fruit';
+		this.stats.name = ':herb: budding';
 		this.stats.valueMult = 0;
 	}
 };
@@ -161,19 +160,24 @@ var tree = {
 	trees: {
 		"134800705230733312": [
 			new Fruit({}),
-			new Fruit({}),
+			new Fruit({"health": 1}),
 			new Fruit({})
 		],
 		"167711491078750208": [
 			new Fruit({}),
-			new Fruit({}),
+			new Fruit({"health": 1}),
 			new Fruit({}),
 			new Fruit({}),
 			new Fruit({})
 		],
 		"306645821426761729": [
 			new Fruit({}),
+			new Fruit({"health": 1}),
+			new Fruit({})
+		],
+		"104219409991626752": [
 			new Fruit({}),
+			new Fruit({"health": 1}),
 			new Fruit({})
 		]
 	}
@@ -881,6 +885,19 @@ spongeBot.backup = {
 	}
 };
 //-----------------------------------------------------------------------------
+spongeBot.z = {
+	do: function(message, parms) {
+		story += parms + ' ';
+		chSend(message, '```' + story + '```');
+	}
+}
+spongeBot.zclear = {
+	do: function(message, parms) {
+		story = '';
+		chSend(message, '`Story cleared.`');
+	}
+}
+//-----------------------------------------------------------------------------
 spongeBot.tree = {
 	subCmd: {
 		check: {
@@ -945,6 +962,29 @@ spongeBot.tree = {
 				}
 			}
 		},
+		fruit: {
+			do: function(message) {
+				//var fruit = getStat(message.author.id, tree, ...
+				var who = message.author.id;
+				if (tree.trees.hasOwnProperty(who)) {
+					var fruit = tree.trees[who];
+					
+					// show each fruit's stats
+					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
+					for (var i = 0; i < fruit.length; i++) {	
+						fruitMess += fruit[i].stats.name + ' ' + fruit[i].stats.color +
+						  ' loot fruit   Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
+						if (fruit[i].stats.health) {
+							fruitMess += ' (thriving!)';
+						}
+						fruitMess += '\n';
+					}
+					chSend(message, fruitMess);
+				} else {
+					chSend(message, 'I see no fruit for you to check, ' + message.author);
+				}
+			}
+		},
 		tend: {
 			do: function(message) {
 				//var fruit = getStat(message.author.id, tree, ...
@@ -953,14 +993,20 @@ spongeBot.tree = {
 					var fruit = tree.trees[who];
 					
 					// tend to each Fruit
-					var fruitMess = '';
+					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
 					for (var i = 0; i < fruit.length; i++) {
 						ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
-						if (ageIt) {fruit[i].age();}
+						if (ageIt) {
+							fruit[i].age();
+						}
 							
-						fruitMess += 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
-						'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
-						if (ageIt) {fruitMess += ' (tended)';}
+						fruitMess += fruit[i].stats.name + ' ' + fruit[i].stats.color +
+						  ' loot fruit   Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
+						if (ageIt) {
+							fruitMess += ' (tended)';
+						} if (fruit[i].stats.health) {
+							fruitMess += ' (thriving!)';
+						}
 						fruitMess += '\n';
 					}
 					chSend(message, fruitMess);
@@ -976,7 +1022,7 @@ spongeBot.tree = {
 					var fruit = tree.trees[who];
 				
 					// .pick() each Fruit
-					var pickMess = '';
+					var pickMess = '```Loot Fruit pick results for '+ message.author.username +': ```\n ';
 					for (var i = 0; i < fruit.length; i++) {
 						pickMess += fruit[i].pick(message) + '\n';
 					}
@@ -1001,8 +1047,7 @@ spongeBot.tree = {
 		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
 		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
 	do: function(message, parms) {
-		parms = parms.split(' ');
-		
+		parms = parms.split(' ');		
 		if (parms[0] === '') {
 			chSend(message, 'Please see `!help tree` for help with your loot tree.');
 			return;
@@ -1016,18 +1061,6 @@ spongeBot.tree = {
 		} else {
 			chSend(message, 'What are you trying to do to that tree?!');
 		}
-	}
-}
-spongeBot.z = {
-	do: function(message, parms) {
-		story += parms + ' ';
-		chSend(message, '```' + story + '```');
-	}
-}
-spongeBot.zclear = {
-	do: function(message, parms) {
-		story = '';
-		chSend(message, '`Story cleared.`');
 	}
 }
 spongeBot.loot = {
