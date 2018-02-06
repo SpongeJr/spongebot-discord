@@ -163,13 +163,6 @@ var tree = {
 			new Fruit({"health": 1}),
 			new Fruit({})
 		],
-		"167711491078750208": [
-			new Fruit({}),
-			new Fruit({"health": 1}),
-			new Fruit({}),
-			new Fruit({}),
-			new Fruit({})
-		],
 		"306645821426761729": [
 			new Fruit({}),
 			new Fruit({"health": 1}),
@@ -930,8 +923,20 @@ spongeBot.tree = {
 				} else {
 					// if we're here, it's time to collect, and collectTime has been updated to now
 					var messStr = '';
+					var fruitBonus = 0;
+					//fruit bonus
+					if (tree.trees.hasOwnProperty(who)) {
+						/*
+						for (var i = 0; i < tree.trees[who].length; i++) {
+							
+						}
+						*/
+						fruitBonus += 125 * tree.trees[who].length;
+					}
+					
 					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-					  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer! ';
+					  makeTag(who) +  ' walks away ' + tree.config.treeVal + fruitBonus +
+					 ' credits richer! ';
 					addBank(who, tree.config.treeVal);
 					
 					//random saying extra bit on end: 
@@ -981,7 +986,12 @@ spongeBot.tree = {
 					}
 					chSend(message, fruitMess);
 				} else {
-					chSend(message, 'I see no fruit for you to check, ' + message.author);
+					chSend(message, 'I see no fruit for you to check, ' + message.author +
+					  '\nI\'ll give you two starter fruit. You can !tree tend or !tree pick them' +
+					  ' at any time, for now.');
+					tree.trees[who] = [];
+					tree.trees[who].push(new Fruit({}));
+					tree.trees[who].push(new Fruit({}));
 				}
 			}
 		},
