@@ -2434,8 +2434,8 @@ spongeBot.acro = {
 		var acroLen = 3 + Math.floor(Math.random() * 3);
 		var table = '';
 		
-		for(var flag in parms) {
-			var parts = flag.split(':');
+		for(var i = 0; i < parms.length; i++) {
+			var parts = parms[i].split(':');
 			var parameter = parts[0];
 			var argument = parts[1];
 			if(!parameter || !argument) {
