@@ -43,7 +43,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.99810001';
+const VERSION_STRING = '0.99810001 hey look another minor fix ewrdftgvhbjnkml';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -2437,6 +2437,8 @@ spongeBot.acro = {
 				//Check alphabetic only
 				if(/^[a-z]+$/.test(argument)) {
 					letters = argument;
+					//Update acroLen
+					acroLen = letters.length;
 				} else {
 					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
 				}
