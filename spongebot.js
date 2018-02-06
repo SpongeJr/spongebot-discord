@@ -62,8 +62,14 @@ var acro = {
 			letters += acro.freq.charAt(
 			  Math.floor(Math.random() * acro.freq.length));
 		}
-		// set and return
-		acro.letters = letters;
+		return letters;
+	},
+	pickLettersCustom: function(count, table) {
+		var letters = '';
+		for (var i = 0; i < count; i++) {
+			letters += table.charAt(
+			  Math.floor(Math.random() * table.length));
+		}
 		return letters;
 	},
 	entries: {},
@@ -2410,19 +2416,72 @@ spongeBot.acro = {
 		acro.players = {};
 		acro.runState = 'main';
 		var letters = '';
-		var timeAllowed;
-		var category = 'None / General';
+		var timeAllowed = 0;
+		var CATEGORY_DEFAULT = 'None / General'
+		var category = CATEGORY_DEFAULT;
 		acro.entries = [];
+		var acroLen = 3 + Math.floor(Math.random() * 3);
+		var table = '';
 		
-		if (acro.config.categories) {
+		for(var flag in parms) {
+			flag = flag.split(':');
+			var parameter = flag[0];
+			var argument = flag[1];
+			if(!parameter || !argument) {
+				if(!parameter && !argument) {
+					chSend(message, makeTag(message.author.id) + ', missing parameter and argument');
+				}
+				else if(!parameter) {
+					chSend(message, makeTag(message.author.id) + ', missing parameter');
+				} else if(!argument) {
+					chSend(message, makeTag(message.author.id) + ', missing argument');
+				}
+			}
+			parameter = parameter.toLowerCase();
+			if(parameter === 'letters') {
+				//https://stackoverflow.com/questions/23476532/check-if-string-contains-only-letters-in-javascript
+				//Check alphabetic only
+				if(/^[a-zA-Z]+$/.test(argument)) {
+					letters = argument;
+				} else {
+					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
+				}
+			} else if(parameter === 'table') {
+				if(/^[a-zA-Z]+$/.test(argument)) {
+					table = argument;
+				}
+			} else if(parameter === 'playtime') {
+				timeAllowed = parseInt(argument);
+			} else if(parameter === 'length') {
+				var argument = parseInt(argument);
+				if(argument) {
+					acroLen = argument;
+				}
+			} else if(parameter === 'category') {
+				category = argument;
+			}
+		}
+		//Check if we have a custom category before assigning one
+		if (acro.config.categories && category === CATEGORY_DEFAULT) {
 			var catNo = Math.floor(Math.random() * acro.categories.length);
 			category = acro.categories[catNo];
 		}
+		if(!timeAllowed) {
+			timeAllowed = acroLen * 10 + 20;
+		}
+		//Initialize the letters
+		if(letters === '') {
+			//Check for custom table
+			if(table === '') {
+				letters = acro.pickLetters(acroLen);
+			} else {
+				letters = acro.pickLettersCustom(acroLen, table);
+			}
+		}
+		acro.letters = letters;
 		
-		var acroLen = 3 + Math.floor(Math.random() * 3);
-		timeAllowed = acroLen * 10 + 20;
-		acro.pickLetters(acroLen);
-		
+		//Recycle this variable
+		letters = '';
 		for (var i = 0; i < acro.letters.length; i++) {
 			letters += acro.letters.charAt(i).toUpperCase();
 		}
