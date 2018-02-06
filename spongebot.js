@@ -98,6 +98,9 @@ var Fruit = function(stats) {
 	this.stats.ripeness = stats.ripeness || 0;
 	this.stats.name = stats.name || 'A loot fruit bud';
 	this.stats.valueMult = stats.valueMult || 0
+	this.stats.special = {},
+	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled']
+	  + ' ' + listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
 Fruit.prototype.pick = function(message) {
 
@@ -143,46 +146,21 @@ var tree = {
 	},
 	trees: {
 		"134800705230733312": [
-			new Fruit({
-				ripeness: 0.6
-			}),
-			new Fruit({
-				ripeness: 0.5
-			}),
-			new Fruit({
-				ripeness: 0.25
-			
-			})
+			new Fruit({}),
+			new Fruit({}),
+			new Fruit({})
 		],
 		"167711491078750208": [
-			new Fruit({
-				ripeness: 0.7,
-			}),
-			new Fruit({
-				ripeness: 0.6
-			}),
-			new Fruit({
-				ripeness: 0.6
-			
-			}),
-			new Fruit({
-				ripeness: 0.5
-			})
+			new Fruit({}),
+			new Fruit({}),
+			new Fruit({}),
+			new Fruit({}),
+			new Fruit({})
 		],
 		"306645821426761729": [
-			new Fruit({
-				ripeness: 0.6
-			}),
-			new Fruit({
-				ripeness: 0.5
-			}),
-			new Fruit({
-				ripeness: 0.25
-			
-			}),
-			new Fruit({
-				ripeness: 0.03
-			})
+			new Fruit({}),
+			new Fruit({}),
+			new Fruit({})
 		]
 	}
 }
