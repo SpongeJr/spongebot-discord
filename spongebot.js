@@ -102,7 +102,7 @@ var listPick = function(theList) {
 var Fruit = function(stats) {
 	this.stats = {};
 	this.stats.ripeness = stats.ripeness || 0;
-	this.stats.name = stats.name || 'A loot fruit bud';
+	this.stats.name = stats.name || 'loot fruit bud';
 	this.stats.valueMult = stats.valueMult || 0
 	this.stats.special = {},
 	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
@@ -117,7 +117,7 @@ Fruit.prototype.pick = function(message) {
 	}
 	
 	chSend(message, this.stats.name + ' was picked for ' + FRUIT_VAL +
-	  ' x ' + this.stats.valueMult + '% =' + FRUIT_VAL * this.stats.valueMult);
+	  ' x ' + (this.stats.valueMult * 100) + '% =' + FRUIT_VAL * this.stats.valueMult);
 		
 	this.stats.ripeness = 0;
 	this.stats.name = 'a budding loot fruit';
@@ -127,19 +127,19 @@ Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
 	
 	 if (this.stats.ripeness > 1.3) {
-		this.stats.name = 'A rotten loot fruit';
+		this.stats.name = 'rotten loot fruit';
 		this.stats.valueMult = 0;
 	} else if (this.stats.ripeness > 1.1 && this.stats.ripeness <= 1.3) {
 		this.stats.valueMult = 0.8;
-		this.stats.name = 'A very ripe loot fruit';
+		this.stats.name = 'very ripe loot fruit';
 	} else if (this.stats.ripeness > 0.8 && this.stats.ripeness <= 1.1) {
-		this.stats.name = 'A perfectly ripe loot fruit'
+		this.stats.name = 'perfectly ripe loot fruit'
 		this.stats.valueMult = 1;
 	} else if (this.stats.ripeness > 0.4 && this.stats.ripeness <= 0.8) {
-		this.stats.name = 'An unripe loot fruit'
+		this.stats.name = 'unripe loot fruit'
 		this.stats.valueMult = 0.1;
 	} else if (this.stats.ripeness <= 0.4) {
-		this.stats.name = 'A budding loot fruit';
+		this.stats.name = 'budding loot fruit';
 		this.stats.valueMult = 0;
 	}
 };
@@ -906,7 +906,7 @@ spongeBot.tree = {
 					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
 					if (ageIt) {fruit[i].age();}
 						
-					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + fruit[i].stats.name + 
+					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' fruit[i].stats.name + 
 					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
 					if (ageIt) {fruitMess += ' (tended)';}
 					chSend(message, fruitMess);	
@@ -2443,12 +2443,6 @@ spongeBot.acro = {
 					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
 				}
 			} else if(parameter === 'table') {
-				//We only change the table if we haven't yet set the letters
-				if(letters !== '') {
-					chSend(message, makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
-					continue;
-				}
-				
 				if(/^[a-z]+$/.test(argument)) {
 					table = argument;
 				} else {
@@ -2460,11 +2454,6 @@ spongeBot.acro = {
 					chSend(message, makeTag(message.author.id) + ', invalid playtime argument');
 				}
 			} else if(parameter === 'length') {
-				//We only change the length if we haven't yet set the letters
-				if(letters !== '') {
-					chSend(message, makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
-					continue;
-				}
 				var argument = parseInt(argument);
 				if(argument) {
 					acroLen = argument;
