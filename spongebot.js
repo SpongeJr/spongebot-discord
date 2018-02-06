@@ -43,7 +43,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.997.tree-tousand';
+const VERSION_STRING = '0.998';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -1360,8 +1360,7 @@ spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
 	subCmd: {
 		config: function(message, parms) {
-			
-			
+			chSend(message, 'can\'t config scram right now');
 		}
 	},
 	do: function(message, parms) {
@@ -1379,7 +1378,7 @@ spongeBot.scram = {
 			parms[0] = parms[0].toLowerCase();
 			if (spongeBot.scram.subCmd.hasOwnProperty(parms[0])) {
 				//we've found a found sub-command, so do it...
-				spongeBot.scram.subCmd[parms[0]](message, parms); // we're passing parms up as an array, but it doesn't have to be, can parms.join(' ') it back together instead
+				spongeBot.scram.subCmd[parms[0]](message, parms);
 				return; // we're done here
 			}
 			// ignore non-sub-command extra stuff they type
