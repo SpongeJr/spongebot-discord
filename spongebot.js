@@ -97,6 +97,7 @@ var Fruit = function(stats) {
 	this.stats = {};
 	this.stats.ripeness = stats.ripeness || 0;
 	this.stats.name = stats.name || 'A loot fruit bud';
+	this.stats.valueMult = stats.valueMult || 0
 };
 Fruit.prototype.pick = function(message) {
 
@@ -106,7 +107,8 @@ Fruit.prototype.pick = function(message) {
 		this.stats.valueMult = 0;
 	}
 	
-	chSend(message, this.stats.name + ' was picked for ' + FRUIT_VAL * this.stats.valueMult + '!');
+	chSend(message, this.stats.name + ' was picked for ' + FRUIT_VAL +
+	  ' x ' + this.stats.valueMult + '% =' + FRUIT_VAL * this.stats.valueMult);
 		
 	this.stats.ripeness = 0;
 	this.stats.name = 'a budding loot fruit';
@@ -154,17 +156,17 @@ var tree = {
 		],
 		"167711491078750208": [
 			new Fruit({
+				ripeness: 0.7,
+			}),
+			new Fruit({
 				ripeness: 0.6
 			}),
 			new Fruit({
-				ripeness: 0.5
-			}),
-			new Fruit({
-				ripeness: 0.25
+				ripeness: 0.6
 			
 			}),
 			new Fruit({
-				ripeness: 0.03
+				ripeness: 0.5
 			})
 		],
 		"306645821426761729": [
