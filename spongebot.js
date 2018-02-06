@@ -1140,6 +1140,7 @@ spongeBot.loot = {
 				}
 				for(var box in loot.boxes) {
 					if(box === boxName) {
+						var boxEntry = loot.boxes[box];
 						var desc = 'The ' + box + ' box.';
 						desc += '\nDescription: ' + boxEntry.description;
 						desc += '\nPrice: ' + boxEntry.price + ' credits';
