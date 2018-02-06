@@ -30,6 +30,8 @@ const BOT = new Discord.Client();
 const FS = require('fs');
 const BANK_FILENAME = '../data/banks.csv';
 const STATS_FILENAME = '../data/gamestats.json';
+const BANK_BACKUP_FILENAME = '../data/banks.bak';
+const STATS_BACKUP_FILENAME = '../data/gamestats.bak';
 
 const ONE_DAY = 86400000;
 const ONE_WEEK = 604800000;
@@ -43,12 +45,13 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.99810002';
+const VERSION_STRING = '0.9982';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
   '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
+var debugMode = true;
 var spongeBot = {};
 var story = '';
 //-----------------------------------------------------------------------------
@@ -404,13 +407,23 @@ var loot = {
         }
     };
 //-----------------------------------------------------------------------------
+var debugPrint = function(inpString){
+	// throw away that old console.log and try our brand new debugPrint!
+	// can add all sorts of goodies here, like sending output to a Discord chan or DN
+	// for now, just checks if the global debugMode is true. If it isn't,
+	// doesn't output, just returns
+	
+	if (debugMode === true) {
+		console.log(inpString);
+	}
+};
 var makeStatFile = function() {
 	var theFile = JSON.stringify(gameStats);
 	return theFile;
 };
 var parseStatFile = function() {
 	var outp = JSON.parse(botStorage.statloaddata);
-	console.log(outp);
+	debugPrint(outp);
 	return outp;
 };
 var loadStats = function() {
@@ -423,7 +436,7 @@ var loadStats = function() {
 				for (var i = 0; i < chunk.length; i++) {
 					botStorage.statloaddata += String.fromCharCode(chunk[i]);
 				};
-				console.log('  !loadStats: Data chunk loaded.');
+				debugPrint('  !loadStats: Data chunk loaded.');
 			}
 		})
 		.on('end', function() {
@@ -431,11 +444,16 @@ var loadStats = function() {
 			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
 		});	
 };
-var saveStats = function() {
-	var writeStream = FS.createWriteStream(STATS_FILENAME, {autoClose: true});
+var saveStats = function(filename) {
+	
+	if (!filename) {
+		filename = STATS_FILENAME;
+	}
+	
+	var writeStream = FS.createWriteStream(filename, {autoClose: true});
 	writeStream.write(makeStatFile(gameStats));
 	writeStream.end(function() {
-		console.log(' Game stats saved.');
+		debugPrint(' Game stats saved to: ' + filename);
 	});
 };
 var getStat = function(who, game, stat) {
@@ -445,7 +463,7 @@ var getStat = function(who, game, stat) {
 	// otherwise, returns the stat as stored on gameStats
 	
 	who = makeId(who);
-	console.log(who);
+	debugPrint(who);
 	
 	if (!gameStats.hasOwnProperty(who)) {
 		return; // user doesn't exist
@@ -494,7 +512,7 @@ var incStat = function(who, game, stat) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		console.log('!incStat: Made a new ' + game + ' stat for ' + who);
+		debugPrint('!incStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat]++;
@@ -518,7 +536,7 @@ var setStat = function(who, game, stat, amt) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		console.log('!alterStat: Made a new ' + game + ' stat for ' + who);
+		debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat] = parseInt(amt);
@@ -542,14 +560,13 @@ var alterStat = function(who, game, stat, amt) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		console.log('!alterStat: Made a new ' + game + ' stat for ' + who);
+		debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat] += parseInt(amt);
 	saveStats();
 	return gameStats[who][game][stat];
 };
-//-----------------------------------------------------------------------------
 var parseBankfile = function(inp) {
 	inp = inp.split(',');
 	
@@ -571,7 +588,7 @@ var loadBanks = function() {
 				for (var i = 0; i < chunk.length; i++) {
 					botStorage.bankloaddata += String.fromCharCode(chunk[i]);
 				};
-				console.log('  !loadBanks: Data chunk loaded.');
+				debugPrint('  !loadBanks: Data chunk loaded.');
 			}
 		})
 		.on('end', function() {
@@ -579,23 +596,28 @@ var loadBanks = function() {
 			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
 		});
 };
-var saveBanks = function() {
-	var writeStream = FS.createWriteStream(BANK_FILENAME, {autoClose: true});
+var saveBanks = function(filename) {
+	
+	if (!filename) {
+		filename = BANK_FILENAME;
+	}
+	
+	var writeStream = FS.createWriteStream(filename, {autoClose: true});
 	writeStream.write(makeBankFile(bankroll));
 	writeStream.end(function() {
-		console.log(' Banks saved.');
+		debugPrint(' Banks saved to: ' + filename);
 	});
 };
 var addBank = function(who, amt) {
 	
 	if (!BOT.users.get(who)) {
-		console.log('addBank: nonexistent user: ' + who);
+		debugPrint('addBank: nonexistent user: ' + who);
 		return false;
 	}
 	
 	if (!bankroll.hasOwnProperty(who)) {
 		bankroll[who] = START_BANK;
-		console.log('addBank: New bankroll made for ' + who);
+		debugPrint('addBank: New bankroll made for ' + who);
 	}
 	
 	bankroll[who] += parseInt(amt);
@@ -610,6 +632,11 @@ var makeBankFile = function(bankdata) {
 	theFile = theFile.slice(0, -1); // remove trailing comma
 	return theFile;
 };
+var makeBackups = function() {
+	// call me to write out backup copies of the banks.csv and stats.JSON
+	saveBanks(BANK_BACKUP_FILENAME);
+	saveStats(STATS_BACKUP_FILENAME);
+}	
 //-----------------------------------------------------------------------------
 var makeId = function(inp) {
 	// strips out the first <@! and > in a string
@@ -698,38 +725,38 @@ var chSend = function(message, str) {
 	
 	// temporary stuff
 	if (typeof message === 'undefined') {
-		console.log('chSend: message is undefined!');
+		debugPrint('chSend: message is undefined!');
 		return
 	}
 	
 	if (!message.hasOwnProperty('author')) {
-		console.log('chSend: No .author property on message!');
+		debugPrint('chSend: No .author property on message!');
 		return;
 	}
 	
 	if (!message.author.hasOwnProperty('bot')) {
-		console.log('chSend: no .bot property on message.author!');
+		debugPrint('chSend: no .bot property on message.author!');
 		return;
 	}
 	
 	if (message.author.bot) {
-		console.log(' -- Blocked a bot-to-bot m.channel.send');
+		debugPrint(' -- Blocked a bot-to-bot m.channel.send');
 		return;
 	}
 	
 	message.channel.send(str).catch(reason => {
-		console.log('Error sending a channel message: ' + reason);
+		debugPrint('Error sending a channel message: ' + reason);
 	});
 };
 //-----------------------------------------------------------------------------
 var auSend = function(message, str) {
 	if (message.author.bot) {
-		console.log(' -- Blocked a bot-to-bot m.author.send');
+		debugPrint(' -- Blocked a bot-to-bot m.author.send');
 		return;
 	}
 	
 	message.author.send(str).catch(reason => {
-		console.log('Error sending a DM: ' + reason);
+		debugPrint('Error sending a DM: ' + reason);
 	});
 }
 //-----------------------------------------------------------------------------
@@ -789,7 +816,7 @@ var checkTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
 		//setStat(makeId(who), 'lastUsed', command, 0);
 		return true;
 	} else {
@@ -817,7 +844,7 @@ var collectTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		console.log('lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
 		setStat(makeId(who), 'lastUsed', command, now);
 		return true;
 	} else {
@@ -840,6 +867,19 @@ var collectTimer = function(message, who, command) {
 		}
 	}
 }
+//-----------------------------------------------------------------------------
+spongeBot.backup = {
+	cmdGroup: 'Admin',
+	disabled: true,
+	access: [],
+	do: function(message) {
+		saveBanks(BANK_BACKUP_FILENAME);
+		saveStats(STATS_BACKUP_FILENAME);
+		chSend(message, 'I ran the backups. Probably.');
+		debugPrint('!backup:  MANUALLY BACKED UP TO: `' + BANK_BACKUP_FILENAME +
+		  '` and `' + STATS_BACKUP_FILENAME +  '`');
+	}
+};
 //-----------------------------------------------------------------------------
 spongeBot.tree = {
 	subCmd: {
@@ -990,7 +1030,6 @@ spongeBot.zclear = {
 		chSend(message, '`Story cleared.`');
 	}
 }
-
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -1345,7 +1384,7 @@ spongeBot.showCode = {
 		var theCode = spongeBot[parms];
 		
 		chSend(message, theCode);
-		console.log(theCode);
+		debugPrint(theCode);
 	},
 	help: 'shows code.',
 	disabled: true
@@ -1419,7 +1458,7 @@ spongeBot.scram = {
 		
 		if (!scram.hasOwnProperty(server.id)) {
 			// key doesn't exist for this server, so init
-			console.log('!scram: Adding instance for ' + server.id + ' ('
+			debugPrint('!scram: Adding instance for ' + server.id + ' ('
 			  + server.name + ')');
 			scram[server.id] = {};
 			scram[server.id].announce = true;
@@ -1549,7 +1588,7 @@ spongeBot.giveaways = {
 			var role = message.guild.roles.find('name', 'giveaways');
 			
 			if (message.member.roles.has('408789879590354944')) {
-				console.log('!giveaways addrole: Did not add role or award ticket because they had it already.');
+				debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
 				chSend(message, message.author + ' I think you already had that role.');
 			} else {
 				message.member.addRole(role);
@@ -1569,7 +1608,7 @@ spongeBot.giveaways = {
 			var whoStr = ''
 			for (var who of whoHas.keys()) {
 				whoStr += makeTag(who) + '   ';
-				console.log(who);
+				debugPrint(who);
 			}
 			chSend(message, whoStr);
 			*/
@@ -1731,7 +1770,7 @@ spongeBot.bank = {
 				var role = server.roles.find('name', 'Tester');
 			
 				if (server.roles.has('name', 'Tester')) {
-					console.log(' we have a tester!');
+					debugPrint(' we have a tester!');
 				}
 				
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
@@ -1739,7 +1778,7 @@ spongeBot.bank = {
 				
 				bankroll[who] = START_BANK;
 				saveBanks();
-				console.log('New bankroll made for ' + who + ' via !bank.');
+				debugPrint('New bankroll made for ' + who + ' via !bank.');
 			} 
 		} else {
 			who = makeId(parms[0]);
@@ -1752,10 +1791,10 @@ spongeBot.bank = {
 			  ' for pointing it out. I\'ll reset it to ' + START_BANK);
 			bankroll[who] = START_BANK;
 			saveBanks();
-			console.log('Corrupted bankroll fixed for ' + who + ' via !bank.');
+			debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
 			  
 		} else {
-			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');	
+			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');
 			chSend(message, makeTag(who) + ' has ' + getStat(who, 'raffle', 'ticketCount') + ' :tickets: s.');	
 		}
 	},
@@ -1849,7 +1888,6 @@ spongeBot.delstat = {
 			}
 
 			if (!parms[3]) {
-				console.log(who + ', ' + game + ', ' + stat);
 				chSend(message, 'Deleting GAME ' + game + ' from USER ' + who);
 				delete gameStats[who][game];
 				return;
@@ -2010,7 +2048,7 @@ spongeBot.slots = {
 					rarity: slots.config.symbols[sym].rarity
 				});
 			}
-			console.log('.slots: First run, built symbol array.');
+			debugPrint('.slots: First run, built symbol array.');
 		};
 
 		var payTab = slots.config.payTable;
@@ -2233,7 +2271,7 @@ spongeBot.help = {
 			
 			if (!botStorage.fullHelp) {
 				// "cached" help doesn't exist, so build it...
-				console.log('!help: building help text for first time');
+				debugPrint('!help: building help text for first time');
 				botStorage.fullHelp = buildHelp();
 			} 
 			
@@ -2346,7 +2384,7 @@ spongeBot.say = {
 			}
 			BOT.channels.get(chan).send(parms);
 		} else {
-			console.log(message.author.id + ' tried to put words in my mouth!');
+			debugPrint(message.author.id + ' tried to put words in my mouth!');
 			auSend(message, 'I don\'t speak for just anyone.');
 		}
 	},
@@ -2615,9 +2653,7 @@ spongeBot.acro = {
 							winArr.push(i);
 						}
 					}
-				}
-
-				console.log('!acro: winArr = ' + winArr);
+				}			
 				
 				if (winner === false) {
 					chSend(message, 'Looks like no one won `!acro`. Sad!');
@@ -2739,9 +2775,6 @@ spongeBot.arch = {
 spongeBot.biglet = {
 	cmdGroup: 'miscellanous',
 	do: function(message, txt) {
-		
-		console.log(txt);
-		
 		if (txt === '') {
 			chSend(message, message.author + ', I have nothing to supersize.');
 			return;
@@ -2751,8 +2784,6 @@ spongeBot.biglet = {
 			chSend(message, message.author + ', message too big!');
 			return;
 		}
-		console.log(txt);
-		console.log(bigLetter(txt));
 		chSend(message, bigLetter(txt));
 	},
 	help: '`!biglet <message>` says your message back in big letters'
@@ -3126,7 +3157,7 @@ spongeBot.version = {
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-  console.log('Spongebot version ' + VERSION_STRING + ' READY!');
+  debugPrint('Spongebot version ' + VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(SPAMCHAN_ID).send('I live!');}
   loadBanks();
@@ -3147,7 +3178,7 @@ BOT.on('message', message => {
 		parms = parms.slice(1); // remove leading space
 		
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			console.log('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			debugPrint('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
 				if (spongeBot[theCmd].access) {
@@ -3156,14 +3187,26 @@ BOT.on('message', message => {
 						chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
-						spongeBot[theCmd].do(message, parms);
+						// missing spongebot.command.do
+						if (!spongeBot[theCmd].hasOwnProperty('do')) {
+							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							  ', ignoring limited-access command !' + theCmd);
+						} else {
+							// all good, run it
+							spongeBot[theCmd].do(message, parms);
+						}
 					}
 				} else {
 					
 					if (message.author.bot) {
-						console.log('Blocked a bot-to-bot !command.');
-					} else {	
-						spongeBot[theCmd].do(message, parms);
+						debugPrint('Blocked a bot-to-bot !command.');
+					} else {
+						if (!spongeBot[theCmd].hasOwnProperty('do')) {
+							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							  ', ignoring user command !' + theCmd);
+						} else {
+							spongeBot[theCmd].do(message, parms);
+						}
 					}
 				}
 			} else {
