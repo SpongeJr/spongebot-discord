@@ -1126,28 +1126,40 @@ spongeBot.loot = {
                 if (!found) {
                     chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
                 }
-            } else if (action === 'box' || action === 'boxes') {
-				chSend(message, message.author + ', here are the loot boxes that I have in stock.');
+            } else if (action === 'boxes') {
+				var reply = message.author + ', here are the loot boxes that I have in stock: ';
 				for (var box in loot.boxes) {
-					var desc = '\nThe `' + box + '` box';
-					var boxEntry = loot.boxes[box];
-					desc += '\nDescription: ' + boxEntry.description;
-					desc += '\nPrice: ' + boxEntry.price + ' credits';
-					desc += '\nContains ' + boxEntry.count + ' items from the following selection.';
-					
-					//List out the items
-					var itemTable = boxEntry.items;
-					for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
-						var itemEntry = itemTable[itemIndex];
-						desc += '\n' + itemEntry.emoji + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
-					}
-					chSend(message, desc);
+					reply += '`' + box + '`, ';
 				}
+			} else if(action === 'box') {
+				var boxName = args[1] || '';
+				if(boxName === '') {
+					chSend(message, message.author + ', which loot box would you like to learn more about?');
+					return;
+				}
+				for(var box in loot.boxes) {
+					if(box === boxName) {
+						var desc = 'The ' + box + ' box.';
+						desc += '\nDescription: ' + boxEntry.description;
+						desc += '\nPrice: ' + boxEntry.price + ' credits';
+						desc += '\nContains ' + boxEntry.count + ' items from the following selection.';
+
+						//List out the items
+						var itemTable = boxEntry.items;
+						for (var itemIndex = 0; itemIndex < itemTable.length; itemIndex++) {
+							var itemEntry = itemTable[itemIndex];
+							desc += '\n' + itemEntry.emoji + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
+						}
+						chSend(message, desc);
+						return;
+					}
+				}
+				chSend(message, makeTag(message.author.id) + ', unknown loot box');
 			}
            
         },
         help: '`!loot`: Buy a loot box and see what\'s inside!',
-		longHelp: 'Try `!loot unbox <name>` or `!loot boxes`.'
+		longHelp: 'Try `!loot unbox <name>`, `!loot boxes`, `loot box <name>`, etc.'
     }
 //-----------------------------------------------------------------------------
 spongeBot.roll = {
