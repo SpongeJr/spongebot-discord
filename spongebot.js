@@ -43,7 +43,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.99810001 hey look another minor fix ewrdftgvhbjnkml';
+const VERSION_STRING = '0.99810002';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -842,97 +842,106 @@ var collectTimer = function(message, who, command) {
 }
 //-----------------------------------------------------------------------------
 spongeBot.tree = {
-	subCmd : {
-		check: function(message) {
-			var who = message.author.id;
-			var now = new Date();
-			var timedCmd = spongeBot.tree.timedCmd;
-			var lastCol = alterStat(who, 'lastUsed', 'tree', 0);
-			var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
-			now = now.valueOf();
-			
-			if (checkTimer(message, who, 'tree')) {
-				chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
-				  ' with `!tree harvest` and get your goodies!');
-			} else {
-				percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
-				chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
-				'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
-				' in about ' + msToTime(nextCol - now));
-			}
-		},
-		harvest: function(message) {
-			var who = message.author.id;	
-			if (!collectTimer(message, who, 'tree')) {
-				// not time yet. since we used collectTimer();, the rejection message
-				// is automatic, and we can just return; here if we want
-				return;
-			} else {
-				// if we're here, it's time to collect, and collectTime has been updated to now
-				var messStr = '';
-				messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-				  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer! ';
-				addBank(who, tree.config.treeVal);
+	subCmd: {
+		check: {
+			do: function(message) {
+				var who = message.author.id;
+				var now = new Date();
+				var timedCmd = spongeBot.tree.timedCmd;
+				var lastCol = alterStat(who, 'lastUsed', 'tree', 0);
+				var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+				now = now.valueOf();
 				
-				//random saying extra bit on end: 
-				
-				// so we don't hurt the original
-				var sayings = JSON.stringify(tree.config.harvestMessages);
-				sayings = JSON.parse(sayings);
-
-				messStr += listPick(sayings);
-				chSend(message, messStr);
-					
-				//magic seeds ... (do nothing right now unfortunately) =(
-				//since I'm testing and will have them set common, we're calling them "regularSeeds"
-				if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
-					chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
-					'loot tree seed in your harvest! Looks useful! You save it.');
-					
-					alterStat(who, 'tree', 'regularSeeds', 1);
+				if (checkTimer(message, who, 'tree')) {
+					chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
+					  ' with `!tree harvest` and get your goodies!');
+				} else {
+					percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
+					chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
+					'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
+					' in about ' + msToTime(nextCol - now));
 				}
-
-				//raffle ticket! DOES award, be careful with rarity!
-				if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
-					chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
-					':tickets: fell out of the tree! (`!giveways` for more info.)');
-					alterStat(who, 'raffle', 'ticketCount', 1);
-				}
-			}
+			},
 		},
-		tend: function(message) {
-			//var fruit = getStat(message.author.id, tree, ...
-			var who = message.author.id;
-			if (tree.trees.hasOwnProperty(who)) {
-				var fruit = tree.trees[who];
-				
-				// tend to each Fruit
-				var fruitMess = '';
-				for (var i = 0; i < fruit.length; i++) {
-					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
-					if (ageIt) {fruit[i].age();}
+		harvest: {
+			do: function(message) {
+				var who = message.author.id;	
+				if (!collectTimer(message, who, 'tree')) {
+					// not time yet. since we used collectTimer();, the rejection message
+					// is automatic, and we can just return; here if we want
+					return;
+				} else {
+					// if we're here, it's time to collect, and collectTime has been updated to now
+					var messStr = '';
+					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
+					  makeTag(who) +  ' walks away ' + tree.config.treeVal + ' credits richer! ';
+					addBank(who, tree.config.treeVal);
+					
+					//random saying extra bit on end: 
+					
+					// so we don't hurt the original
+					var sayings = JSON.stringify(tree.config.harvestMessages);
+					sayings = JSON.parse(sayings);
+
+					messStr += listPick(sayings);
+					chSend(message, messStr);
 						
-					fruitMess += 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
-					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
-					if (ageIt) {fruitMess += ' (tended)';}
-					fruitMess += '\n';
+					//magic seeds ... (do nothing right now unfortunately) =(
+					//since I'm testing and will have them set common, we're calling them "regularSeeds"
+					if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
+						chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
+						'loot tree seed in your harvest! Looks useful! You save it.');
+						
+						alterStat(who, 'tree', 'regularSeeds', 1);
+					}
+
+					//raffle ticket! DOES award, be careful with rarity!
+					if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
+						chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
+						':tickets: fell out of the tree! (`!giveways` for more info.)');
+						alterStat(who, 'raffle', 'ticketCount', 1);
+					
+					}
 				}
-				chSend(message, fruitMess);
-			} else {
-				chSend(message, 'I see no trees you can tend to.');
 			}
 		},
-		pick: function(message) {
-			var who = message.author.id;
-			if (tree.trees.hasOwnProperty(who)) {
-				var fruit = tree.trees[who];
-			
-				// .pick() each Fruit
-				var pickMess = '';
-				for (var i = 0; i < fruit.length; i++) {
-					pickMess += fruit[i].pick(message) + '\n';
+		tend: {
+			do: function(message) {
+				//var fruit = getStat(message.author.id, tree, ...
+				var who = message.author.id;
+				if (tree.trees.hasOwnProperty(who)) {
+					var fruit = tree.trees[who];
+					
+					// tend to each Fruit
+					var fruitMess = '';
+					for (var i = 0; i < fruit.length; i++) {
+						ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
+						if (ageIt) {fruit[i].age();}
+							
+						fruitMess += 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
+						'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
+						if (ageIt) {fruitMess += ' (tended)';}
+						fruitMess += '\n';
+					}
+					chSend(message, fruitMess);
+				} else {
+					chSend(message, 'I see no trees you can tend to.');
 				}
-				chSend(message, pickMess);
+			}
+		},
+		pick: {
+			do: function(message) {
+				var who = message.author.id;
+				if (tree.trees.hasOwnProperty(who)) {
+					var fruit = tree.trees[who];
+				
+					// .pick() each Fruit
+					var pickMess = '';
+					for (var i = 0; i < fruit.length; i++) {
+						pickMess += fruit[i].pick(message) + '\n';
+					}
+					chSend(message, pickMess);
+				}
 			}
 		}
 	},
@@ -963,7 +972,7 @@ spongeBot.tree = {
 		
 		if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
 			//we've found a found sub-command, so do it...
-			spongeBot.tree.subCmd[parms[0]](message);
+			spongeBot.tree.subCmd[parms[0]].do(message);
 		} else {
 			chSend(message, 'What are you trying to do to that tree?!');
 		}
@@ -1381,8 +1390,10 @@ spongeBot.s = {
 spongeBot.scram = {
 	cmdGroup: 'Fun and Games',
 	subCmd: {
-		config: function(message, parms) {
-			chSend(message, 'can\'t config scram right now');
+		config: {
+			do: function(message, parms) {
+				chSend(message, 'can\'t config scram right now');
+			}
 		}
 	},
 	do: function(message, parms) {
@@ -1400,7 +1411,7 @@ spongeBot.scram = {
 			parms[0] = parms[0].toLowerCase();
 			if (spongeBot.scram.subCmd.hasOwnProperty(parms[0])) {
 				//we've found a found sub-command, so do it...
-				spongeBot.scram.subCmd[parms[0]](message, parms);
+				spongeBot.scram.subCmd[parms[0]].do(message, parms);
 				return; // we're done here
 			}
 			// ignore non-sub-command extra stuff they type
