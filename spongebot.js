@@ -2628,7 +2628,7 @@ spongeBot.acro = {
 		}
 	}, timeAllowed * 1000);},
 	help:	'`!acro`: Starts up the acronym game. Set custom options with the format `<parameter>:<argument>`, where' +
-		'where parameter is one of `letters`, `table`, `length`, `playtime`, or `category` and `<argument>` is the ' +
+		' parameter is one of `letters`, `table`, `length`, `playtime`, or `category` and `<argument>` is the ' +
 		'value that you want to assign to that parameter.',
 	longHelp:	'`!acro`: Starts up the acronym game. Set custom options with the format `<parameter>:<argument>`, where' +
 			'where parameter is one of `letters`, `table`, `length`, `playtime`, or `category`, and `<argument>` is the ' +
