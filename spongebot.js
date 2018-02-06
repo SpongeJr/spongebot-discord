@@ -43,7 +43,7 @@ const MAINCHAN_ID = "402126095056633863";
 const SPAMCHAN_ID = "402591405920223244";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9981';
+const VERSION_STRING = '0.99810001';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -2412,8 +2412,8 @@ spongeBot.acro = {
 		var acroLen = 3 + Math.floor(Math.random() * 3);
 		var table = '';
 		
-		for(var flag in parms) {
-			var parts = flag.split(':');
+		for(var i = 0; i < parms.length; i++) {
+			var parts = parms[i].split(':');
 			var parameter = parts[0];
 			var argument = parts[1];
 			if(!parameter || !argument) {
