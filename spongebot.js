@@ -2413,6 +2413,9 @@ spongeBot.acro = {
 		var table = '';
 		
 		for(var i = 0; i < parms.length; i++) {
+			if(parms[i] === '') {
+				continue;
+			}
 			var parts = parms[i].split(':');
 			var parameter = parts[0];
 			var argument = parts[1];
