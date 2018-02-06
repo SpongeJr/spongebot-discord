@@ -1000,7 +1000,7 @@ spongeBot.loot = {
 				return;
 			} else */
 			if (args === '') {
-                chSend(message, 'Try `!loot unbox <name>` or `!loot boxes`.');
+                chSend(message, 'Try `!loot unbox <name>`, `!loot boxes`, `!loot box <name>`.');
                 return;
             }
 
