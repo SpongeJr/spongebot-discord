@@ -2437,6 +2437,8 @@ spongeBot.acro = {
 				//Check alphabetic only
 				if(/^[a-z]+$/.test(argument)) {
 					letters = argument;
+					//Update acroLen
+					acroLen = letters.length;
 				} else {
 					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
 				}
