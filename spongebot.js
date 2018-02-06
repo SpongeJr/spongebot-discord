@@ -50,6 +50,7 @@ const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon
   '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
 var spongeBot = {};
+var story = '';
 //-----------------------------------------------------------------------------
 var acro = {
 	runState: false,
@@ -966,6 +967,12 @@ spongeBot.tree = {
 		} else {
 			chSend(message, 'What are you trying to do to that tree?!');
 		}
+	}
+}
+spongeBot.z = {
+	do: function(message, parms) {
+		story += parms + ' ';
+		chSend(message, '```' + story + '```');
 	}
 }
 spongeBot.loot = {
