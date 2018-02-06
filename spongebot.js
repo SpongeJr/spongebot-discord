@@ -1131,6 +1131,7 @@ spongeBot.loot = {
 				for (var box in loot.boxes) {
 					reply += '`' + box + '`, ';
 				}
+				chSend(message, reply);
 			} else if(action === 'box') {
 				var boxName = args[1] || '';
 				if(boxName === '') {
