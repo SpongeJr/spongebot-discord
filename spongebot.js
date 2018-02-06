@@ -2438,9 +2438,9 @@ spongeBot.acro = {
 		var table = '';
 		
 		for(var flag in parms) {
-			flag = flag.split(':');
-			var parameter = flag[0];
-			var argument = flag[1];
+			var parts = flag.split(':');
+			var parameter = parts[0];
+			var argument = parts[1];
 			if(!parameter || !argument) {
 				if(!parameter && !argument) {
 					chSend(message, makeTag(message.author.id) + ', missing parameter and argument');
@@ -2450,6 +2450,7 @@ spongeBot.acro = {
 				} else if(!argument) {
 					chSend(message, makeTag(message.author.id) + ', missing argument');
 				}
+				return;
 			}
 			parameter = parameter.toLowerCase();
 			if(parameter === 'letters') {
@@ -2463,16 +2464,25 @@ spongeBot.acro = {
 			} else if(parameter === 'table') {
 				if(/^[a-zA-Z]+$/.test(argument)) {
 					table = argument;
+				} else {
+					chSend(message, makeTag(message.author.id) + ', invalid table argument');
 				}
 			} else if(parameter === 'playtime') {
 				timeAllowed = parseInt(argument);
+				if(!timeAllowed) {
+					chSend(message, makeTag(message.author.id) + ', invalid playtime argument');
+				}
 			} else if(parameter === 'length') {
 				var argument = parseInt(argument);
 				if(argument) {
 					acroLen = argument;
+				} else {
+					chSend(message, makeTag(message.author.id) + ', invalid length argument');
 				}
 			} else if(parameter === 'category') {
 				category = argument;
+			} else {
+				chSend(message, makeTag(message.author.id) + ', unknown parameter');
 			}
 		}
 		//Check if we have a custom category before assigning one
