@@ -2413,6 +2413,9 @@ spongeBot.acro = {
 		var table = '';
 		
 		for(var i = 0; i < parms.length; i++) {
+			if(parms[i] === '') {
+				continue;
+			}
 			var parts = parms[i].split(':');
 			var parameter = parts[0];
 			var argument = parts[1];
@@ -2428,16 +2431,17 @@ spongeBot.acro = {
 				return;
 			}
 			parameter = parameter.toLowerCase();
+			argument = argument.toLowerCase();
 			if(parameter === 'letters') {
 				//https://stackoverflow.com/questions/23476532/check-if-string-contains-only-letters-in-javascript
 				//Check alphabetic only
-				if(/^[a-zA-Z]+$/.test(argument)) {
+				if(/^[a-z]+$/.test(argument)) {
 					letters = argument;
 				} else {
 					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
 				}
 			} else if(parameter === 'table') {
-				if(/^[a-zA-Z]+$/.test(argument)) {
+				if(/^[a-z]+$/.test(argument)) {
 					table = argument;
 				} else {
 					chSend(message, makeTag(message.author.id) + ', invalid table argument');
