@@ -906,7 +906,7 @@ spongeBot.tree = {
 					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
 					if (ageIt) {fruit[i].age();}
 						
-					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' fruit[i].stats.name + 
+					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + ' ' + fruit[i].stats.name + 
 					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
 					if (ageIt) {fruitMess += ' (tended)';}
 					chSend(message, fruitMess);	
