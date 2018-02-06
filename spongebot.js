@@ -87,19 +87,25 @@ var acro = {
 		'technology and science', 'memes and fads', 'fantasy', 'general/any'
 	]
 };
+var listPick = function(theList) {
+	// takes Array, returns a random element destructively pulled from it
+	var choice = Math.random() * theList.length;
+	return theList.splice(choice, 1);
+};
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
 		ticketRarity: how rare (really) tickets are, as in 1 in this value chance
 		magicSeedRarity: how rare seeds are, as above (1000 means 1/1000 chance)
 		harvestMessages: [] Array of strings of things that might be said during harvesting
 */
+//-----------------------------------------------------------------------------
 var Fruit = function(stats) {
 	this.stats = {};
 	this.stats.ripeness = stats.ripeness || 0;
 	this.stats.name = stats.name || 'A loot fruit bud';
 	this.stats.valueMult = stats.valueMult || 0
 	this.stats.special = {},
-	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled']
+	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
 	  + ' ' + listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
 Fruit.prototype.pick = function(message) {
@@ -600,12 +606,6 @@ var makeBankFile = function(bankdata) {
 	return theFile;
 };
 //-----------------------------------------------------------------------------
-var listPick = function(theList) {
-	// takes Array, returns a random element destructively pulled from it
-	var choice = Math.random() * theList.length;
-	return theList.splice(choice, 1);
-};
-//-----------------------------------------------------------------------------
 var makeId = function(inp) {
 	// strips out the first <@! and > in a string
 	// if you send it a string that is alread legit id, it won't be harmed
@@ -906,7 +906,7 @@ spongeBot.tree = {
 					ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
 					if (ageIt) {fruit[i].age();}
 						
-					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.name + 
+					fruitMess = 'Fruit #' + i + ': ' + fruit[i].stats.color + fruit[i].stats.name + 
 					'  Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
 					if (ageIt) {fruitMess += ' (tended)';}
 					chSend(message, fruitMess);	
