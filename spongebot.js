@@ -3075,6 +3075,7 @@ spongeBot.hangman = {
 				hangman.active = true;
 				utils.chSend(message, utils.makeTag(message.author.id) + ' has taken a random person for hostage and has threatened to hang the hostage unless someone guesses the secret password! The hostage has promised a reward of ' + hangman.reward + ' credits to whoever reveals the correct answer!');
 				utils.chSend(message, 'Answer: `' + hangman.display + '`');
+				utils.chSend(message, 'Hint: ' + hangman.hint);
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', a game of hangman is already running');
 			}
@@ -3118,29 +3119,31 @@ spongeBot.hangman = {
 			}
 			hangman.display = nextDisplay;
 			hangman.characters.push(character);
-			utils.chSend(message, 'Answer: `' + hangman.display + '`');
 			if(found > 0) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', you have found ' + found + ' instances of ' + character.toUpperCase() + ' in the answer.');
+				utils.chSend(message, 'Answer: `' + hangman.display + '`');
 				//Check if we already revealed the answer
 				for(var i = 0; i < hangman.answer.length; i++) {
 					if(hangman.answer.charAt(i).toLowerCase() !== hangman.display.charAt(i).toLowerCase()) {
 						return;
 					}
 				}
-				hangman.active = false;
+				
 				utils.chSend(message, utils.makeTag(message.author.id) + ' has completed the answer!');
 				utils.chSend(message, utils.makeTag(message.author.id) + ' wins ' + hangman.reward + ' credits!');
 				utils.addBank(message.author.id, hangman.reward, bankroll);
+				hangman.active = false;
 				return;
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', you have found 0 instances of ' + character.toUpperCase() + ' in the answer.');
+				utils.chSend(message, 'Answer: `' + hangman.display + '`');
 				hangman.chances--;
 				if(hangman.chances < 1) {
 					utils.chSend(message, 'The hangman has died! Game over!');
 					utils.chSend(message, utils.makeTag(message.author.id) + ', think about what you have done! The hangman is now dead because of you!');
 					hangman.active = false;
 				} else {
-					utils.chSend(hangman.chances + ' chances remain!');
+					utils.chSend(message, hangman.chances + ' chances remain!');
 				}
 			}
 		} else if(action === 'answer') {
@@ -3148,9 +3151,10 @@ spongeBot.hangman = {
 			if(answer === '') {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', what? Cat got your tongue? If you have an answer, then speak!');
 			} else if(answer.toLowerCase() === hangman.answer) {
-				utils.chSend(message, utils.makeTag(message.author.id) + ' speaks the correct answer and saved the day!');
+				utils.chSend(message, utils.makeTag(message.author.id) + ' speaks the correct answer and saves the day!');
 				utils.chSend(message, utils.makeTag(message.author.id) + ' wins ' + hangman.reward + ' credits!');
 				utils.addBank(message.author.id, hangman.reward, bankroll);
+				hangman.active = false;
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', that is not the correct answer!');
 				hangman.chances--;
