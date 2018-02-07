@@ -22,10 +22,10 @@ IN THE SOFTWARE.
 */
 
 const Discord = require('discord.js');
+const cons = require('./lib/constants.js');
 const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
-const SCRAMWORDS = require('../data/scramwords.json');
-const ESO_SCRAMWORDS = require('../data/esowords.json'); // Temporary. Elder Scrolls Online words for side project
+
 const BOT = new Discord.Client();
 
 const FS = require('fs');
@@ -40,7 +40,6 @@ const ONE_HOUR = 3600000;
 
 const FRUIT_VAL = 300; // temporary!
 
-
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
@@ -48,19 +47,19 @@ const SPAMCHAN_ID = "402591405920223244";
 const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9984';
+const VERSION_STRING = '0.9984m03';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
   '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
 //-----------------------------------------------------------------------------
-var debugMode = true;
-var enableDebugChan = true;
-var autoEmbed = false;
 var spongeBot = {};
 var story = '';
 //-----------------------------------------------------------------------------
-// var iFic = require('../games/ific.js');
+//  MODULES
+//-----------------------------------------------------------------------------
+var utils = require('./lib/utils.js');
+var iFic = require('./games/ific.js');
 //-----------------------------------------------------------------------------
 var acro = {
 	runState: false,
@@ -184,8 +183,8 @@ var tree = {
 }
 var scram = {};
 var scramWordLists = {
-	"278588293321326594": ESO_SCRAMWORDS,
-	"402126095056633859": SCRAMWORDS
+	"278588293321326594": cons.ESO_SCRAMWORDS,
+	"402126095056633859": cons.SCRAMWORDS
 };
 // these should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
 // note: make sure wordDelay - wordDelayVariation > guessTime to prevent overlap!
@@ -414,31 +413,14 @@ var loot = {
         }
     };
 //-----------------------------------------------------------------------------
-var debugPrint = function(inpString){
-	// throw away that old console.log and try our brand new debugPrint!
-	// can add all sorts of goodies here, like sending output to a Discord chan or DN
-	// for now, just checks if the global debugMode is true. If it isn't,
-	// doesn't output, just returns
-	
-	if (debugMode) {
-		console.log(inpString);
-		if (enableDebugChan) {
-			if ((inpString !== '') && (typeof inpString === 'string')) {
-				// todo: rate limiter?
-				if (inpString.length < 1024) { 
-					BOT.channels.get(DEBUGCHAN_ID).send(inpString);
-				}
-			}
-		}
-	}
-};
+
 var makeStatFile = function() {
 	var theFile = JSON.stringify(gameStats);
 	return theFile;
 };
 var parseStatFile = function() {
 	var outp = JSON.parse(botStorage.statloaddata);
-	debugPrint(outp);
+	utils.debugPrint(outp);
 	return outp;
 };
 var loadStats = function() {
@@ -451,7 +433,7 @@ var loadStats = function() {
 				for (var i = 0; i < chunk.length; i++) {
 					botStorage.statloaddata += String.fromCharCode(chunk[i]);
 				};
-				debugPrint('  !loadStats: Data chunk loaded.');
+				utils.debugPrint('  !loadStats: Data chunk loaded.');
 			}
 		})
 		.on('end', function() {
@@ -468,7 +450,7 @@ var saveStats = function(filename) {
 	var writeStream = FS.createWriteStream(filename, {autoClose: true});
 	writeStream.write(makeStatFile(gameStats));
 	writeStream.end(function() {
-		debugPrint(' Game stats saved to: ' + filename);
+		utils.debugPrint(' Game stats saved to: ' + filename);
 	});
 };
 var getStat = function(who, game, stat) {
@@ -478,7 +460,7 @@ var getStat = function(who, game, stat) {
 	// otherwise, returns the stat as stored on gameStats
 	
 	who = makeId(who);
-	debugPrint(who);
+	utils.debugPrint(who);
 	
 	if (!gameStats.hasOwnProperty(who)) {
 		return; // user doesn't exist
@@ -527,7 +509,7 @@ var incStat = function(who, game, stat) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		debugPrint('!incStat: Made a new ' + game + ' stat for ' + who);
+		utils.debugPrint('!incStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat]++;
@@ -551,7 +533,7 @@ var setStat = function(who, game, stat, amt) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
+		utils.debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat] = parseInt(amt);
@@ -575,7 +557,7 @@ var alterStat = function(who, game, stat, amt) {
 	
 	if (!gameStats[who][game].hasOwnProperty(stat)) {
 		gameStats[who][game][stat] = 0;
-		debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
+		utils.debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
 	}
 	
 	gameStats[who][game][stat] += parseInt(amt);
@@ -603,7 +585,7 @@ var loadBanks = function() {
 				for (var i = 0; i < chunk.length; i++) {
 					botStorage.bankloaddata += String.fromCharCode(chunk[i]);
 				};
-				debugPrint('  !loadBanks: Data chunk loaded.');
+				utils.debugPrint('  !loadBanks: Data chunk loaded.');
 			}
 		})
 		.on('end', function() {
@@ -620,19 +602,19 @@ var saveBanks = function(filename) {
 	var writeStream = FS.createWriteStream(filename, {autoClose: true});
 	writeStream.write(makeBankFile(bankroll));
 	writeStream.end(function() {
-		debugPrint(' Banks saved to: ' + filename);
+		utils.debugPrint(' Banks saved to: ' + filename);
 	});
 };
 var addBank = function(who, amt) {
 	
 	if (!BOT.users.get(who)) {
-		debugPrint('addBank: nonexistent user: ' + who);
+		utils.debugPrint('addBank: nonexistent user: ' + who);
 		return false;
 	}
 	
 	if (!bankroll.hasOwnProperty(who)) {
 		bankroll[who] = START_BANK;
-		debugPrint('addBank: New bankroll made for ' + who);
+		utils.debugPrint('addBank: New bankroll made for ' + who);
 	}
 	
 	bankroll[who] += parseInt(amt);
@@ -736,78 +718,7 @@ toppings = toppings.split(",");
 	return sammich;
 }
 //-----------------------------------------------------------------------------
-var chSend = function(message, str, emb) {
-	
-	// temporary stuff
-	if (typeof message === 'undefined') {
-		debugPrint('chSend: message is undefined!');
-		return
-	}
-	
-	if (!message.hasOwnProperty('author')) {
-		debugPrint('chSend: No .author property on message!');
-		return;
-	}
-	
-	if (!message.author.hasOwnProperty('bot')) {
-		debugPrint('chSend: no .bot property on message.author!');
-		return;
-	}
-	
-	if (message.author.bot) {
-		debugPrint(' -- Blocked a bot-to-bot m.channel.send');
-		return;
-	}
-	
-	if (autoEmbed) {
-		// turn all chSend() messages into emebed, if autoEmbed is on
-		if (typeof emb === 'undefined') {
-			emb = {"description": str}
-		}
-	}
-	
-	if (typeof emb !== 'undefined') {
-		// we have an embed, so use it
-		message.channel.send({embed: emb}).catch(reason => {
-			debugPrint('Error sending a channel message: ' + reason);
-		});
-	} else {	
-		// no embed, send standard message
-		message.channel.send(str).catch(reason => {
-			debugPrint('Error sending a channel message: ' + reason);
-		})
-	};
 
-};
-//-----------------------------------------------------------------------------
-var auSend = function(message, str) {
-	if (message.author.bot) {
-		debugPrint(' -- Blocked a bot-to-bot m.author.send');
-		return;
-	}
-	
-	message.author.send(str).catch(reason => {
-		debugPrint('Error sending a DM: ' + reason);
-	});
-}
-//-----------------------------------------------------------------------------
-var bigLetter = function(inp) {
-	var outp = '';
-	var ch = '';
-	for (var i = 0; i < inp.length; i++) {
-		ch = inp.charAt(i);
-		
-		if (ch === ' ') {
-			//TODO: figure out how to do the blank tile emoji
-			//outp += '<:blank:410757195836293120>';
-			outp += '____ ' ;
-		} else {
-			ch = ch.toLowerCase();
-			outp += ':regional_indicator_' + ch + ': ';
-		}
-	}	
-	return outp;
-};
 //-----------------------------------------------------------------------------
 var hasAccess = function(who, accessArr) {
 	return (who === SPONGE_ID || who === ARCH_ID);
@@ -846,7 +757,7 @@ var checkTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		utils.debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
 		//setStat(makeId(who), 'lastUsed', command, 0);
 		return true;
 	} else {
@@ -874,14 +785,14 @@ var collectTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		utils.debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
 		setStat(makeId(who), 'lastUsed', command, now);
 		return true;
 	} else {
 		var failStr;
 		if (!timedCmd.hasOwnProperty('failResponse')) {
 			failStr = 'Ya can\'t do that yet. ' + makeTag(message.author.id);
-			chSend(message, failStr);
+			utils.chSend(message, failStr);
 			return false;
 		} else {
 			failStr = timedCmd.failResponse
@@ -892,7 +803,7 @@ var collectTimer = function(message, who, command) {
 			  .replace('<<howOften>>', msToTime(timedCmd.howOften - timedCmd.gracePeriod))
 			  .replace('<<cmd>>', command);
 			  
-			chSend(message, failStr);
+			utils.chSend(message, failStr);
 			return false;
 		}
 	}
@@ -905,15 +816,15 @@ spongeBot.blank = {
 //-----------------------------------------------------------------------------
 spongeBot.debug = {
 	do: function(message) {
-		enableDebugChan = !enableDebugChan;
-		chSend(message, 'debugging to channel is: ' + enableDebugChan);
+		utils.enableDebugChan = !utils.enableDebugChan;
+		utils.chSend(message, 'debugging to channel is: ' + utils.enableDebugChan);
 	},
 	help: 'Toggles debugging to #debug-print on Planet Insomnia.'
 };
 spongeBot.embeds = {
 	do: function(message) {
-		autoEmbed = !autoEmbed;
-		chSend(message, 'automatic embeds to channel is: ' + autoEmbed);
+		utils.autoEmbed = !utils.autoEmbed;
+		utils.chSend(message, 'automatic embeds to channel is: ' + utils.autoEmbed);
 	},
 	help: 'Toggles automatic embeds'
 };
@@ -924,24 +835,29 @@ spongeBot.backup = {
 	do: function(message) {
 		saveBanks(BANK_BACKUP_FILENAME);
 		saveStats(STATS_BACKUP_FILENAME);
-		chSend(message, 'I ran the backups. Probably.');
-		debugPrint('!backup:  MANUALLY BACKED UP TO: `' + BANK_BACKUP_FILENAME +
+		utils.chSend(message, 'I ran the backups. Probably.');
+		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + BANK_BACKUP_FILENAME +
 		  '` and `' + STATS_BACKUP_FILENAME +  '`');
 	}
 };
 //-----------------------------------------------------------------------------
 spongeBot.z = {
+	v: {
+		story: 'Once upon a time... '
+	},
+	help: 'Use `!z` word to keep a story going.',
 	do: function(message, parms) {
-		story += parms + ' ';
-		chSend(message, '```' + story + '```');
+		v = spongeBot.z.v; // get vars
+		iFic.z.do(message, parms, v)
 	}
-}
+};
 spongeBot.zclear = {
 	do: function(message, parms) {
-		story = '';
-		chSend(message, '`Story cleared.`');
+		v = spongeBot.z.v; // get vars
+		iFic.zclear.do(message, parms, v)
+		spongeBot.z.v // update vars
 	}
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
@@ -961,6 +877,7 @@ spongeBot.collect = {
 			// if we're here, it's time to collect, and collectTime has been updated to now
 			var messStr =  ':moneybag: Loot bag `!collect`ed!  :moneybag:\n\n';
 			var collectVal = 12500;
+			var fruitBonus = 0;
 			
 			//small extra fruit bonus for now using loot tree code/formula (300 / fr.)
 			if (tree.trees.hasOwnProperty(who)) {
@@ -981,7 +898,7 @@ spongeBot.collect = {
 			var sayings = JSON.stringify(tree.config.harvestMessages);
 			sayings = JSON.parse(sayings);
 			messStr += listPick(sayings);
-			chSend(message, messStr);
+			utils.chSend(message, messStr);
 		}
 	}
 }
@@ -997,11 +914,11 @@ spongeBot.tree = {
 				now = now.valueOf();
 				
 				if (checkTimer(message, who, 'tree')) {
-					chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
+					utils.chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
 					  ' with `!tree harvest` and get your goodies!');
 				} else {
 					percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
-					chSend(message, ' The fruit on your tree is healthy, and looks to be ' +
+					utils.chSend(message, ' Your loot tree is healthy, and looks to be about ' +
 					'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
 					' in about ' + msToTime(nextCol - now));
 				}
@@ -1040,12 +957,12 @@ spongeBot.tree = {
 					sayings = JSON.parse(sayings);
 
 					messStr += listPick(sayings);
-					chSend(message, messStr);
+					utils.chSend(message, messStr);
 						
 					//magic seeds ... (do nothing right now unfortunately) =(
 					//since I'm testing and will have them set common, we're calling them "regularSeeds"
 					if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
-						chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
+						utils.chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
 						'loot tree seed in your harvest! Looks useful! You save it.');
 						
 						alterStat(who, 'tree', 'regularSeeds', 1);
@@ -1053,7 +970,7 @@ spongeBot.tree = {
 
 					//raffle ticket! DOES award, be careful with rarity!
 					if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
-						chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
+						utils.chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
 						':tickets: fell out of the tree! (`!giveways` for more info.)');
 						alterStat(who, 'raffle', 'ticketCount', 1);
 					
@@ -1078,9 +995,9 @@ spongeBot.tree = {
 						}
 						fruitMess += '\n';
 					}
-					chSend(message, fruitMess);
+					utils.chSend(message, fruitMess);
 				} else {
-					chSend(message, 'I see no fruit for you to check, ' + message.author +
+					utils.chSend(message, 'I see no fruit for you to check, ' + message.author +
 					  '\nI\'ll give you two starter fruit. You can !tree tend or !tree pick them' +
 					  ' at any time, for now.');
 					tree.trees[who] = [];
@@ -1113,9 +1030,9 @@ spongeBot.tree = {
 						}
 						fruitMess += '\n';
 					}
-					chSend(message, fruitMess);
+					utils.chSend(message, fruitMess);
 				} else {
-					chSend(message, 'I see no trees you can tend to.');
+					utils.chSend(message, 'I see no trees you can tend to.');
 				}
 			}
 		},
@@ -1130,7 +1047,7 @@ spongeBot.tree = {
 					for (var i = 0; i < fruit.length; i++) {
 						pickMess += fruit[i].pick(message) + '\n';
 					}
-					chSend(message, pickMess);
+					utils.chSend(message, pickMess);
 				}
 			}
 		}
@@ -1145,15 +1062,15 @@ spongeBot.tree = {
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 885000,
+		howOften: 3200000,
 		gracePeriod: 10000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
-		  'is nothing to harvest on it yet. It looks like it\'ll yield fruit in ' +
+		  'is nothing to harvest on it yet. It looks like it\'ll yield loot in ' +
 		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
 	do: function(message, parms) {
 		parms = parms.split(' ');		
 		if (parms[0] === '') {
-			chSend(message, 'Please see `!help tree` for help with your loot tree.');
+			utils.chSend(message, 'Please see `!help tree` for help with your loot tree.');
 			return;
 		}
 		
@@ -1163,7 +1080,7 @@ spongeBot.tree = {
 			//we've found a found sub-command, so do it...
 			spongeBot.tree.subCmd[parms[0]].do(message);
 		} else {
-			chSend(message, 'What are you trying to do to that tree?!');
+			utils.chSend(message, 'What are you trying to do to that tree?!');
 		}
 	}
 }
@@ -1183,11 +1100,11 @@ spongeBot.loot = {
 			// custom message is cool though, we should add that
 			/*
 			if ((message.author.id !== SPONGE_ID) && (message.author.id !== ARCH_ID)) {
-				chSend(' You must develop your shtyle further before using loot boxes!');
+				utils.chSend(' You must develop your shtyle further before using loot boxes!');
 				return;
 			} else */
 			if (args === '') {
-                chSend(message, 'Try `!loot unbox <name>`, `!loot boxes`, `!loot box <name>`.');
+                utils.chSend(message, 'Try `!loot unbox <name>`, `!loot boxes`, `!loot box <name>`.');
                 return;
             }
 
@@ -1195,7 +1112,7 @@ spongeBot.loot = {
             args = args.split(' ');
            	
 			if (args[0] === 'boxes' && args[1] === 'suck') {
-				chSend(message, 'But you gotta admit that they are *really* lucrative');
+				utils.chSend(message, 'But you gotta admit that they are *really* lucrative');
 				return;
 			}
 			
@@ -1204,32 +1121,32 @@ spongeBot.loot = {
                 var who = message.author.id;
  
                 if (!bankroll[who]) {
-                    chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
+                    utils.chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
                     return;
                 }
                 var boxName = args[1] || '';
  
                 if (boxName === '') {
-					chSend(message, message.author + ', what do you want to unbox?');
+					utils.chSend(message, message.author + ', what do you want to unbox?');
 					return;
 				} else if (boxName === 'nothing') {
-                    chSend(message, message.author + ', you can\'t unbox nothing.');
+                    utils.chSend(message, message.author + ', you can\'t unbox nothing.');
                     return;
                 } else if (boxName === 'it') {
-			   		chSend(message, message.author + ', do it yourself!');
+			   		utils.chSend(message, message.author + ', do it yourself!');
 					return;
 			   	} else if (boxName === 'yourself') {
-					chSend(message, message.author + ', okay then. ');
-					chSend(message, '*pelts ' + message.author + ' with a barrage of wrenches, screwdrivers, cogs, nails, washers, and other machine parts.*');
+					utils.chSend(message, message.author + ', okay then. ');
+					utils.chSend(message, '*pelts ' + message.author + ' with a barrage of wrenches, screwdrivers, cogs, nails, washers, and other machine parts.*');
 					return;
 				} else if (boxName === 'me') {
-					chSend(message, message.author + ', that would be extremely painful for you.');
+					utils.chSend(message, message.author + ', that would be extremely painful for you.');
 					return;
 				} else if (boxName === 'everything') {
-					chSend(message, message.author + ', that\'s impossible.');
+					utils.chSend(message, message.author + ', that\'s impossible.');
 					return;
 				} else if (args[1] === 'the' && args[2] === 'pod' && args[3] === 'bay' && args[4] === 'doors') {
-					chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
+					utils.chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
 					return;
 				}
                
@@ -1240,8 +1157,8 @@ spongeBot.loot = {
                         var price = loot.boxes[box].price;
 						var discountPercent = loot.discountPercent || 0;
 						/*
-						chSend(message, 'unboxing a ' + box);
-						chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
+						utils.chSend(message, 'unboxing a ' + box);
+						utils.chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
 						*/
 						
                         if (bankroll[who] >= price) {
@@ -1251,10 +1168,10 @@ spongeBot.loot = {
 							}	
 							
 							if (discountPercent > 0) {
-								chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price * (1 - discountPercent / 100) + ' credits,' +
+								utils.chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price * (1 - discountPercent / 100) + ' credits,' +
 								  ' and got a great deal since loot boxes are ' + discountPercent + '% off right now!');
 							} else {
-								chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
+								utils.chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
 							}
 							
                             addBank(who, -price * ( 1 - discountPercent / 100));
@@ -1302,27 +1219,27 @@ spongeBot.loot = {
                             }
                             resultMessage += '\nTotal Value: ' + valueTotal;
                             addBank(who, valueTotal);
-                            chSend(message, resultMessage);
+                            utils.chSend(message, resultMessage);
                         } else {
-                            chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
+                            utils.chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
                         }
                         return;
                     }
                 }
                
                 if (!found) {
-                    chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
+                    utils.chSend(message, message.author + ', you can\'t unbox something that doesn\'t exist.');
                 }
             } else if (action === 'boxes') {
 				var reply = message.author + ', here are the loot boxes that I have in stock: ';
 				for (var box in loot.boxes) {
 					reply += '`' + box + '`, ';
 				}
-				chSend(message, reply);
+				utils.chSend(message, reply);
 			} else if(action === 'box') {
 				var boxName = args[1] || '';
 				if(boxName === '') {
-					chSend(message, message.author + ', which loot box would you like to learn more about?');
+					utils.chSend(message, message.author + ', which loot box would you like to learn more about?');
 					return;
 				}
 				for(var box in loot.boxes) {
@@ -1339,11 +1256,11 @@ spongeBot.loot = {
 							var itemEntry = itemTable[itemIndex];
 							desc += '\n' + itemEntry.emoji + ' (chance: ' + itemEntry.rarity + '; value: ' + itemEntry.value + ')';
 						}
-						chSend(message, desc);
+						utils.chSend(message, desc);
 						return;
 					}
 				}
-				chSend(message, makeTag(message.author.id) + ', unknown loot box');
+				utils.chSend(message, makeTag(message.author.id) + ', unknown loot box');
 			}
            
         },
@@ -1356,7 +1273,7 @@ spongeBot.roll = {
 	do: function (message, parms){
 		
 		if (!parms) {
-			chSend(message, 'See `!help roll` for help.');
+			utils.chSend(message, 'See `!help roll` for help.');
 			return;
 		}
 		
@@ -1369,22 +1286,22 @@ spongeBot.roll = {
 			y = parseInt(y);
 			
 			if (x > 20) {
-				chSend(message, '`!roll`: No more than 20 dice please.');
+				utils.chSend(message, '`!roll`: No more than 20 dice please.');
 				return;
 			}
 			
 			if (x < 1) {
-				chSend(message, '`!roll`: Must roll at least one die.');
+				utils.chSend(message, '`!roll`: Must roll at least one die.');
 				return;
 			}
 			
 			if (y < 2) {
-				chSend(message, '`!roll`: Dice must have at least 2 sides.');
+				utils.chSend(message, '`!roll`: Dice must have at least 2 sides.');
 				return;
 			}
 			
 			if (y > 10000) {
-				chSend(message, '`!roll`: Max sides allowed is 10000.');
+				utils.chSend(message, '`!roll`: Max sides allowed is 10000.');
 				return;
 			}
 			
@@ -1402,9 +1319,9 @@ spongeBot.roll = {
 				total += roll;
 			}
 			str += '`\n' + x + 'd' + y + ' TOTAL: ' + total;
-			chSend(message, str);
+			utils.chSend(message, str);
 		} else {
-			chSend(message, 'Use `!roll `X`d`Y to roll X Y-sided dice.');
+			utils.chSend(message, 'Use `!roll `X`d`Y to roll X Y-sided dice.');
 		}
 	},
 	help: '`!roll <x>d<y>` rolls a `y`-sided die `x` times and gives results.',
@@ -1428,10 +1345,10 @@ spongeBot.rot13 = {
 			return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);});
 			
 		if (outp === '') {
-			chSend(message, message.author + ' nothing to ROT-13!');
+			utils.chSend(message, message.author + ' nothing to ROT-13!');
 			return false;
 		};
-		chSend(message, message.author + ': `' + outp + '`');
+		utils.chSend(message, message.author + ': `' + outp + '`');
     },
 	help: '`!rot13 <message>` spits back the ROT-13 ciphertext of your message.',
 	longHelp: '	You could use this in DM and then use the result in public chat if you were giving spoilers or something I guess.',
@@ -1441,14 +1358,14 @@ spongeBot.rot13 = {
 spongeBot.enable = {
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
-			chSend(message, 'Can\'t find command ' + parms + '!');
+			utils.chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
 		if (parms === 'enable') {
-			chSend(message, ':yodawg:');
+			utils.chSend(message, ':yodawg:');
 		}
 		spongeBot[parms].disabled = false;
-		chSend(message, parms + '.disabled: '
+		utils.chSend(message, parms + '.disabled: '
 		  + spongeBot[parms].disabled);
 	},
 	help: 'Enables a bot command. Restricted access.',
@@ -1457,17 +1374,17 @@ spongeBot.enable = {
 spongeBot.disable = {
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
-			chSend(message, 'Can\'t find command ' + parms + '!');
+			utils.chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
 		if (parms === 'disable') {
-			chSend(message, ':yodawg:');
+			utils.chSend(message, ':yodawg:');
 		} else if (parms === 'enable') {
-			chSend(message, 'Don\'t disable enable. Just don\'t.');
+			utils.chSend(message, 'Don\'t disable enable. Just don\'t.');
 			return;
 		}
 		spongeBot[parms].disabled = true;
-		chSend(message, parms + '.disabled: '
+		utils.chSend(message, parms + '.disabled: '
 		  + spongeBot[parms].disabled);
 	},
 	help: 'Disables a bot command. Restricted access.',
@@ -1478,11 +1395,11 @@ spongeBot.restrict = {
 	cmdGroup: 'Admin',
 	do: function(message, parms) {
 		if (!spongeBot[parms]) {
-			chSend(message, 'Can\'t find command ' + parms + '!');
+			utils.chSend(message, 'Can\'t find command ' + parms + '!');
 			return;
 		}
 		if (parms === 'restrict') {
-			chSend(message, ':yodawg: you can\'t !restrict .restrict');
+			utils.chSend(message, ':yodawg: you can\'t !restrict .restrict');
 			return;
 		}
 		
@@ -1491,7 +1408,7 @@ spongeBot.restrict = {
 		} else {
 			spongeBot[parms].access = false;
 		}
-		chSend(message, '`!' + parms + '` needs special access:  '
+		utils.chSend(message, '`!' + parms + '` needs special access:  '
 		  + spongeBot[parms].access);
 	},
 	help: ':warning: Toggles whether commands require special access.'
@@ -1504,14 +1421,14 @@ spongeBot.server = {
 		var server = message.guild;
 		
 		if (!server) {
-			auSend(message, ' Doesn\'t look like you sent me that message on _any_ server!');
+			utils.auSend(message, ' Doesn\'t look like you sent me that message on _any_ server!');
 			return;
 		}
 		
 		var str = ' You are on ' + server.name + ', which has the id: ' + 
 		  server.id + '. It was created on: ' + server.createdAt + '.';
 		
-		chSend(message, str);
+		utils.chSend(message, str);
 	},
 	help: 'Gives info about the server on which you send me the command.'
 }
@@ -1520,8 +1437,8 @@ spongeBot.showCode = {
 	do: function(message, parms) {
 		var theCode = spongeBot[parms];
 		
-		chSend(message, theCode);
-		debugPrint(theCode);
+		utils.chSend(message, theCode);
+		utils.debugPrint(theCode);
 	},
 	help: 'shows code.',
 	disabled: true
@@ -1533,7 +1450,7 @@ spongeBot.s = {
 		var server = message.guild;
 		
 		if (!server) {
-			auSend(message, 'The word scramble game is meant to be played in public, and '+
+			utils.auSend(message, 'The word scramble game is meant to be played in public, and '+
 			'not direct messages. Sorry! It\'s more fun with others, anyway!');
 			return;
 		}
@@ -1541,19 +1458,19 @@ spongeBot.s = {
 		parms = parms.toLowerCase();
 		
 		if (!scram.hasOwnProperty(server.id)) {
-			debugPrint('!s: No key ' + server.id + ' in scram variable! Someone probably ran !s before !scram.');
-			chSend(message, 'Please start `!scram` before guessing a scrambled word.');
+			utils.debugPrint('!s: No key ' + server.id + ' in scram variable! Someone probably ran !s before !scram.');
+			utils.chSend(message, 'Please start `!scram` before guessing a scrambled word.');
 			return;
 		}
 		
 		if (!scram[server.id].hasOwnProperty('runState')) {
-			debugPrint('!s: No key .runState in scram.' + server.id + ' Maybe someone ran !s before !scram.');
-			chSend(message, 'Please start `!scram` before guessing a scrambled word.');
+			utils.debugPrint('!s: No key .runState in scram.' + server.id + ' Maybe someone ran !s before !scram.');
+			utils.chSend(message, 'Please start `!scram` before guessing a scrambled word.');
 			return;
 		}
 		
 		if (scram[server.id].runState !== 'guessing') {
-			chSend(message, 'You can\'t guess the scrambled word now! ' +
+			utils.chSend(message, 'You can\'t guess the scrambled word now! ' +
 			  'You need to wait for a new word to unscramble!');
 			return;
 		}
@@ -1561,14 +1478,14 @@ spongeBot.s = {
 		if (parms === scram[server.id].word) {
 			scram[server.id].runState = 'gameover';
 			addBank(message.author.id, parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length));
-			chSend(message, message.author + ' just unscrambled ' +
+			utils.chSend(message, message.author + ' just unscrambled ' +
 			  ' the word and wins ' + parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!');
 			incStat(message.author.id, 'scram', 'wins');
 			
-			chSend(message, message.author + ' has now unscrambled ' +
+			utils.chSend(message, message.author + ' has now unscrambled ' +
 			  gameStats[message.author.id].scram.wins + ' words!');
 		} else {
-			//chSend(message, 'Not the word.');
+			//utils.chSend(message, 'Not the word.');
 		}
 	},
 	help: 'Use `!s <word>` to submit a guess in the `!scram` '
@@ -1580,7 +1497,8 @@ spongeBot.scram = {
 	subCmd: {
 		config: {
 			do: function(message, parms) {
-				chSend(message, 'can\'t config scram right now');
+				console.log(cons.SCRAMWORDS);
+				utils.chSend(message, 'can\'t config scram right now');
 			}
 		}
 	},
@@ -1589,7 +1507,7 @@ spongeBot.scram = {
 		var server = message.guild;
 		
 		if (!server) {
-			auSend(message, 'The word scramble game is meant to be played in public, and '+
+			utils.auSend(message, 'The word scramble game is meant to be played in public, and '+
 			'not direct messages. Sorry! It\'s more fun with others, anyway!');
 			return;
 		}
@@ -1607,7 +1525,7 @@ spongeBot.scram = {
 		
 		if (!scram.hasOwnProperty(server.id)) {
 			// key doesn't exist for this server, so init
-			debugPrint('!scram: Adding instance for ' + server.id + ' ('
+			utils.debugPrint('!scram: Adding instance for ' + server.id + ' ('
 			  + server.name + ')');
 			scram[server.id] = {};
 			scram[server.id].announce = true;
@@ -1621,7 +1539,7 @@ spongeBot.scram = {
 				wordList = scramWordLists[server.id];
 			} else {
 				// use default list
-				wordList = SCRAMWORDS;
+				wordList = cons.SCRAMWORDS;
 			}
 			var keys = Object.keys(wordList);
 			var theCat = keys[parseInt(Math.random() * keys.length)];
@@ -1630,8 +1548,13 @@ spongeBot.scram = {
 			
 			scram[server.id].word = theWord;		
 			var scramWord = scrambler(theWord);
-			debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
-			chSend(message, 'Unscramble this: ' + bigLetter(scramWord) + 
+			utils.debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
+			/*
+			utils.chSend(message, 'Unscramble this: ' + utils.bigLet(scramWord) + 
+			  '   *Category*: ' + theCat);
+			*/
+			  
+			utils.chSend(message, 'Unscramble this: ' + utils.bigLet(scramWord) + 
 			  '   *Category*: ' + theCat);
 			  
 			var theDelay = parseInt(scramConfig.wordDelay - (scramConfig.wordDelayVariation / 2) +
@@ -1643,27 +1566,27 @@ spongeBot.scram = {
 			theMess += 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
 			  parseInt(theDelay / 1000) + ' seconds.'
-			chSend(message, theMess);
+			utils.chSend(message, theMess);
 			scram[server.id].runState = 'guessing';
 			
 			scram[server.id].timer = setTimeout(function() {
 				if (scram[server.id].runState !== 'ready') {
 					scram[server.id].runState = 'ready';
 					if (scram[server.id].announce) {
-						chSend(message, 'There\'s a new `!scram` word ready!');
+						utils.chSend(message, 'There\'s a new `!scram` word ready!');
 					}
 				}
 			}, theDelay);
 			
 			scram[server.id].guessTimer = setTimeout(function() {
 				if (scram[server.id].runState === 'guessing') {
-					chSend(message, 'The `!scram` word was not guessed' +
+					utils.chSend(message, 'The `!scram` word was not guessed' +
 					' in time! The word was: ' + scram[server.id].word);
 					scram[server.id].runState = 'gameover';
 				}
 			}, guessTime);
 		} else {
-			chSend(message, '`!scram` is not ready just yet.');
+			utils.chSend(message, '`!scram` is not ready just yet.');
 		}
 	},
     help: '`!scram` starts the scramble game or checks to see if it\'s ready',
@@ -1675,14 +1598,14 @@ spongeBot.ttc = {
 	do: function(message, parms) {
 		
 		if (!parms) {
-			chSend(message, 'To look up an item on Tamriel Trade Centre (EU/PC), just use `!ttc <item>`.' +
+			utils.chSend(message, 'To look up an item on Tamriel Trade Centre (EU/PC), just use `!ttc <item>`.' +
 			  '\nUse an exact item name, or you can search for partial matches.');
 			return;
 		}
 		var theLink = 'https://eu.tamrieltradecentre.com/pc/Trade/SearchResult?ItemNamePattern='
 		parms = parms.replace(/ /g, '+');
 		theLink += parms + '&SortBy=Price&Order=asc';
-		chSend(message, theLink);
+		utils.chSend(message, theLink);
 	},
 	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
 	  + ' Use an exact item name, or you can search for partial matches.'
@@ -1693,10 +1616,13 @@ spongeBot.giveaways = {
 	do: function(message, parms) {
 		
 		if (!parms) {
-			chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n ' +
-			' FLASH GIVEAWAY NOTICE: Sponge has 2 raffle tickets. Sponge can\'t win raffles. Sponge will be giving away ' +
-			' both tickets in the #giveaways chan tonight, Feb. 2 between the hours of 1900 and 2300 EST. That\'s all I know.');
-			chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
+			utils.chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n ' +
+			' **OFFICIAL GIVEAWAY NOTICE** The next (ok, also the first) giveaway will be on: ' +
+			' Friday Feb. 9 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +
+			' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
+			' There will be _two_ winners who can pick any one item from `!giveaways list`, and several ' +
+			' smaller prizes (probably credits and tickets for the next raffle).');
+			utils.chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
 			' Items listed there will be options  you can pick if you win a weekly raffle. ' +
 			' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
 			' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
@@ -1721,7 +1647,7 @@ spongeBot.giveaways = {
 			}
 
 			str += '\n List subject to change.';
-			chSend(message, str);
+			utils.chSend(message, str);
 		}
 		
 		if (parms[0] === 'info') {
@@ -1732,15 +1658,15 @@ spongeBot.giveaways = {
 				str += giveaways[parms].info.description + '\n';
 				str += ' **Category**: ' + (giveaways[parms].type || '(none)');
 				str += '   **More info**: ' + giveaways[parms].info.infoUrl;
-				chSend(message, str);
+				utils.chSend(message, str);
 			} else {
-				chSend(message, 'Couldn\'t find any info for that giveaway, ' + message.author +
+				utils.chSend(message, 'Couldn\'t find any info for that giveaway, ' + message.author +
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
 		} else if (parms[0] === 'addrole') {
 			/*
 			if (!message.hasOwnProperty('guild')) {
-				chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server not in DM, ' +
+				utils.chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server not in DM, ' +
 				'because I don\'t know where to give you the giveaways role otherwise!');
 				return;
 			}
@@ -1749,29 +1675,29 @@ spongeBot.giveaways = {
 			var role = message.guild.roles.find('name', 'giveaways');
 			
 			if (message.member.roles.has('408789879590354944')) {
-				debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
-				chSend(message, message.author + ' I think you already had that role.');
+				utils.debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
+				utils.chSend(message, message.author + ' I think you already had that role.');
 			} else {
 				message.member.addRole(role);
-				chSend(message, message.author + ', I\'ve given you the `giveaways` role. ' + 
+				utils.chSend(message, message.author + ', I\'ve given you the `giveaways` role. ' + 
 				' You might be pinged at any time of day for giveaways, raffles, and related announcements and info.' +
 				'\n If something went wrong, you don\'t have the role, or you didn\'t really want it, please ping ' +
 				' <@167711491078750208> to sort it out. And... good luck in the giveaways!');
-				chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
+				utils.chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
 				  alterStat(message.author.id, 'raffle', 'ticketCount', 1) + ' raffle tickets!');
 			}
 		} else if (parms[0] === 'whohasrole') {
-			chSend(message, 'Don\'t even.');
+			utils.chSend(message, 'Don\'t even.');
 			/*
 			var whoHas = message.guild.roles.get('408789879590354944').members;
-			chSend(message, 'These are the ' + whoHas.size + ' members with the giveaways role: ');
+			utils.chSend(message, 'These are the ' + whoHas.size + ' members with the giveaways role: ');
 			
 			var whoStr = ''
 			for (var who of whoHas.keys()) {
 				whoStr += makeTag(who) + '   ';
-				debugPrint(who);
+				utils.debugPrint(who);
 			}
-			chSend(message, whoStr);
+			utils.chSend(message, whoStr);
 			*/
 
 		} else if (parms[0] === 'categories') {
@@ -1787,7 +1713,7 @@ spongeBot.giveaways = {
 			for (var cat in cats) {
 				theStr += '`' + cat + '` ';
 			}
-			chSend(message, theStr);
+			utils.chSend(message, theStr);
 		}
 	},
 	help: '`!giveaways` lists any currently running contests, giveaways, freebies, and other fun stuff.' +
@@ -1811,7 +1737,7 @@ spongeBot.sammich = {
 		if (!collectTimer(message, message.author.id, 'sammich')) {
 			return false; // can't use it yet!
 		}
-		chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
+		utils.chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
 	},
 	help: '`!sammich` whips you up a tasty random sandwich (65% chance) or smoothie (35% chance)'
 };
@@ -1823,7 +1749,7 @@ spongeBot.give = {
 		var giver = message.author.id;
 		
 		if (!parms) {
-			chSend(message, 'Who are you trying to `!give` credits ' +
+			utils.chSend(message, 'Who are you trying to `!give` credits ' +
 			  ' to, ' + makeTag(giver) + '? (`!help give` for help)');
 			return;
 		}
@@ -1831,7 +1757,7 @@ spongeBot.give = {
 		parms = parms.split(' ');
 			
 		if (!parms[1]) {
-			chSend(message, 'No amount specified to `!give`, ' + 
+			utils.chSend(message, 'No amount specified to `!give`, ' + 
 			  makeTag(giver) + '. (`!help give` for help)' );
 			return;
 		}
@@ -1840,42 +1766,42 @@ spongeBot.give = {
 		var amt = parseInt(parms[1]);
 
 		if (isNaN(amt)) {
-			chSend(message, makeTag(giver) + ', that\'s not a number to me.');
+			utils.chSend(message, makeTag(giver) + ', that\'s not a number to me.');
 			return;
 		}
 		
 		if (amt === 0) {
-			chSend(message, makeTag(giver) + ' you want to give *nothing*? ' + 
+			utils.chSend(message, makeTag(giver) + ' you want to give *nothing*? ' + 
 			  'Ok, uh... consider it done I guess.');
 			return;
 		}
 		
 		if (amt < 0) {
-			chSend(message, makeTag(giver) + ' wouldn\'t that be *taking*?'); 
+			utils.chSend(message, makeTag(giver) + ' wouldn\'t that be *taking*?'); 
 			return;
 		}
 		
 		if (bankroll[giver] < amt) {
-			chSend(message, 'You can\'t give what you don\'t have, ' +
+			utils.chSend(message, 'You can\'t give what you don\'t have, ' +
 			  makeTag(giver) + '!');
 			return;
 		}
 		
 		if (!bankroll.hasOwnProperty(giver)) {
-			chSend(message, 'You\'ll need a bank account first, ' +
+			utils.chSend(message, 'You\'ll need a bank account first, ' +
 			  makeTag(giver) + '!');
 			return;
 		}
 		
 		if (amt === 1) {
-			chSend(message, 'Aren\'t you the generous one, ' + makeTag(giver) + '?');
+			utils.chSend(message, 'Aren\'t you the generous one, ' + makeTag(giver) + '?');
 		}
 	
 		if (!addBank(who, amt)) {
-			chSend(message, 'Failed to give to ' + who);
+			utils.chSend(message, 'Failed to give to ' + who);
 		} else {
 			addBank(giver, -amt);
-			chSend(message, ':gift: OK, I moved ' + amt +
+			utils.chSend(message, ':gift: OK, I moved ' + amt +
 			  ' of your credits to ' + makeTag(who) + ', ' + makeTag(giver));
 		}
 	},
@@ -1888,14 +1814,14 @@ spongeBot.gift = {
 		if (message.author.id === SPONGE_ID) {
 			
 			if (!parms) {
-				chSend(message, 'You forgot the target to !gift.');
+				utils.chSend(message, 'You forgot the target to !gift.');
 				return;
 			}
 			
 			parms = parms.split(' ');
 			
 			if (!parms[1]) {
-				chSend(message, 'No amount specified to `!gift`');
+				utils.chSend(message, 'No amount specified to `!gift`');
 				return;
 			}
 			
@@ -1903,9 +1829,9 @@ spongeBot.gift = {
 			var amt = parseInt(parms[1]);
 			
 			if (!addBank(who, amt)) {
-				chSend(message, 'Failed to give to ' + who);
+				utils.chSend(message, 'Failed to give to ' + who);
 			} else {
-				chSend(message, 'OK, gave ' + makeTag(who) + ' ' + amt + ' credits!');
+				utils.chSend(message, 'OK, gave ' + makeTag(who) + ' ' + amt + ' credits!');
 			}
 		}
 	},
@@ -1923,7 +1849,7 @@ spongeBot.bank = {
 			who = message.author.id;
 			
 			if (typeof bankroll[who] === 'undefined') {
-				chSend(message, makeTag(who) + ', I don\'t see an account ' +
+				utils.chSend(message, makeTag(who) + ', I don\'t see an account ' +
 				  'for you, so I\'ll open one with ' + START_BANK + ' credits.');
 				
 				/*
@@ -1931,7 +1857,7 @@ spongeBot.bank = {
 				var role = server.roles.find('name', 'Tester');
 			
 				if (server.roles.has('name', 'Tester')) {
-					debugPrint(' we have a tester!');
+					utils.debugPrint(' we have a tester!');
 				}
 				
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
@@ -1939,24 +1865,24 @@ spongeBot.bank = {
 				
 				bankroll[who] = START_BANK;
 				saveBanks();
-				debugPrint('New bankroll made for ' + who + ' via !bank.');
+				utils.debugPrint('New bankroll made for ' + who + ' via !bank.');
 			} 
 		} else {
 			who = makeId(parms[0]);
 		}
 		
 		if (typeof bankroll[who] === 'undefined') {
-			chSend(message, message.author + ', they don\'t have a bank account.');
+			utils.chSend(message, message.author + ', they don\'t have a bank account.');
 		} else if (isNaN(bankroll[who])) {
-			chSend(message, message.author + ' that bank account looks weird, thanks' +
+			utils.chSend(message, message.author + ' that bank account looks weird, thanks' +
 			  ' for pointing it out. I\'ll reset it to ' + START_BANK);
 			bankroll[who] = START_BANK;
 			saveBanks();
-			debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
+			utils.debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
 			  
 		} else {
-			chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');
-			chSend(message, makeTag(who) + ' has ' + getStat(who, 'raffle', 'ticketCount') + ' :tickets: s.');	
+			utils.chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');
+			utils.chSend(message, makeTag(who) + ' has ' + getStat(who, 'raffle', 'ticketCount') + ' :tickets: s.');	
 		}
 	},
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
@@ -1968,22 +1894,22 @@ spongeBot.exchange = {
 		if (parms  === 'iamsure') {
 			
 			if (!bankroll.hasOwnProperty(message.author.id)) {
-				chSend(message, message.author + ', you have no bank ' +
+				utils.chSend(message, message.author + ', you have no bank ' +
 				'account.  You can open one with `!bank`.');
 				return;
 			}
 			
 			if (bankroll[message.author.id] < 100000) {
-				chSend(message, message.author + ', you don\'t have enough credits.');
+				utils.chSend(message, message.author + ', you don\'t have enough credits.');
 				return;
 			}
 			
 			addBank(message.author.id, -100000);
 			var newTix = incStat(message.author.id, 'raffle', 'ticketCount');
-			chSend(message, message.author + ', you now have ' +
+			utils.chSend(message, message.author + ', you now have ' +
 			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
 		} else {
-			chSend(message, message.author + ', be sure you want to tade 100K ' +
+			utils.chSend(message, message.author + ', be sure you want to tade 100K ' +
 			  'credits for one raffle ticket, then type `!exchange iamsure` to do so.');
 		}
 	},
@@ -2009,7 +1935,7 @@ spongeBot.loadstats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
 		loadStats();
-		chSend(message, 'OK. Stats loaded manually.');
+		utils.chSend(message, 'OK. Stats loaded manually.');
 	},
 	help: 'force a stat reload from persistent storage',
 	access: [],
@@ -2019,7 +1945,7 @@ spongeBot.savestats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
 		saveStats();
-		chSend(message, 'OK. Stats saved manually.');
+		utils.chSend(message, 'OK. Stats saved manually.');
 	},
 	help: 'force a stat save to persistent storage',
 	access: [],
@@ -2031,7 +1957,7 @@ spongeBot.delstat = {
 		// forreal user game [stat]
 		parms = parms.split(' ');
 		if (parms[0] !== 'forreal') {
-			chSend(message, 'Are you **for real** ' + message.author);
+			utils.chSend(message, 'Are you **for real** ' + message.author);
 			return;
 		} else {
 			var who = makeId(parms[1]);
@@ -2039,26 +1965,26 @@ spongeBot.delstat = {
 			var stat = parms[3];
 			
 			if(!gameStats.hasOwnProperty(who)) {
-				chSend(message, 'Can\'t find uid ' + who);
+				utils.chSend(message, 'Can\'t find uid ' + who);
 				return;
 			}
 				
 			if (!gameStats[who].hasOwnProperty(game)) {
-				chSend(message, 'Can\'t find game `' + game + '` for uid ' + who);
+				utils.chSend(message, 'Can\'t find game `' + game + '` for uid ' + who);
 				return;
 			}
 
 			if (!parms[3]) {
-				chSend(message, 'Deleting GAME ' + game + ' from USER ' + who);
+				utils.chSend(message, 'Deleting GAME ' + game + ' from USER ' + who);
 				delete gameStats[who][game];
 				return;
 			} else {
 				if (!gameStats[who][game].hasOwnProperty(stat)) {
-					chSend(message, 'Can\'t find stat `' + stat + '` for game ' +
+					utils.chSend(message, 'Can\'t find stat `' + stat + '` for game ' +
 					game + ' for uid ' + who);
 					return;
 				}
-				chSend(message, 'Deleting STAT ' + stat + ' from GAME ' + game + 
+				utils.chSend(message, 'Deleting STAT ' + stat + ' from GAME ' + game + 
 				  ' from USER ' + who);
 				delete gameStats[who][game][stat];
 			}
@@ -2083,17 +2009,17 @@ spongeBot.getstat = {
 		stat = parms[2];
 		
 		if (typeof parms[0] === 'undefined') {
-			chSend(mesage, '!getstat: No user specified');
+			utils.chSend(mesage, '!getstat: No user specified');
 			return
 		}
 		
 		var results = getStat(who, game, stat);
 		
 		if (typeof results === 'object') {
-			chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat +
+			utils.chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat +
 			  ' is:\n' + JSON.stringify(results));
 		} else {
-			chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat + ' is:\n' + results);
+			utils.chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat + ' is:\n' + results);
 		}
 	},
 	help: 'gets a stat'
@@ -2102,7 +2028,7 @@ spongeBot.setstat = {
 	cmdGroup: 'Admin',
 	do: function(message, parms) {
 		parms = parms.split(' ');
-		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
+		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  setStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
 	},
@@ -2116,7 +2042,7 @@ spongeBot.setstat = {
 spongeBot.alterstat = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
-		chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
+		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  alterStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
 	},
@@ -2133,14 +2059,14 @@ spongeBot.stats = {
 		var who;
 		
 		if (!parms) {
-			//chSend(message, message.author + ', specify a <user> for `!stats`.');
+			//utils.chSend(message, message.author + ', specify a <user> for `!stats`.');
 			who = message.author.id;
 		} else {
 			who = makeId(parms);
 		}
 		
 		if (!gameStats[who]) {
-			chSend(message, message.author + ', I don\'t have any stats for them.');
+			utils.chSend(message, message.author + ', I don\'t have any stats for them.');
 			return;
 		}
 		
@@ -2152,7 +2078,7 @@ spongeBot.stats = {
 			}
 		}
 		theStr += '```';
-		chSend(message, theStr);
+		utils.chSend(message, theStr);
 	},
 	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
 };
@@ -2161,7 +2087,7 @@ spongeBot.topstats = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		if (parms === '') {
-			chSend(message, 'Type `!topStats` followed by the game name.');
+			utils.chSend(message, 'Type `!topStats` followed by the game name.');
 			return;
 		}
 		
@@ -2188,7 +2114,7 @@ spongeBot.topstats = {
 			for (var who in gameData[stat]) {
 				outStr += gameData[stat][who] + ': @' + who + '\n';
 			}
-			chSend(message, outStr + '\n');
+			utils.chSend(message, outStr + '\n');
 		}
 	},
 	help: 'Shows the top players for a SpongeBot game, and other stats.',
@@ -2209,13 +2135,13 @@ spongeBot.slots = {
 					rarity: slots.config.symbols[sym].rarity
 				});
 			}
-			debugPrint('.slots: First run, built symbol array.');
+			utils.debugPrint('.slots: First run, built symbol array.');
 		};
 
 		var payTab = slots.config.payTable;
 		
 		if (parms === '') {
-			chSend(message, 'Try `!slots spin <bet>` or `!slots paytable`.');
+			utils.chSend(message, 'Try `!slots spin <bet>` or `!slots paytable`.');
 			return;
 		}	
 		
@@ -2256,36 +2182,36 @@ spongeBot.slots = {
 				ptabString += '      (' + lineChance.toFixed(1) + ' : 1)';
 				ptabString += '\n';
 			}
-			chSend(message, ptabString);
+			utils.chSend(message, ptabString);
 		}
 
 		if (parms[0] === 'spin') {
 			var who = message.author.id;
 
 			if (!bankroll.hasOwnProperty(who)) {
-				chSend(message, message.author + ', please open a `!bank` account before playing slots.');
+				utils.chSend(message, message.author + ', please open a `!bank` account before playing slots.');
 				return;
 			}
 			
 			var betAmt = parseInt(parms[1]) || 0;
 
 			if (betAmt === 0) {
-				chSend(message, message.author + ', you can\'t play if you don\'t pay.');
+				utils.chSend(message, message.author + ', you can\'t play if you don\'t pay.');
 				return;
 			}
 			
 			if (betAmt < 0) {
-				chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
+				utils.chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
 				return;
 			}
 			
 			if (betAmt > bankroll[who]) {
-				chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
+				utils.chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
 				return;
 			}
 			
 			if (betAmt === bankroll[who]) {
-				chSend(message, message.author + ' just bet the farm on `!slots`!');
+				utils.chSend(message, message.author + ' just bet the farm on `!slots`!');
 			}
 			
 			addBank(who, -betAmt);
@@ -2320,7 +2246,7 @@ spongeBot.slots = {
 			for (var i = 0; i < 3; i++) {
 				spinString += slots.config.symbols[spinArr[i]].emo;
 			}
-			chSend(message, spinString + ' (spun by ' + message.author + ')');
+			utils.chSend(message, spinString + ' (spun by ' + message.author + ')');
 			
 			for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
 				
@@ -2337,7 +2263,7 @@ spongeBot.slots = {
 					if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
 						// winner winner chicken dinner
 						var winAmt = betAmt * payTab[pNum].payout;
-						chSend(message, ':slot_machine: ' +
+						utils.chSend(message, ':slot_machine: ' +
 						  message.author + ' is a `!slots` winner!\n' + 
 						  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
 						  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
@@ -2385,7 +2311,7 @@ spongeBot.ticket = {
 		if (message.author.id === SPONGE_ID) {
 			
 			if (!parms) {
-				chSend(message, 'You forgot the target to for !ticket.');
+				utils.chSend(message, 'You forgot the target to for !ticket.');
 				return;
 			}
 			
@@ -2404,7 +2330,7 @@ spongeBot.ticket = {
 			str += alterStat(who, 'raffle', 'ticketCount', amt);
 			str += ' raffle tickets.';
 			
-			chSend(message, str);
+			utils.chSend(message, str);
 		}
 	},
 	access: true,
@@ -2418,31 +2344,31 @@ spongeBot.help = {
 		if (parms) {
 			if (typeof spongeBot[parms] !== 'undefined') {	
 				if (spongeBot[parms].longHelp) {
-					chSend(message, spongeBot[parms].longHelp);
+					utils.chSend(message, spongeBot[parms].longHelp);
 				} else if (spongeBot[parms].help) {
-					chSend(message, spongeBot[parms].help);
+					utils.chSend(message, spongeBot[parms].help);
 				} else {
-					chSend(message, 'I have no help about that, ' + message.author);
+					utils.chSend(message, 'I have no help about that, ' + message.author);
 				}
 			} else {
-				chSend(message, 'Not a command I know, ' + message.author);
+				utils.chSend(message, 'Not a command I know, ' + message.author);
 			}
 		} else {
 			// no parms supplied, show help on everything in a DM
 			
 			if (!botStorage.fullHelp) {
 				// "cached" help doesn't exist, so build it...
-				debugPrint('!help: building help text for first time');
+				utils.debugPrint('!help: building help text for first time');
 				botStorage.fullHelp = buildHelp();
 			} 
 			
 			// since help text is built, just regurgitate it
-			chSend(message, message.author + ', incoming DM spam!');
+			utils.chSend(message, message.author + ', incoming DM spam!');
 			for (var cat in botStorage.fullHelp) {
-				auSend(message, '\n**' + cat +'**\n');
-				auSend(message, '---\n' + botStorage.fullHelp[cat]);
+				utils.auSend(message, '\n**' + cat +'**\n');
+				utils.auSend(message, '---\n' + botStorage.fullHelp[cat]);
 			}
-			auSend(message, '---\n( * - Denotes restricted access command. )' +
+			utils.auSend(message, '---\n( * - Denotes restricted access command. )' +
 			  ' Type `!help <command>` for more info on a specific command.');
 			}
 		},
@@ -2454,15 +2380,15 @@ spongeBot.timer = {
 	do: function(message, parms) {
 
 		if (parms === '') {
-			chSend(message, 'Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
+			utils.chSend(message, 'Usage: `!timer <sec>` sets a timer to go off in _<sec>_ seconds.');
 		} else {
 			parms = parseInt(parms);
 			if ((parms >= 1) && (parms <= 255)) {
 				setTimeout(function() {
-					chSend(message, 'Ding ding! Time is up!');
+					utils.chSend(message, 'Ding ding! Time is up!');
 				}, (parms * 1000));
 			} else {
-				chSend(message, 'Timer has to be set for between 1-255 secs.');
+				utils.chSend(message, 'Timer has to be set for between 1-255 secs.');
 			}
 		}
 	},
@@ -2477,29 +2403,29 @@ spongeBot.time = {
 		parms = parms.split(' ');
 		
 		if (!parms[0]) {
-			chSend(message, now.toTimeString());
+			utils.chSend(message, now.toTimeString());
 			return;
 		}
 		
 		if (parms[0] === 'long') {
-			chSend(message, now.toString());
+			utils.chSend(message, now.toString());
 			return;
 		}
 		
 		if (parms[0] === 'iso') {
-			chSend(message, now.toISOString());
+			utils.chSend(message, now.toISOString());
 			return;
 		}
 		
 		if (parms[0] === 'raw') {
-			chSend(message, '`' + now.valueOf() + '`');
+			utils.chSend(message, '`' + now.valueOf() + '`');
 			return;
 		}
 		
 		if (parms[0] === 'diff') {
 			// <t1, t2>, returns difference between the two -- either order (abs value)
 			var timeElapsed = msToTime(Math.abs(parseInt(parms[1]) - parseInt(parms[2])));
-			chSend(message, timeElapsed);
+			utils.chSend(message, timeElapsed);
 			return;
 		}
 		
@@ -2510,15 +2436,15 @@ spongeBot.time = {
 			if (parms[0] === 'nextWeek') {howMuch = ONE_WEEK;} else {howMuch = ONE_DAY;};
 			when = parseInt(parms[1]) + howMuch - now.valueOf();
 			if (when < 0) {
-				chSend(message, 'That was ' + msToTime(Math.abs(when)) + ' ago');
+				utils.chSend(message, 'That was ' + msToTime(Math.abs(when)) + ' ago');
 				return;
 			} else {
-				chSend(message, 'Coming up in ' + msToTime(when));
+				utils.chSend(message, 'Coming up in ' + msToTime(when));
 				return;
 			}
 		};
 		
-		chSend(message, now.toString());
+		utils.chSend(message, now.toString());
 	},
 	help: '`time [long | iso]`: Shows current time.`',
 	longHelp: '`time [long | iso]`: Shows current time.' +
@@ -2545,8 +2471,8 @@ spongeBot.say = {
 			}
 			BOT.channels.get(chan).send(parms);
 		} else {
-			debugPrint(message.author.id + ' tried to put words in my mouth!');
-			auSend(message, 'I don\'t speak for just anyone.');
+			utils.debugPrint(message.author.id + ' tried to put words in my mouth!');
+			utils.auSend(message, 'I don\'t speak for just anyone.');
 		}
 	},
 	help: '`!say <stuff>` Make me speak. (limited access command)',
@@ -2558,32 +2484,32 @@ spongeBot.avote = {
 	do: function(message, parms) {
 
 		if (!acro.runState) {
-			chSend(message, message.author + ', the game is not running.' +
+			utils.chSend(message, message.author + ', the game is not running.' +
 			  ' You can start a new game with `!acro`');
 			return;
 		}
 		
 		if (acro.runState !== 'vote') {
-			chSend(message, message.author + ', wait for the voting to start!');
+			utils.chSend(message, message.author + ', wait for the voting to start!');
 			return;
 		}
 		
 		var theVote = parseInt(parms);
 		
 		if ((theVote > acro.entries.length - 1) || (theVote < 0) || (isNaN(theVote))) {
-			chSend(message, ':warning: Not a valid vote, ' + message.author);
+			utils.chSend(message, ':warning: Not a valid vote, ' + message.author);
 			return;
 		}
 		
 		if (acro.entries[theVote].author === message.author.id && !acro.config.voteOwn) {
-			chSend(message, message.author + ', you can\'t vote for yourself!');
+			utils.chSend(message, message.author + ', you can\'t vote for yourself!');
 			return;
 		}
 		
 		if (typeof acro.votes[message.author.id] === 'undefined') {
-			chSend(message, message.author + ' your vote was recorded.');
+			utils.chSend(message, message.author + ' your vote was recorded.');
 		} else {
-			chSend(message, message.author + ', I changed your vote for you.');
+			utils.chSend(message, message.author + ', I changed your vote for you.');
 		}
 		acro.votes[message.author.id] = theVote;
 	},
@@ -2597,7 +2523,7 @@ spongeBot.stopacro = {
 		clearTimeout(acro.timer);
 		if (acro.voteTimer) {clearTimeout(acro.voteTimer);}
 		acro.runState = false;
-		chSend(message, ':octagonal_sign: `!acro` has been stopped if it was running.');
+		utils.chSend(message, ':octagonal_sign: `!acro` has been stopped if it was running.');
 	},
 	help: '`!stopacro` stops the currently running `!acro` game.',
 	access: true
@@ -2608,7 +2534,7 @@ spongeBot.acrocfg = {
 		
 		if (!parms[0]) {
 			for (var opt in acro.config) {
-				chSend(message, opt + ': ' + acro.config[opt]);
+				utils.chSend(message, opt + ': ' + acro.config[opt]);
 			}
 		} else {
 			if (acro.config.hasOwnProperty([parms[0]])) {
@@ -2618,9 +2544,9 @@ spongeBot.acrocfg = {
 				else if (parms[1] === 'true') {parms[1] = true}
 				
 				acro.config[parms[0]] = parms[1];
-				chSend(message, '`!acro`: set ' + parms[0] + ' to ' + parms[1] + '.');
+				utils.chSend(message, '`!acro`: set ' + parms[0] + ' to ' + parms[1] + '.');
 			} else {
-				chSend(message, '`!acro`: can\'t config ' + parms[0]);
+				utils.chSend(message, '`!acro`: can\'t config ' + parms[0]);
 			}
 		}
 	},
@@ -2633,7 +2559,7 @@ spongeBot.acro = {
 		parms = parms.split(' ');
 		
 		if (acro.runState) {
-			chSend(message, ':warning: I think the `!acro` is already running.');
+			utils.chSend(message, ':warning: I think the `!acro` is already running.');
 			return;
 		}
 		var letters = '';
@@ -2653,12 +2579,12 @@ spongeBot.acro = {
 			var argument = parts[1];
 			if(!parameter || !argument) {
 				if(!parameter && !argument) {
-					chSend(message, makeTag(message.author.id) + ', missing parameter and argument');
+					utils.chSend(message, makeTag(message.author.id) + ', missing parameter and argument');
 				}
 				else if(!parameter) {
-					chSend(message, makeTag(message.author.id) + ', missing parameter');
+					utils.chSend(message, makeTag(message.author.id) + ', missing parameter');
 				} else if(!argument) {
-					chSend(message, makeTag(message.author.id) + ', missing argument');
+					utils.chSend(message, makeTag(message.author.id) + ', missing argument');
 				}
 				return;
 			}
@@ -2672,25 +2598,25 @@ spongeBot.acro = {
 					//Update acroLen
 					acroLen = letters.length;
 				} else {
-					chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
+					utils.chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
 					return;
 				}
 			} else if(parameter === 'table') {
 				if(/^[a-z]+$/.test(argument)) {
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
-						chSend(message, makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
+						utils.chSend(message, makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
 						continue;
 					}
 					table = argument;
 				} else {
-					chSend(message, makeTag(message.author.id) + ', invalid `table` argument');
+					utils.chSend(message, makeTag(message.author.id) + ', invalid `table` argument');
 					return;
 				}
 			} else if(parameter === 'playtime') {
 				timeAllowed = parseInt(argument);
 				if(!timeAllowed) {
-					chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
+					utils.chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
 					return;
 				}
 			} else if(parameter === 'length') {
@@ -2699,18 +2625,18 @@ spongeBot.acro = {
 				if(argument) {
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
-						chSend(message, makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
+						utils.chSend(message, makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
 						continue;
 					}
 					acroLen = argument;
 				} else {
-					chSend(message, makeTag(message.author.id) + ', invalid `length` argument');
+					utils.chSend(message, makeTag(message.author.id) + ', invalid `length` argument');
 					return;
 				}
 			} else if(parameter === 'category') {
 				category = argument;
 			} else {
-				chSend(message, makeTag(message.author.id) + ', unknown parameter');
+				utils.chSend(message, makeTag(message.author.id) + ', unknown parameter');
 			}
 		}
 		
@@ -2745,8 +2671,8 @@ spongeBot.acro = {
 			letters += acro.letters.charAt(i).toUpperCase();
 		}
 		
-		chSend(message, ' Let\'s play the `!acro` game!\n' + 
-		  '\nLetters: ' + bigLetter(letters) + 
+		utils.chSend(message, ' Let\'s play the `!acro` game!\n' + 
+		  '\nLetters: ' + utils.bigLet(letters) + 
 		  '   Category: ' + category +
 		  '\nYou have ' + timeAllowed + 
 		  ' seconds to make an acronym with them and submit it with `!a`');
@@ -2777,12 +2703,12 @@ spongeBot.acro = {
 			theText += '=-=-=-=-=-=-=-=-=\n';
 			theText += 'Vote for your favorite with `!avote`!';
 			theText += '\n You have ' + voteTimeAllowed + ' seconds.';
-			chSend(message, theText);
+			utils.chSend(message, theText);
 			acro.runState = 'vote';
 			acro.voteTimer = setTimeout(function() {
 				acro.runState = false;
 				clearTimeout(acro.voteTimer); 
-				chSend(message, ':stopwatch: `!acro` voting time is up!' + 
+				utils.chSend(message, ':stopwatch: `!acro` voting time is up!' + 
 				  ':stopwatch: \n Here are the results:');
 				
 				//count the votes
@@ -2794,7 +2720,7 @@ spongeBot.acro = {
 				var winner = false;
 				var winArr = [];
 				for (var i = 0; i < acro.entries.length; i++) {
-					chSend(message, '`[#' + i +
+					utils.chSend(message, '`[#' + i +
 					  '] ' + acro.entries[i].voteCount + 
 					  ' votes for: ' + acro.entries[i].entry +
 					  '` (by ' + makeTag(acro.entries[i].author) + ')\n');
@@ -2817,27 +2743,27 @@ spongeBot.acro = {
 				}			
 				
 				if (winner === false) {
-					chSend(message, 'Looks like no one won `!acro`. Sad!');
+					utils.chSend(message, 'Looks like no one won `!acro`. Sad!');
 				} else {
-					//chSend(message, 'Number of !acro winners: ' + winArr.length);
+					//utils.chSend(message, 'Number of !acro winners: ' + winArr.length);
 					if (winArr.length === 1) {
 						incStat(acro.entries[winner].author, 'acro', 'wins');
-						chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro`!' +
+						utils.chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro`!' +
 						  ' That makes ' + gameStats[acro.entries[winner].author].acro.wins + ' wins!');
 					} else {
 						var winStr = 'Looks like we have a tie in `!acro`! Winners: ';
 						for (var i = 0; i < winArr.length; i++) {
 							winStr += makeTag(acro.entries[winArr[i]].author) + ' ';
 						}
-						chSend(message, winStr);
+						utils.chSend(message, winStr);
 					}
 					if ((acro.entries.length >= acro.config.minPlayersForCredits) && winArr.length === 1) {
-						chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
+						utils.chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
 						  'at least ' + acro.config.minPlayersForCredits + ' entries, and' +
 						  ' won ' + acro.config.winCredits + ' credits!');
 						addBank(acro.entries[winner].author, acro.config.winCredits);						
 						incStat(acro.entries[winner].author, 'acro', 'credwins');
-						chSend(message, makeTag(acro.entries[winner].author) +
+						utils.chSend(message, makeTag(acro.entries[winner].author) +
 						  ' got a crediting acro win and now has ' +
 						  gameStats[acro.entries[winner].author].acro.credwins +
 						  ' crediting acro wins!');
@@ -2845,7 +2771,7 @@ spongeBot.acro = {
 				}
 			}, voteTimeAllowed * 1000);
 		} else {
-			chSend(message, '`!acro` has ended, and no one submitted an entry.');					
+			utils.chSend(message, '`!acro` has ended, and no one submitted an entry.');					
 			acro.runState = false;
 		}
 	}, timeAllowed * 1000);},
@@ -2872,12 +2798,12 @@ spongeBot.a = {
 	do: function(message, parms) {
 		
 		if (!acro.runState) {
-			chSend(message, 'Acro not running. Start it with `!acro`.');
+			utils.chSend(message, 'Acro not running. Start it with `!acro`.');
 			return;
 		}
 		
 		if (acro.runState === 'vote') {
-			chSend(message, 'Too slow, ' + message.author +
+			utils.chSend(message, 'Too slow, ' + message.author +
 			  ', voting has begun :slight_frown:');
 			  return;
 		}
@@ -2891,7 +2817,7 @@ spongeBot.a = {
 		var isLegit = true;
 		
 		if (theirAcro.length !== acro.letters.length) {
-			chSend(message, message.author +
+			utils.chSend(message, message.author +
 			  ', that acro is the wrong length!');
 			  isLegit = false;
 		}
@@ -2906,13 +2832,13 @@ spongeBot.a = {
 		
 		if (isLegit) {
 			if (acro.players[message.author]) {
-				chSend(message, message.author + ', I am' +
+				utils.chSend(message, message.author + ', I am' +
 				  'replacing your old submission.');
 			}
 			acro.entries[message.author.id] = message.content.slice(2);
-			chSend(message, 'Got it, ' + message.author + '!');
+			utils.chSend(message, 'Got it, ' + message.author + '!');
 		} else {
-			chSend(message, ':warning: ' + message.author +
+			utils.chSend(message, ':warning: ' + message.author +
 			  ', your invalid acro was not accepted :.');
 		}
 	},
@@ -2925,10 +2851,10 @@ spongeBot.arch = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
 		if(message.author.id === ARCH_ID) {
-			chSend(message, makeTag(ARCH_ID) + ', your bank has been reset');
+			utils.chSend(message, makeTag(ARCH_ID) + ', your bank has been reset');
 			bankroll[ARCH_ID] = 50000;
 		} else {
-			chSend(message, makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
+			utils.chSend(message, makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
 }
@@ -2937,15 +2863,15 @@ spongeBot.biglet = {
 	cmdGroup: 'miscellanous',
 	do: function(message, txt) {
 		if (txt === '') {
-			chSend(message, message.author + ', I have nothing to supersize.');
+			utils.chSend(message, message.author + ', I have nothing to supersize.');
 			return;
 		}
 		
 		if (txt.length > 80) {
-			chSend(message, message.author + ', message too big!');
+			utils.chSend(message, message.author + ', message too big!');
 			return;
 		}
-		chSend(message, bigLetter(txt));
+		utils.chSend(message, utils.bigLet(txt));
 	},
 	help: '`!biglet <message>` says your message back in big letters'
 }
@@ -2984,14 +2910,14 @@ spongeBot.duel = {
 				}
 			}
 			if (!args) {
-				chSend(message, 'Who are you trying to duel, ' + makeTag(challenger) + '? (`!help duel` for help)');
+				utils.chSend(message, 'Who are you trying to duel, ' + makeTag(challenger) + '? (`!help duel` for help)');
 				return;
 			}
 			
 			args = args.split(' ');
 			
 			if(!args[0]) {
-				chSend(message, makeTag(challenger) + ', use `!help duel`');
+				utils.chSend(message, makeTag(challenger) + ', use `!help duel`');
 				return;
 			}
 			var action = args[0];
@@ -3003,7 +2929,7 @@ spongeBot.duel = {
 				}
 				//Quit if the subject isn't in the bank record
 				if(!bankroll[subject]) {
-					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?');
+					utils.chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?');
 					return;
 				}
 				//If subject isn't in the duelManager record, we initialize them
@@ -3034,17 +2960,17 @@ spongeBot.duel = {
 				reply += '\nKills: ' + subjectEntry.kills;
 				reply += '\nDeaths: ' + subjectEntry.deaths;
 				reply += '\nKill/Death Ratio: ' + (subjectEntry.kills/subjectEntry.deaths);
-				chSend(message, reply);
+				utils.chSend(message, reply);
 			} else if(action === 'challenge') {
 				if (!args[1]) {
-					chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
+					utils.chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
 					return;
 				}
 				var opponent = makeId(args[1]);
 				NaN
 				//If the opponent isn't in the bank record, we assume they don't exist
 				if(!(bankroll[opponent] >= 0)) {
-					chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
+					utils.chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
 					return;
 				}
 				var challengerEntry = duelManager[challenger];
@@ -3054,11 +2980,11 @@ spongeBot.duel = {
 					bet = 0;
 				}
 				if(bet < 0) {
-					chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
+					utils.chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
 					return;
 				} else if(bet > 0) {
 					if(bankroll[challenger] < bet) {
-						chSend(message, makeTag(challenger) + ', you can\'t bet what you don\'t have!');
+						utils.chSend(message, makeTag(challenger) + ', you can\'t bet what you don\'t have!');
 						return;
 					}
 					//If everything's good, then we prepare the bets later
@@ -3074,15 +3000,15 @@ spongeBot.duel = {
 				}
 				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
 				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
-					chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
+					utils.chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID === opponent) {
 					//If @challenger already challenged the opponent, then this means they are canceling the challenge
-					chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
+					utils.chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
 					challengerEntry.status = 'idle';
 					//Return bet
 					if(challengerEntry.bet > 0) {
-						chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						utils.chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
 						addBank(challenger, challengerEntry.bet);
 					}
 					
@@ -3091,11 +3017,11 @@ spongeBot.duel = {
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
 					//If @challenger has already challenged someone else, then they cancel their previous challenge
-					chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
+					utils.chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
 					challengerEntry.opponentID = opponent;
 					//Return bet
 					if(challengerEntry.bet > 0) {
-						chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						utils.chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
 						addBank(challenger, challengerEntry.bet);
 					}
 					
@@ -3114,13 +3040,13 @@ spongeBot.duel = {
 				if(opponentEntry.status === 'challenging' && opponentEntry.opponentID === challenger) {
 					challengerEntry.status = 'ready';
 					opponentEntry.status = 'ready';
-					chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
-					chSend(message, makeTag(challenger) + ': Get ready!');
-					chSend(message, makeTag(opponent) + ': Get ready!');
-					chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
+					utils.chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
+					utils.chSend(message, makeTag(challenger) + ': Get ready!');
+					utils.chSend(message, makeTag(opponent) + ': Get ready!');
+					utils.chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
 					//Start the duel!
 					var duelTimer = setTimeout(function() {
-						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
+						utils.chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
 						
 						challengerEntry.status = 'dueling';
 						opponentEntry.status = 'dueling';
@@ -3133,7 +3059,7 @@ spongeBot.duel = {
 					
 					var stalemateTimer = setTimeout(function() {
 						//If nobody wins, we don't pay out any bets
-						chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalemate! All bets have been claimed by me.');
+						utils.chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalemate! All bets have been claimed by me.');
 						//addBank(challenger, challengerEntry.bet);
 						//addBank(opponent, opponentEntry.bet);
 						delete challengerEntry.bet;
@@ -3150,14 +3076,14 @@ spongeBot.duel = {
 					
 					//Opponent is either idle, ready, or dueling at this point
 					//We wait for the opponent to reciprocate @challenger's request
-					chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
-					chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
+					utils.chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
+					utils.chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
 					if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
-						chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
+						utils.chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
 					}
 				}
 			} else {
-				chSend(message, makeTag(challenger) + ', use `!help duel`');
+				utils.chSend(message, makeTag(challenger) + ', use `!help duel`');
 			}
 		},
 		help: '`!duel challenge <user>`: Challenge another user to a duel.\n'
@@ -3169,12 +3095,12 @@ spongeBot.d = {
 		cmdGroup: 'Fun and Games',
 		do: function(message, args) {
 			if (args === '') {
-				chSend(message, 'Usage: `!d <number>` attempts to fire at your opponent. Chance to hit depends on difference between your input and your target number.');
+				utils.chSend(message, 'Usage: `!d <number>` attempts to fire at your opponent. Chance to hit depends on difference between your input and your target number.');
 			} else {
 				var author = message.author.id;
 				var entry = duelManager[author];
 				if(!entry) {
-					chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
+					utils.chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
 				} else if(entry.status === 'dueling') {
 					args = parseInt(args);
 					if ((args >= 0) && (args <= 1000)) {
@@ -3190,12 +3116,12 @@ spongeBot.d = {
 						 * 250			0
 						 */
 						if(Math.random()*100 < chance) {
-							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
-							chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
+							utils.chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
+							utils.chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
 							
 							var reward = entry.bet;
 							if(reward > 0) {
-								chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
+								utils.chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
 								addBank(author, reward);
 							}
 							
@@ -3206,14 +3132,14 @@ spongeBot.d = {
 							if(author !== opponent) {
 								reward = opponentEntry.bet;
 								if(reward > 0) {
-									chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
+									utils.chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
 									addBank(author, reward);
 								}
 								
 								//We also take up to our bet amount in credits from the opponent
 								reward = Math.min(entry.bet, bankroll[opponent]);
 								if(reward > 0) {
-									chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
+									utils.chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
 									addBank(author, reward);
 									addBank(opponent, -reward);
 								}
@@ -3239,31 +3165,31 @@ spongeBot.d = {
 							entry.kills++;
 							opponentEntry.deaths++;
 						} else {
-							chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
+							utils.chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
 							if(difference < 50) {
-                                chSend(message, makeTag(author) + ', you were so close!');
+                                utils.chSend(message, makeTag(author) + ', you were so close!');
                             } else if(difference < 100) {
-                                chSend(message, makeTag(author) + ', your shot just barely missed!');
+                                utils.chSend(message, makeTag(author) + ', your shot just barely missed!');
                             } else if(difference < 150) {
-                                chSend(message, makeTag(author) + ', your aim is getting closer!');
+                                utils.chSend(message, makeTag(author) + ', your aim is getting closer!');
                             } else if(difference < 200) {
-                                chSend(message, makeTag(author) + ', your aim could be better!');
+                                utils.chSend(message, makeTag(author) + ', your aim could be better!');
                             } else if(difference < 250) {
-                                chSend(message, makeTag(author) + ', try aiming at your opponent!');
+                                utils.chSend(message, makeTag(author) + ', try aiming at your opponent!');
                             } else {
-                                chSend(message, makeTag(author) + ', you\'re aiming in the wrong direction!');
+                                utils.chSend(message, makeTag(author) + ', you\'re aiming in the wrong direction!');
                             }
 						}
 					} else {
-						chSend(message, '<number> must be between 0 and 1000.');
+						utils.chSend(message, '<number> must be between 0 and 1000.');
 					}
 				}
 				else if(entry.status === 'ready') {
-					chSend(message, makeTag(author) + ', *no cheating!*');
+					utils.chSend(message, makeTag(author) + ', *no cheating!*');
 				} else if(entry.status === 'challenging') {
-					chSend(message, makeTag(author) + ', sorry, but shooting at your opponent before they even accept your challenge is just plain murder.');
+					utils.chSend(message, makeTag(author) + ', sorry, but shooting at your opponent before they even accept your challenge is just plain murder.');
 				} else {
-					chSend(message, makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
+					utils.chSend(message, makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
 				}
 			}
 		},
@@ -3294,9 +3220,9 @@ spongeBot.sponge = {
 		}
 		if(!found) {
 			sponge[author] = true;
-			chSend(message, makeTag(author) + ', you have been polymorphed into a sponge!');
+			utils.chSend(message, makeTag(author) + ', you have been polymorphed into a sponge!');
 		} else {
-			chSend(message, makeTag(author) + ', you have been polymorphed back to normal!');
+			utils.chSend(message, makeTag(author) + ', you have been polymorphed back to normal!');
 		}
 	}
 }
@@ -3304,21 +3230,21 @@ spongeBot.sponge = {
 spongeBot.v = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
-		chSend(message, '`' + VERSION_STRING + '`');
+		utils.chSend(message, '`' + VERSION_STRING + '`');
 	},
 	help: 'Outputs the current bot code VERSION_STRING.'
 }
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
-		chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
-		chSend(message, SPONGEBOT_INFO);
+		utils.chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
+		utils.chSend(message, SPONGEBOT_INFO);
 	},
 	help: 'Outputs the current bot code version and other info.'
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-  debugPrint('Spongebot version ' + VERSION_STRING + ' READY!');
+  utils.debugPrint('Spongebot version ' + VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(SPAMCHAN_ID).send('I live!');}
   loadBanks();
@@ -3339,18 +3265,18 @@ BOT.on('message', message => {
 		parms = parms.slice(1); // remove leading space
 		
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			debugPrint('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			utils.debugPrint('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
 				if (spongeBot[theCmd].access) {
 					// requires special access
 					if (!hasAccess(message.author.id, spongeBot[theCmd].access)) {
-						chSend(message, 'Your shtyle is too weak ' +
+						utils.chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
 						// missing spongebot.command.do
 						if (!spongeBot[theCmd].hasOwnProperty('do')) {
-							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							utils.debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
 							  ', ignoring limited-access command !' + theCmd);
 						} else {
 							// all good, run it
@@ -3360,10 +3286,10 @@ BOT.on('message', message => {
 				} else {
 					
 					if (message.author.bot) {
-						debugPrint('Blocked a bot-to-bot !command.');
+						utils.debugPrint('Blocked a bot-to-bot !command.');
 					} else {
 						if (!spongeBot[theCmd].hasOwnProperty('do')) {
-							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							utils.debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
 							  ', ignoring user command !' + theCmd);
 						} else {
 							spongeBot[theCmd].do(message, parms);
@@ -3371,14 +3297,14 @@ BOT.on('message', message => {
 					}
 				}
 			} else {
-				chSend(message, 'Sorry, that is disabled.');
+				utils.chSend(message, 'Sorry, that is disabled.');
 			}
 		} else {
 			// not a valid command
 		}
 	} else {
 		if(sponge[message.author.id]) {
-			chSend(message, makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
+			utils.chSend(message, makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
 		}
 	}
 });
