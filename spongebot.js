@@ -3074,7 +3074,7 @@ spongeBot.hangman = {
 				hangman.reward = 300;
 				hangman.active = true;
 				utils.chSend(message, utils.makeTag(message.author.id) + ' has taken a random person for hostage and has threatened to hang the hostage unless someone guesses the secret password! The hostage has promised a reward of ' + hangman.reward + ' credits to whoever reveals the correct answer!');
-				utils.chSend(message, 'Answer: ' + hangman.display);
+				utils.chSend(message, 'Answer: `' + hangman.display + '`');
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', a game of hangman is already running');
 			}
@@ -3118,7 +3118,7 @@ spongeBot.hangman = {
 			}
 			hangman.display = nextDisplay;
 			hangman.characters.push(character);
-			utils.chSend(message, 'Answer: ' + hangman.display);
+			utils.chSend(message, 'Answer: `' + hangman.display + '`');
 			if(found > 0) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', you have found ' + found + ' instances of ' + character.toUpperCase() + ' in the answer.');
 				//Check if we already revealed the answer
