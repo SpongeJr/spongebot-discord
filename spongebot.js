@@ -46,7 +46,7 @@ const SPAMCHAN_ID = "402591405920223244";
 const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9982.fruit.by.the.foot+debug.tools';
+const VERSION_STRING = '0.9982.fruit.by.the.foot+debug.tools+e';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -54,6 +54,7 @@ const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon
 //-----------------------------------------------------------------------------
 var debugMode = true;
 var enableDebugChan = true;
+var autoEmbed = true;
 var spongeBot = {};
 var story = '';
 //-----------------------------------------------------------------------------
@@ -728,7 +729,7 @@ toppings = toppings.split(",");
 	return sammich;
 }
 //-----------------------------------------------------------------------------
-var chSend = function(message, str) {
+var chSend = function(message, str, emb) {
 	
 	// temporary stuff
 	if (typeof message === 'undefined') {
@@ -751,9 +752,25 @@ var chSend = function(message, str) {
 		return;
 	}
 	
-	message.channel.send(str).catch(reason => {
-		debugPrint('Error sending a channel message: ' + reason);
-	});
+	if (autoEmbed) {
+		// turn all chSend() messages into emebed, if autoEmbed is on
+		if (typeof emb === 'undefined') {
+			emb = {"description": str}
+		}
+	}
+	
+	if (typeof emb !== 'undefined') {
+		// we have an embed, so use it
+		message.channel.send({embed: emb}).catch(reason => {
+			debugPrint('Error sending a channel message: ' + reason);
+		});
+	} else {	
+		// no embed, send standard message
+		message.channel.send(str).catch(reason => {
+			debugPrint('Error sending a channel message: ' + reason);
+		})
+	};
+
 };
 //-----------------------------------------------------------------------------
 var auSend = function(message, str) {
@@ -881,7 +898,14 @@ spongeBot.debug = {
 		chSend(message, 'debugging to channel is: ' + enableDebugChan);
 	},
 	help: 'Toggles debugging to #debug-print on Planet Insomnia.'
-}
+};
+spongeBot.embeds = {
+	do: function(message) {
+		autoEmbed = !autoEmbed;
+		chSend(message, 'automatic embeds to channel is: ' + autoEmbed);
+	},
+	help: 'Toggles automatic embeds'
+};
 spongeBot.backup = {
 	cmdGroup: 'Admin',
 	disabled: true,
