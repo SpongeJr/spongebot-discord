@@ -3092,7 +3092,7 @@ spongeBot.hangman = {
 			if(character === '') {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', I\'m not sure that nothingness itself is a character.');
 				return;
-			} else if(character.length) {
+			} else if(character.length > 1) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', only one character at a time, please!');
 				return;
 			} else if(!(/^[a-z0-9\s]+$/i.test(character))) {
@@ -3160,6 +3160,8 @@ spongeBot.hangman = {
 		} else if(action === 'quit') {
 			utils.chSend(message, utils.makeTag(message.author.id) + ' has decided to put the hangman out of his misery!');
 			hangman.active = false;
+		} else {
+			utils.chSend(message, utils.makeTag(message.author.id) + ' you\'re going to do ***WHAT*** to the hangman?!');
 		}
 	},
 	help: ''
