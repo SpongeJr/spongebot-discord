@@ -586,7 +586,7 @@ spongeBot.backup = {
 		saveBanks(cons.BANK_BACKUP_FILENAME);
 		utils.saveStats(cons.STATS_BACKUP_FILENAME, gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
-		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + BANK_BACKUP_FILENAME +
+		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + cons.BANK_BACKUP_FILENAME +
 		  '` and `' + cons.STATS_BACKUP_FILENAME +  '`');
 	}
 };
@@ -606,7 +606,12 @@ spongeBot.zundo = {
 	do: function(message, parms) {
 		iFic.zundo.do(message, parms);
 	}
-}
+};
+spongeBot.zsave = {
+	do: function(message, parms) {
+		iFic.zsave.do(message, parms, gameStats);
+	}
+};
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
@@ -1778,7 +1783,7 @@ spongeBot.setstat = {
 		parms = parms.split(' ');
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
-		  utils.setStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]),gameStats));
+		  utils.setStat(utils.makeId(parms[0]), parms[1], parms[2], parms[3], gameStats));
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
@@ -1792,7 +1797,7 @@ spongeBot.alterstat = {
 		parms = parms.split(' ');
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
-		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]),gameStats));
+		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), gameStats));
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 

@@ -1,5 +1,10 @@
 // this var is local to the module
 var ut = require('../lib/utils.js');
+
+// as is this "v" object, where I'm putting the other variables
+// that I want the function to use.
+// why inside another object? I can then save or move around
+// all the variables easily
 var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
@@ -70,9 +75,17 @@ module.exports = {
 			
 		}
 	},
-	zstorysave: {
-		do: function(mesasge, parms) {
+	zsave: {
+		do: function(message, parms, gameStats) {
 			ut.chSend(message, '`Story saving is still being implemented.`');
+			ut.setStat(message.author.id, 'profile', 'story', v.story, gameStats);
+			ut.chSend(message, '...but I think I saved it to your profile ' +
+			  'anyway, ' + message.author + '! Check with `!stats` for me?');
+		}
+	},
+	quote: {
+		do: function(message, parms) {
+			
 		}
 	}
 };
