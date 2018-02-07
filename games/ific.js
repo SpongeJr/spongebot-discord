@@ -39,5 +39,10 @@ module.exports = {
 			chSend(message, '`Story cleared.`');
 			return v;
 		}
+	},
+	zstoryup: {
+		do: function(message, parms, v) {
+			
+		}
 	}
 };

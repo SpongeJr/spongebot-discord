@@ -20,19 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
 */
-
 const Discord = require('discord.js');
-const cons = require('./lib/constants.js');
+
 const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
 
 const BOT = new Discord.Client();
 
 const FS = require('fs');
-const BANK_FILENAME = '../data/banks.csv';
-const STATS_FILENAME = '../data/gamestats.json';
-const BANK_BACKUP_FILENAME = '../data/banks.bak';
-const STATS_BACKUP_FILENAME = '../data/gamestats.bak';
 
 const ONE_DAY = 86400000;
 const ONE_WEEK = 604800000;
@@ -47,17 +42,14 @@ const SPAMCHAN_ID = "402591405920223244";
 const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9984m03';
-const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
-  '\nreleased under MIT license. Bot source code can be found at: ' +
-  '\n https://github.com/SpongeJr/spongebot-discord' +
-  '\nMade using: `discord.js` https://discord.js.org and `node.js` https://nodejs.org';
+
 //-----------------------------------------------------------------------------
 var spongeBot = {};
 var story = '';
 //-----------------------------------------------------------------------------
 //  MODULES
 //-----------------------------------------------------------------------------
+const cons = require('./lib/constants.js');
 var utils = require('./lib/utils.js');
 var iFic = require('./games/ific.js');
 //-----------------------------------------------------------------------------
@@ -97,11 +89,6 @@ var acro = {
 		'technology and science', 'memes and fads', 'fantasy', 'general/any'
 	]
 };
-var listPick = function(theList) {
-	// expects Array, returns a random element destructively pulled from it
-	var choice = Math.random() * theList.length;
-	return theList.splice(choice, 1);
-};
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
 		ticketRarity: how rare (really) tickets are, as in 1 in this value chance
@@ -115,8 +102,8 @@ var Fruit = function(stats) {
 	this.stats.name = stats.name || ':seedling: budding';
 	this.stats.valueMult = stats.valueMult || 0
 	this.stats.special = {},
-	this.stats.color = listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
-	  + ' ' + listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
+	this.stats.color = utils.listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
+	  + ' ' + utils.listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
 Fruit.prototype.pick = function(message) {
 	// returns some text about what happened
@@ -198,7 +185,9 @@ var scramConfig = {
 }
 var botStorage = {};
 var bankroll = {};
-var gameStats = {};
+var gameStats = require('../data/gamestats.json');
+var bankroll = require('../data/banks.json');
+if (utils.debugMode) {console.log(bankroll);}
 
 var giveaways = {
 	'Shelter': {
@@ -413,243 +402,10 @@ var loot = {
         }
     };
 //-----------------------------------------------------------------------------
-
-var makeStatFile = function() {
-	var theFile = JSON.stringify(gameStats);
-	return theFile;
-};
-var parseStatFile = function() {
-	var outp = JSON.parse(botStorage.statloaddata);
-	utils.debugPrint(outp);
-	return outp;
-};
-var loadStats = function() {
-	var readStream = FS.createReadStream(STATS_FILENAME);
-	readStream
-		.on('readable', function() {
-			var chunk;
-			while (null !== (chunk = readStream.read())) {
-				botStorage.statloaddata = '';
-				for (var i = 0; i < chunk.length; i++) {
-					botStorage.statloaddata += String.fromCharCode(chunk[i]);
-				};
-				utils.debugPrint('  !loadStats: Data chunk loaded.');
-			}
-		})
-		.on('end', function() {
-			gameStats = parseStatFile();
-			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
-		});	
-};
-var saveStats = function(filename) {
-	
-	if (!filename) {
-		filename = STATS_FILENAME;
-	}
-	
-	var writeStream = FS.createWriteStream(filename, {autoClose: true});
-	writeStream.write(makeStatFile(gameStats));
-	writeStream.end(function() {
-		utils.debugPrint(' Game stats saved to: ' + filename);
-	});
-};
-var getStat = function(who, game, stat) {
-	// returns if something does not exist, otherwise...
-	// if stat is unspecified, returns all of gameStats[who][stat] object
-	// if game unspecified returns all of gameStats[who] object
-	// otherwise, returns the stat as stored on gameStats
-	
-	who = makeId(who);
-	utils.debugPrint(who);
-	
-	if (!gameStats.hasOwnProperty(who)) {
-		return; // user doesn't exist
-	} else {
-		
-		// no game sent up, return whole player object
-		if (typeof game === 'undefined') {
-			return gameStats[who];
-		}
-		
-		// no stat sent up, return game object
-		if (typeof stat === 'undefined') { 
-			if (!gameStats[who].hasOwnProperty(game)) {
-				return; // game doesn't exist
-			} else {
-				return gameStats[who][game];
-			}
-		}	
-		
-		// return stat if possible
-		if (!gameStats[who].hasOwnProperty(game)) {
-			return; // game doesn't exist
-		} else {
-			if (!gameStats[who][game].hasOwnProperty(stat)) {
-				return; // game exists, stat doesn't
-			} else {
-				return gameStats[who][game][stat];
-			}
-		}	
-	}
-	
-}
 var incStat = function(who, game, stat) {
-	// Increments an integer stat. Returns: the new, incremented value
-	// Does not check validity of who, game, or stat, and will make a new
-	// Object key (who), game, or stat as needed if it doesn't exist.
-	// POSSIBLY DEPRECATE and use alterStat()
-	
-	if (!gameStats[who]) {
-		gameStats[who] = {};
-	}
-	
-	if (!gameStats[who][game]) {
-		gameStats[who][game] = {};
-	}
-	
-	if (!gameStats[who][game].hasOwnProperty(stat)) {
-		gameStats[who][game][stat] = 0;
-		utils.debugPrint('!incStat: Made a new ' + game + ' stat for ' + who);
-	}
-	
-	gameStats[who][game][stat]++;
-	saveStats();
-	return gameStats[who][game][stat];
+	utils.debugPrint('!incStat: WARNING! Deprecated, use alterStat()');
+	// DEPRECATED! Use: untils.alterStat(who, game, stat, 1, gameStats)
 };
-var setStat = function(who, game, stat, amt) {
-	// Sets an integer stat. Returns: the stat's new value
-	// Does not check validity of who, game, or stat, and will make a new
-	// Object key (who), game, or stat as needed if it doesn't exist.
-	// If stat didn't exist, sets this new stat to 0;
-	// Also does no validation on amount parameter, call with care.
-	
-	if (!gameStats[who]) {
-		gameStats[who] = {};
-	}
-	
-	if (!gameStats[who][game]) {
-		gameStats[who][game] = {};
-	}
-	
-	if (!gameStats[who][game].hasOwnProperty(stat)) {
-		gameStats[who][game][stat] = 0;
-		utils.debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
-	}
-	
-	gameStats[who][game][stat] = parseInt(amt);
-	saveStats();
-	return gameStats[who][game][stat];
-};
-var alterStat = function(who, game, stat, amt) {
-	// Alters an integer stat. Returns: the stat's new value
-	// Does not check validity of who, game, or stat, and will make a new
-	// Object key (who), game, or stat as needed if it doesn't exist.
-	// If stat didn't exist, sets this new stat to 0;
-	// Also does no validation on amount parameter, call with care.
-	
-	if (!gameStats[who]) {
-		gameStats[who] = {};
-	}
-	
-	if (!gameStats[who][game]) {
-		gameStats[who][game] = {};
-	}
-	
-	if (!gameStats[who][game].hasOwnProperty(stat)) {
-		gameStats[who][game][stat] = 0;
-		utils.debugPrint('!alterStat: Made a new ' + game + ' stat for ' + who);
-	}
-	
-	gameStats[who][game][stat] += parseInt(amt);
-	saveStats();
-	return gameStats[who][game][stat];
-};
-var parseBankfile = function(inp) {
-	inp = inp.split(',');
-	
-	var outp = {};
-	for (var i = 0; i < inp.length; i = i + 2) {
-		outp[inp[i]] = parseInt(inp[i + 1]);
-		console.log (' ID: ' + inp[i] + '    BANK: ' + inp[i + 1]);
-	}
-	return outp;
-};
-var loadBanks = function() {
-	var readStream = FS.createReadStream(BANK_FILENAME);
-	readStream
-		.on('readable', function() {
-			var chunk;
-			while (null !== (chunk = readStream.read())) {
-				
-				botStorage.bankloaddata = '';
-				for (var i = 0; i < chunk.length; i++) {
-					botStorage.bankloaddata += String.fromCharCode(chunk[i]);
-				};
-				utils.debugPrint('  !loadBanks: Data chunk loaded.');
-			}
-		})
-		.on('end', function() {
-			bankroll = parseBankfile(botStorage.bankloaddata);
-			//BOT.channels.get(SPAMCHAN_ID).send('Bankrolls loaded!');
-		});
-};
-var saveBanks = function(filename) {
-	
-	if (!filename) {
-		filename = BANK_FILENAME;
-	}
-	
-	var writeStream = FS.createWriteStream(filename, {autoClose: true});
-	writeStream.write(makeBankFile(bankroll));
-	writeStream.end(function() {
-		utils.debugPrint(' Banks saved to: ' + filename);
-	});
-};
-var addBank = function(who, amt) {
-	
-	if (!BOT.users.get(who)) {
-		utils.debugPrint('addBank: nonexistent user: ' + who);
-		return false;
-	}
-	
-	if (!bankroll.hasOwnProperty(who)) {
-		bankroll[who] = START_BANK;
-		utils.debugPrint('addBank: New bankroll made for ' + who);
-	}
-	
-	bankroll[who] += parseInt(amt);
-	saveBanks();
-	return bankroll[who];
-};
-var makeBankFile = function(bankdata) {
-	var theFile = '';
-	for (who in bankdata) {
-		theFile += who + ',' + bankdata[who] + ','
-	}
-	theFile = theFile.slice(0, -1); // remove trailing comma
-	return theFile;
-};
-var makeBackups = function() {
-	// call me to write out backup copies of the banks.csv and stats.JSON
-	saveBanks(BANK_BACKUP_FILENAME);
-	saveStats(STATS_BACKUP_FILENAME);
-}	
-//-----------------------------------------------------------------------------
-var makeId = function(inp) {
-	// strips out the first <@! and > in a string
-	// if you send it a string that is alread legit id, it won't be harmed
-	// if not passed a String, sends the input back
-	// should always return a String
-	if (typeof(inp) !== 'string') {return inp};
-	var outp = inp.replace('<', '').replace('>', '').replace('!', '').replace('@', '');
-	return outp;
-};
-var makeTag = function(inp) {
-	// wraps a string in <@>
-	var outp = '<@' + inp + '>';
-	return outp;
-};
-//-----------------------------------------------------------------------------
 var slots = {
 	config: {
 		symbols: {
@@ -702,10 +458,10 @@ toppings = toppings.split(",");
 	var numIngredients = Math.random() * 3 + 1;
 
 	for (var i = 0; i < numIngredients - 1; i++) {
-		sammich = sammich + listPick(ingredients) + ", ";
+		sammich = sammich + utils.listPick(ingredients) + ", ";
 	}
 
-	sammich += "and " + listPick(ingredients);
+	sammich += "and " + utils.listPick(ingredients);
 
 	if (Math.random() < 0.65) {
 		sammich += " sandwich "
@@ -713,7 +469,7 @@ toppings = toppings.split(",");
 		sammich += " smoothie "
 	}
 
-	sammich += "topped with " + listPick(toppings);
+	sammich += "topped with " + utils.listPick(toppings);
 
 	return sammich;
 }
@@ -742,7 +498,7 @@ var msToTime = function(inp) {
 };
 //-----------------------------------------------------------------------------
 var checkTimer = function(message, who, command) {
-	// who: (String) an id, or a tag (will be sent through makeId() )
+	// who: (String) an id, or a tag (will be sent through utils.makeId() )
 	// command: String that !!!should be a valid command!!!
 	// checks to see if this user can use this command yet, and if not, returns false.
 	// If check succeeds (user can !command), returns true, and DOES NOT ALTER lastUsed 
@@ -752,20 +508,21 @@ var checkTimer = function(message, who, command) {
 		
 	var now = new Date();
 	var timedCmd = spongeBot[command].timedCmd;
-	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
+	var lastCol = utils.alterStat(utils.makeId(who), 'lastUsed', command, 0, gameStats);
 	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 	now = now.valueOf();
 	
 	if (now > nextCol) {
+		utils.debugPrint(' BEFORE: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
 		utils.debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		//setStat(makeId(who), 'lastUsed', command, 0);
+		utils.debugPrint(' AFTER: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
 		return true;
 	} else {
 		return false;
 	}
 }
 var collectTimer = function(message, who, command) {
-	// who: (String) an id, or a tag (will be sent through makeId() )
+	// who: (String) an id, or a tag (will be sent through utils.makeId() )
 	// command: String that !!!should be a valid command!!!
 	// checks to see if this user can use this command yet, and if not...
 	//   it sends them either .failResponse from command.timedCmd or a default response
@@ -780,18 +537,18 @@ var collectTimer = function(message, who, command) {
 		
 	var now = new Date();
 	var timedCmd = spongeBot[command].timedCmd;
-	var lastCol = alterStat(makeId(who), 'lastUsed', command, 0);
+	var lastCol = utils.alterStat(utils.makeId(who), 'lastUsed', command, 0, gameStats);
 	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 	now = now.valueOf();
 	
 	if (now > nextCol) {
 		utils.debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		setStat(makeId(who), 'lastUsed', command, now);
+		utils.setStat(utils.makeId(who), 'lastUsed', command, now, gameStats);
 		return true;
 	} else {
 		var failStr;
 		if (!timedCmd.hasOwnProperty('failResponse')) {
-			failStr = 'Ya can\'t do that yet. ' + makeTag(message.author.id);
+			failStr = 'Ya can\'t do that yet. ' + utils.makeTag(message.author.id);
 			utils.chSend(message, failStr);
 			return false;
 		} else {
@@ -833,11 +590,11 @@ spongeBot.backup = {
 	disabled: true,
 	access: [],
 	do: function(message) {
-		saveBanks(BANK_BACKUP_FILENAME);
-		saveStats(STATS_BACKUP_FILENAME);
+		saveBanks(cons.BANK_BACKUP_FILENAME);
+		utils.saveStats(cons.STATS_BACKUP_FILENAME, gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
 		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + BANK_BACKUP_FILENAME +
-		  '` and `' + STATS_BACKUP_FILENAME +  '`');
+		  '` and `' + cons.STATS_BACKUP_FILENAME +  '`');
 	}
 };
 //-----------------------------------------------------------------------------
@@ -888,16 +645,16 @@ spongeBot.collect = {
 			var numTix = 1;
 			
 			
-			messStr += makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
+			messStr += utils.makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
 			  'and ' + numTix + 'x :tickets: (raffle tickets) to your bank. \n';
-			 messStr += makeTag(who) + ', you now have ' + alterStat(who, 'raffle', 'ticketCount', numTix) +
-			   ' :tickets: s and ' + addBank(who, collectVal) + ' credits! ';
+			 messStr += utils.makeTag(who) + ', you now have ' + utils.alterStat(who, 'raffle', 'ticketCount', numTix, gameStats) +
+			   ' :tickets: s and ' + utils.utils.addBank(who, collectVal, bankroll) + ' credits! ';
 			//random saying extra bit on end (using tree sayings for now)
 					
 			// so we don't hurt the original
 			var sayings = JSON.stringify(tree.config.harvestMessages);
 			sayings = JSON.parse(sayings);
-			messStr += listPick(sayings);
+			messStr += utils.listPick(sayings);
 			utils.chSend(message, messStr);
 		}
 	}
@@ -909,7 +666,7 @@ spongeBot.tree = {
 				var who = message.author.id;
 				var now = new Date();
 				var timedCmd = spongeBot.tree.timedCmd;
-				var lastCol = alterStat(who, 'lastUsed', 'tree', 0);
+				var lastCol = utils.alterStat(who, 'lastUsed', 'tree', 0, gameStats);
 				var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 				now = now.valueOf();
 				
@@ -947,8 +704,8 @@ spongeBot.tree = {
 					}
 					collectVal = tree.config.treeVal + fruitBonus
 					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-					  makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ';
-					addBank(who, collectVal);
+					  utils.makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ';
+					utils.addBank(who, collectVal, bankroll);
 					
 					//random saying extra bit on end: 
 					
@@ -956,23 +713,23 @@ spongeBot.tree = {
 					var sayings = JSON.stringify(tree.config.harvestMessages);
 					sayings = JSON.parse(sayings);
 
-					messStr += listPick(sayings);
+					messStr += utils.listPick(sayings);
 					utils.chSend(message, messStr);
 						
 					//magic seeds ... (do nothing right now unfortunately) =(
 					//since I'm testing and will have them set common, we're calling them "regularSeeds"
 					if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
-						utils.chSend(message, makeTag(who) + ', what\'s this? You have found a ' +
+						utils.chSend(message, utils.makeTag(who) + ', what\'s this? You have found a ' +
 						'loot tree seed in your harvest! Looks useful! You save it.');
 						
-						alterStat(who, 'tree', 'regularSeeds', 1);
+						utils.alterStat(who, 'tree', 'regularSeeds', 1, gameStats);
 					}
 
 					//raffle ticket! DOES award, be careful with rarity!
 					if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
-						utils.chSend(message, makeTag(who) + ', what\'s this? A raffle ticket ' +
+						utils.chSend(message, utils.makeTag(who) + ', what\'s this? A raffle ticket ' +
 						':tickets: fell out of the tree! (`!giveways` for more info.)');
-						alterStat(who, 'raffle', 'ticketCount', 1);
+						utils.alterStat(who, 'raffle', 'ticketCount', 1, gameStats);
 					
 					}
 				}
@@ -1120,7 +877,7 @@ spongeBot.loot = {
             if (action === 'unbox') {
                 var who = message.author.id;
  
-                if (!bankroll[who]) {
+                if (!bankroll[who].credits) {
                     utils.chSend(message, message.author + ', please open a `!bank` account before unboxing loot.');
                     return;
                 }
@@ -1161,7 +918,7 @@ spongeBot.loot = {
 						utils.chSend(message, 'bankroll[who] is ' + bankroll[who] + '   and price is ' + price);
 						*/
 						
-                        if (bankroll[who] >= price) {
+                        if (bankroll[who].credits >= price) {
 							
 							if (!collectTimer(message, message.author.id, 'loot')) {
 								return false; // can't unbox yet!
@@ -1174,7 +931,7 @@ spongeBot.loot = {
 								utils.chSend(message, message.author + ' just purchased the ' + box + ' box for ' + price + ' credits.');
 							}
 							
-                            addBank(who, -price * ( 1 - discountPercent / 100));
+                            utils.addBank(who, -price * ( 1 - discountPercent / 100), bankroll);
                            
                             //Accumulate total rarity value
                             var totalRarity = 0;                //The total combined rarity of all items, used for choosing items
@@ -1218,7 +975,7 @@ spongeBot.loot = {
                                 }
                             }
                             resultMessage += '\nTotal Value: ' + valueTotal;
-                            addBank(who, valueTotal);
+                            utils.addBank(who, valueTotal, bankroll);
                             utils.chSend(message, resultMessage);
                         } else {
                             utils.chSend(message, message.author + ' you can\'t afford the ' + box + ' box.');
@@ -1260,7 +1017,7 @@ spongeBot.loot = {
 						return;
 					}
 				}
-				utils.chSend(message, makeTag(message.author.id) + ', unknown loot box');
+				utils.chSend(message, utils.makeTag(message.author.id) + ', unknown loot box');
 			}
            
         },
@@ -1477,10 +1234,10 @@ spongeBot.s = {
 		
 		if (parms === scram[server.id].word) {
 			scram[server.id].runState = 'gameover';
-			addBank(message.author.id, parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length));
+			utils.addBank(message.author.id, parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length), bankroll);
 			utils.chSend(message, message.author + ' just unscrambled ' +
 			  ' the word and wins ' + parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!');
-			incStat(message.author.id, 'scram', 'wins');
+			utils.alterStat(message.author.id, 'scram', 'wins', 1, gameStats);
 			
 			utils.chSend(message, message.author + ' has now unscrambled ' +
 			  gameStats[message.author.id].scram.wins + ' words!');
@@ -1497,7 +1254,6 @@ spongeBot.scram = {
 	subCmd: {
 		config: {
 			do: function(message, parms) {
-				console.log(cons.SCRAMWORDS);
 				utils.chSend(message, 'can\'t config scram right now');
 			}
 		}
@@ -1544,7 +1300,7 @@ spongeBot.scram = {
 			var keys = Object.keys(wordList);
 			var theCat = keys[parseInt(Math.random() * keys.length)];
 			var catWords = wordList[theCat].split(',');
-			var theWord = listPick(catWords)[0];
+			var theWord = utils.listPick(catWords)[0];
 			
 			scram[server.id].word = theWord;		
 			var scramWord = scrambler(theWord);
@@ -1684,7 +1440,7 @@ spongeBot.giveaways = {
 				'\n If something went wrong, you don\'t have the role, or you didn\'t really want it, please ping ' +
 				' <@167711491078750208> to sort it out. And... good luck in the giveaways!');
 				utils.chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
-				  alterStat(message.author.id, 'raffle', 'ticketCount', 1) + ' raffle tickets!');
+				  utils.alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats) + ' raffle tickets!');
 			}
 		} else if (parms[0] === 'whohasrole') {
 			utils.chSend(message, 'Don\'t even.');
@@ -1694,7 +1450,7 @@ spongeBot.giveaways = {
 			
 			var whoStr = ''
 			for (var who of whoHas.keys()) {
-				whoStr += makeTag(who) + '   ';
+				whoStr += utils.makeTag(who) + '   ';
 				utils.debugPrint(who);
 			}
 			utils.chSend(message, whoStr);
@@ -1750,7 +1506,7 @@ spongeBot.give = {
 		
 		if (!parms) {
 			utils.chSend(message, 'Who are you trying to `!give` credits ' +
-			  ' to, ' + makeTag(giver) + '? (`!help give` for help)');
+			  ' to, ' + utils.makeTag(giver) + '? (`!help give` for help)');
 			return;
 		}
 			
@@ -1758,51 +1514,51 @@ spongeBot.give = {
 			
 		if (!parms[1]) {
 			utils.chSend(message, 'No amount specified to `!give`, ' + 
-			  makeTag(giver) + '. (`!help give` for help)' );
+			  utils.makeTag(giver) + '. (`!help give` for help)' );
 			return;
 		}
 			
-		var who = makeId(parms[0]);
+		var who = utils.makeId(parms[0]);
 		var amt = parseInt(parms[1]);
 
 		if (isNaN(amt)) {
-			utils.chSend(message, makeTag(giver) + ', that\'s not a number to me.');
+			utils.chSend(message, utils.makeTag(giver) + ', that\'s not a number to me.');
 			return;
 		}
 		
 		if (amt === 0) {
-			utils.chSend(message, makeTag(giver) + ' you want to give *nothing*? ' + 
+			utils.chSend(message, utils.makeTag(giver) + ' you want to give *nothing*? ' + 
 			  'Ok, uh... consider it done I guess.');
 			return;
 		}
 		
 		if (amt < 0) {
-			utils.chSend(message, makeTag(giver) + ' wouldn\'t that be *taking*?'); 
+			utils.chSend(message, utils.makeTag(giver) + ' wouldn\'t that be *taking*?'); 
 			return;
 		}
 		
 		if (bankroll[giver] < amt) {
 			utils.chSend(message, 'You can\'t give what you don\'t have, ' +
-			  makeTag(giver) + '!');
+			  utils.makeTag(giver) + '!');
 			return;
 		}
 		
 		if (!bankroll.hasOwnProperty(giver)) {
 			utils.chSend(message, 'You\'ll need a bank account first, ' +
-			  makeTag(giver) + '!');
+			  utils.makeTag(giver) + '!');
 			return;
 		}
 		
 		if (amt === 1) {
-			utils.chSend(message, 'Aren\'t you the generous one, ' + makeTag(giver) + '?');
+			utils.chSend(message, 'Aren\'t you the generous one, ' + utils.makeTag(giver) + '?');
 		}
 	
-		if (!addBank(who, amt)) {
+		if (!utils.addBank(who, amt, bankroll)) {
 			utils.chSend(message, 'Failed to give to ' + who);
 		} else {
-			addBank(giver, -amt);
+			utils.addBank(giver, -amt, bankroll);
 			utils.chSend(message, ':gift: OK, I moved ' + amt +
-			  ' of your credits to ' + makeTag(who) + ', ' + makeTag(giver));
+			  ' of your credits to ' + utils.makeTag(who) + ', ' + utils.makeTag(giver));
 		}
 	},
 	help: '`!give <user> <amount>` gives someone some of your credits.',
@@ -1825,13 +1581,13 @@ spongeBot.gift = {
 				return;
 			}
 			
-			var who = makeId(parms[0]);
+			var who = utils.makeId(parms[0]);
 			var amt = parseInt(parms[1]);
 			
-			if (!addBank(who, amt)) {
+			if (!utils.addBank(who, amt, bankroll)) {
 				utils.chSend(message, 'Failed to give to ' + who);
 			} else {
-				utils.chSend(message, 'OK, gave ' + makeTag(who) + ' ' + amt + ' credits!');
+				utils.chSend(message, 'OK, gave ' + utils.makeTag(who) + ' ' + amt + ' credits!');
 			}
 		}
 	},
@@ -1841,15 +1597,14 @@ spongeBot.gift = {
 spongeBot.bank = {
 	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
-		
 		var who;
 		parms = parms.split(' ');
 
 		if (parms[0] === '') {
 			who = message.author.id;
 			
-			if (typeof bankroll[who] === 'undefined') {
-				utils.chSend(message, makeTag(who) + ', I don\'t see an account ' +
+			if (typeof bankroll[who].credits === 'undefined') {
+				utils.chSend(message, utils.makeTag(who) + ', I don\'t see an account ' +
 				  'for you, so I\'ll open one with ' + START_BANK + ' credits.');
 				
 				/*
@@ -1863,26 +1618,26 @@ spongeBot.bank = {
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
 				*/
 				
-				bankroll[who] = START_BANK;
-				saveBanks();
+				bankroll[who].credits = START_BANK;
+				utils.saveBanks(cons.BANK_FILENAME, bankroll);
 				utils.debugPrint('New bankroll made for ' + who + ' via !bank.');
 			} 
 		} else {
-			who = makeId(parms[0]);
+			who = utils.makeId(parms[0]);
 		}
 		
-		if (typeof bankroll[who] === 'undefined') {
+		if (typeof bankroll[who].credits === 'undefined') {
 			utils.chSend(message, message.author + ', they don\'t have a bank account.');
-		} else if (isNaN(bankroll[who])) {
+		} else if (isNaN(bankroll[who].credits)) {
 			utils.chSend(message, message.author + ' that bank account looks weird, thanks' +
 			  ' for pointing it out. I\'ll reset it to ' + START_BANK);
-			bankroll[who] = START_BANK;
-			saveBanks();
+			bankroll[who].credits = START_BANK;
+			utils.saveBanks(cons.BANK_FILENAME, bankroll);
 			utils.debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
 			  
 		} else {
-			utils.chSend(message, makeTag(who) + ' has ' + bankroll[who] + ' credits.');
-			utils.chSend(message, makeTag(who) + ' has ' + getStat(who, 'raffle', 'ticketCount') + ' :tickets: s.');	
+			utils.chSend(message, utils.makeTag(who) + ' has ' + bankroll[who].credits + ' credits.');
+			utils.chSend(message, utils.makeTag(who) + ' has ' + utils.getStat(who, 'raffle', 'ticketCount', gameStats) + ' :tickets: s.');	
 		}
 	},
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
@@ -1904,8 +1659,8 @@ spongeBot.exchange = {
 				return;
 			}
 			
-			addBank(message.author.id, -100000);
-			var newTix = incStat(message.author.id, 'raffle', 'ticketCount');
+			utils.addBank(message.author.id, -100000, bankroll);
+			var newTix = alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats);
 			utils.chSend(message, message.author + ', you now have ' +
 			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
 		} else {
@@ -1918,14 +1673,15 @@ spongeBot.exchange = {
 //-----------------------------------------------------------------------------
 spongeBot.savebanks = {
 	do: function() {
-		saveBanks();
+		utils.saveBanks();
 	},
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true
 }
 spongeBot.loadbanks = {
 	do: function() {
-		loadBanks();
+		//utils.loadBanks(botStorage, bankroll);
+		
 	},
 	help: '(( currently under development ))',
 	disabled: true
@@ -1934,7 +1690,7 @@ spongeBot.loadbanks = {
 spongeBot.loadstats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
-		loadStats();
+		loadStats(botStorage);
 		utils.chSend(message, 'OK. Stats loaded manually.');
 	},
 	help: 'force a stat reload from persistent storage',
@@ -1944,7 +1700,7 @@ spongeBot.loadstats = {
 spongeBot.savestats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
-		saveStats();
+		utils.saveStats(cons.STATS_FILENAME, gameStats);
 		utils.chSend(message, 'OK. Stats saved manually.');
 	},
 	help: 'force a stat save to persistent storage',
@@ -1960,7 +1716,7 @@ spongeBot.delstat = {
 			utils.chSend(message, 'Are you **for real** ' + message.author);
 			return;
 		} else {
-			var who = makeId(parms[1]);
+			var who = utils.makeId(parms[1]);
 			var game = parms[2];
 			var stat = parms[3];
 			
@@ -2013,7 +1769,7 @@ spongeBot.getstat = {
 			return
 		}
 		
-		var results = getStat(who, game, stat);
+		var results = utils.setStat(who, game, stat);
 		
 		if (typeof results === 'object') {
 			utils.chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat +
@@ -2030,7 +1786,7 @@ spongeBot.setstat = {
 		parms = parms.split(' ');
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
-		  setStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
+		  utils.setStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]),gameStats));
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
@@ -2044,7 +1800,7 @@ spongeBot.alterstat = {
 		parms = parms.split(' ');
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
-		  alterStat(makeId(parms[0]), parms[1], parms[2], parseInt(parms[3])));
+		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]),gameStats));
 	},
 	help: 'sets a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
@@ -2062,7 +1818,7 @@ spongeBot.stats = {
 			//utils.chSend(message, message.author + ', specify a <user> for `!stats`.');
 			who = message.author.id;
 		} else {
-			who = makeId(parms);
+			who = utils.makeId(parms);
 		}
 		
 		if (!gameStats[who]) {
@@ -2070,7 +1826,7 @@ spongeBot.stats = {
 			return;
 		}
 		
-		var theStr = ' :bar_chart:  STATS FOR ' + makeTag(who) + '  :bar_chart:\n```';
+		var theStr = ' :bar_chart:  STATS FOR ' + utils.makeTag(who) + '  :bar_chart:\n```';
 		for (var game in gameStats[who]) {
 			theStr += '> ' + game + ':\n';
 			for (var stat in gameStats[who][game]) {
@@ -2205,16 +1961,16 @@ spongeBot.slots = {
 				return;
 			}
 			
-			if (betAmt > bankroll[who]) {
+			if (betAmt > bankroll[who].credits) {
 				utils.chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
 				return;
 			}
 			
-			if (betAmt === bankroll[who]) {
+			if (betAmt === bankroll[who].credits) {
 				utils.chSend(message, message.author + ' just bet the farm on `!slots`!');
 			}
 			
-			addBank(who, -betAmt);
+			utils.addBank(who, -betAmt, bankroll);
 
 			var spinArr = [];
 			for (var reel = 0; reel < 3; reel++) {
@@ -2267,7 +2023,7 @@ spongeBot.slots = {
 						  message.author + ' is a `!slots` winner!\n' + 
 						  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
 						  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
-						addBank(who, winAmt)
+						utils.addBank(who, winAmt, bankroll)
 						won = true;
 					}
 					reel++;
@@ -2317,7 +2073,7 @@ spongeBot.ticket = {
 			
 			parms = parms.split(' ');
 			var amt;
-			var who = makeId(parms[0]);
+			var who = utils.makeId(parms[0]);
 			var str;
 			
 			if (parms[1] === '' || typeof parms[1] === 'undefined') {
@@ -2326,8 +2082,8 @@ spongeBot.ticket = {
 				var amt = parseInt(parms[1]);	
 			}
 			
-			str = makeTag(who) + ' now has ';
-			str += alterStat(who, 'raffle', 'ticketCount', amt);
+			str = utils.makeTag(who) + ' now has ';
+			str += utils.alterStat(who, 'raffle', 'ticketCount', amt, gameStats);
 			str += ' raffle tickets.';
 			
 			utils.chSend(message, str);
@@ -2579,12 +2335,12 @@ spongeBot.acro = {
 			var argument = parts[1];
 			if(!parameter || !argument) {
 				if(!parameter && !argument) {
-					utils.chSend(message, makeTag(message.author.id) + ', missing parameter and argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', missing parameter and argument');
 				}
 				else if(!parameter) {
-					utils.chSend(message, makeTag(message.author.id) + ', missing parameter');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', missing parameter');
 				} else if(!argument) {
-					utils.chSend(message, makeTag(message.author.id) + ', missing argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', missing argument');
 				}
 				return;
 			}
@@ -2598,25 +2354,25 @@ spongeBot.acro = {
 					//Update acroLen
 					acroLen = letters.length;
 				} else {
-					utils.chSend(message, makeTag(message.author.id) + ', invalid `letters` argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `letters` argument');
 					return;
 				}
 			} else if(parameter === 'table') {
 				if(/^[a-z]+$/.test(argument)) {
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
-						utils.chSend(message, makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
+						utils.chSend(message, utils.makeTag(message.author.id) + ', warning: `table` argument overridden by `letters` argument');
 						continue;
 					}
 					table = argument;
 				} else {
-					utils.chSend(message, makeTag(message.author.id) + ', invalid `table` argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `table` argument');
 					return;
 				}
 			} else if(parameter === 'playtime') {
 				timeAllowed = parseInt(argument);
 				if(!timeAllowed) {
-					utils.chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `playtime` argument');
 					return;
 				}
 			} else if(parameter === 'length') {
@@ -2625,18 +2381,18 @@ spongeBot.acro = {
 				if(argument) {
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
-						utils.chSend(message, makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
+						utils.chSend(message, utils.makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
 						continue;
 					}
 					acroLen = argument;
 				} else {
-					utils.chSend(message, makeTag(message.author.id) + ', invalid `length` argument');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `length` argument');
 					return;
 				}
 			} else if(parameter === 'category') {
 				category = argument;
 			} else {
-				utils.chSend(message, makeTag(message.author.id) + ', unknown parameter');
+				utils.chSend(message, utils.makeTag(message.author.id) + ', unknown parameter');
 			}
 		}
 		
@@ -2697,7 +2453,7 @@ spongeBot.acro = {
 			for (var i = 0; i < acro.entries.length; i++) {
 				theText += '`!avote ' + i + '`: ';
 				theText += acro.entries[i].entry + '\n';
-				//theText += ' (by ' + makeTag(acro.entries[i].author) + ')\n';
+				//theText += ' (by ' + utils.makeTag(acro.entries[i].author) + ')\n';
 				acro.entries[i].voteCount = 0;
 			}
 			theText += '=-=-=-=-=-=-=-=-=\n';
@@ -2723,7 +2479,7 @@ spongeBot.acro = {
 					utils.chSend(message, '`[#' + i +
 					  '] ' + acro.entries[i].voteCount + 
 					  ' votes for: ' + acro.entries[i].entry +
-					  '` (by ' + makeTag(acro.entries[i].author) + ')\n');
+					  '` (by ' + utils.makeTag(acro.entries[i].author) + ')\n');
 
 					if (winner === false) {
 						if (acro.entries[i].voteCount > 0) {
@@ -2747,23 +2503,23 @@ spongeBot.acro = {
 				} else {
 					//utils.chSend(message, 'Number of !acro winners: ' + winArr.length);
 					if (winArr.length === 1) {
-						incStat(acro.entries[winner].author, 'acro', 'wins');
-						utils.chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro`!' +
+						alterstat(acro.entries[winner].author, 'acro', 'wins', 1, gameStats);
+						utils.chSend(message, utils.makeTag(acro.entries[winner].author) + ' won `!acro`!' +
 						  ' That makes ' + gameStats[acro.entries[winner].author].acro.wins + ' wins!');
 					} else {
 						var winStr = 'Looks like we have a tie in `!acro`! Winners: ';
 						for (var i = 0; i < winArr.length; i++) {
-							winStr += makeTag(acro.entries[winArr[i]].author) + ' ';
+							winStr += utils.makeTag(acro.entries[winArr[i]].author) + ' ';
 						}
 						utils.chSend(message, winStr);
 					}
 					if ((acro.entries.length >= acro.config.minPlayersForCredits) && winArr.length === 1) {
-						utils.chSend(message, makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
+						utils.chSend(message, utils.makeTag(acro.entries[winner].author) + ' won `!acro` with ' +
 						  'at least ' + acro.config.minPlayersForCredits + ' entries, and' +
 						  ' won ' + acro.config.winCredits + ' credits!');
-						addBank(acro.entries[winner].author, acro.config.winCredits);						
-						incStat(acro.entries[winner].author, 'acro', 'credwins');
-						utils.chSend(message, makeTag(acro.entries[winner].author) +
+						utils.addBank(acro.entries[winner].author, acro.config.winCredits, bankroll);
+						alterStat(acro.entries[winner].author, 'acro', 'credwins');
+						utils.chSend(message, utils.makeTag(acro.entries[winner].author) +
 						  ' got a crediting acro win and now has ' +
 						  gameStats[acro.entries[winner].author].acro.credwins +
 						  ' crediting acro wins!');
@@ -2851,10 +2607,10 @@ spongeBot.arch = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
 		if(message.author.id === ARCH_ID) {
-			utils.chSend(message, makeTag(ARCH_ID) + ', your bank has been reset');
+			utils.chSend(message, utils.makeTag(ARCH_ID) + ', your bank has been reset');
 			bankroll[ARCH_ID] = 50000;
 		} else {
-			utils.chSend(message, makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
+			utils.chSend(message, utils.makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
 }
@@ -2910,14 +2666,14 @@ spongeBot.duel = {
 				}
 			}
 			if (!args) {
-				utils.chSend(message, 'Who are you trying to duel, ' + makeTag(challenger) + '? (`!help duel` for help)');
+				utils.chSend(message, 'Who are you trying to duel, ' + utils.makeTag(challenger) + '? (`!help duel` for help)');
 				return;
 			}
 			
 			args = args.split(' ');
 			
 			if(!args[0]) {
-				utils.chSend(message, makeTag(challenger) + ', use `!help duel`');
+				utils.chSend(message, utils.makeTag(challenger) + ', use `!help duel`');
 				return;
 			}
 			var action = args[0];
@@ -2925,11 +2681,11 @@ spongeBot.duel = {
 			if(action === 'info') {
 				var subject = challenger;
 				if(args[1]) {
-					subject = makeId(args[1]);
+					subject = utils.makeId(args[1]);
 				}
 				//Quit if the subject isn't in the bank record
 				if(!bankroll[subject]) {
-					utils.chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?');
+					utils.chSend(message, utils.makeTag(challenger) + ', is that one of your imaginary friends?');
 					return;
 				}
 				//If subject isn't in the duelManager record, we initialize them
@@ -2942,19 +2698,19 @@ spongeBot.duel = {
 				}
 				var subjectEntry = duelManager[subject];
 				var status = subjectEntry.status;
-				var reply = '`!duel` info about ' + makeTag(subject);
+				var reply = '`!duel` info about ' + utils.makeTag(subject);
 				if(status === 'idle') {
 					reply += '\nStatus: Idle';
 				} else if(status === 'challenging') {
-					reply += '\nStatus: Waiting to duel ' + makeTag(subjectEntry.opponentID) + ' with a bet of ' + subjectEntry.bet + ' credits';
+					reply += '\nStatus: Waiting to duel ' + utils.makeTag(subjectEntry.opponentID) + ' with a bet of ' + subjectEntry.bet + ' credits';
 				} else {
-					reply += '\nStatus: Currently dueling ' + makeTag(subjectEntry.opponentID + ' with a bet of ' + subjectEntry.bet + ' credits');
+					reply += '\nStatus: Currently dueling ' + utils.makeTag(subjectEntry.opponentID + ' with a bet of ' + subjectEntry.bet + ' credits');
 				}
 				
 				for(var user in duelManager) {
 					var userEntry = duelManager[user];
 					if(userEntry.status === 'challenging' && userEntry.opponentID === subject) {
-						reply += '\nPending challenge from ' + makeTag(user) + 'with a bet of ' + userEntry.bet + ' credits.'; 
+						reply += '\nPending challenge from ' + utils.makeTag(user) + 'with a bet of ' + userEntry.bet + ' credits.'; 
 					}
 				}
 				reply += '\nKills: ' + subjectEntry.kills;
@@ -2963,14 +2719,14 @@ spongeBot.duel = {
 				utils.chSend(message, reply);
 			} else if(action === 'challenge') {
 				if (!args[1]) {
-					utils.chSend(message, makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
+					utils.chSend(message, utils.makeTag(challenger) + ', you can\'t duel nobody. (`!help duel` for help)' );
 					return;
 				}
-				var opponent = makeId(args[1]);
+				var opponent = utils.makeId(args[1]);
 				NaN
 				//If the opponent isn't in the bank record, we assume they don't exist
 				if(!(bankroll[opponent] >= 0)) {
-					utils.chSend(message, makeTag(challenger) + ', is that one of your imaginary friends?' );
+					utils.chSend(message, utils.makeTag(challenger) + ', is that one of your imaginary friends?' );
 					return;
 				}
 				var challengerEntry = duelManager[challenger];
@@ -2980,11 +2736,11 @@ spongeBot.duel = {
 					bet = 0;
 				}
 				if(bet < 0) {
-					utils.chSend(message, makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
+					utils.chSend(message, utils.makeTag(challenger) + ', if you\'re looking for a loan, please look somewhere else.');
 					return;
 				} else if(bet > 0) {
 					if(bankroll[challenger] < bet) {
-						utils.chSend(message, makeTag(challenger) + ', you can\'t bet what you don\'t have!');
+						utils.chSend(message, utils.makeTag(challenger) + ', you can\'t bet what you don\'t have!');
 						return;
 					}
 					//If everything's good, then we prepare the bets later
@@ -3000,16 +2756,16 @@ spongeBot.duel = {
 				}
 				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
 				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
-					utils.chSend(message, makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
+					utils.chSend(message, utils.makeTag(challenger) + ' you are already dueling somebody! There\'s no backing out now!');
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID === opponent) {
 					//If @challenger already challenged the opponent, then this means they are canceling the challenge
-					utils.chSend(message, makeTag(challenger) + ' has backed out of their challenge against ' + makeTag(opponent) + ' because they are too chicken!');
+					utils.chSend(message, utils.makeTag(challenger) + ' has backed out of their challenge against ' + utils.makeTag(opponent) + ' because they are too chicken!');
 					challengerEntry.status = 'idle';
 					//Return bet
 					if(challengerEntry.bet > 0) {
-						utils.chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
-						addBank(challenger, challengerEntry.bet);
+						utils.chSend(message, utils.makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						utils.addBank(challenger, challengerEntry.bet, bankroll);
 					}
 					
 					delete challengerEntry.opponentID;
@@ -3017,17 +2773,17 @@ spongeBot.duel = {
 					return;
 				} else if(challengerEntry.status === 'challenging' && challengerEntry.opponentID !== opponent) {
 					//If @challenger has already challenged someone else, then they cancel their previous challenge
-					utils.chSend(message, makeTag(challenger) + ' has lost interest in dueling ' + makeTag(challengerEntry.opponentID) + ' and has challenged ' + makeTag(opponent) + ' instead' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
+					utils.chSend(message, utils.makeTag(challenger) + ' has lost interest in dueling ' + utils.makeTag(challengerEntry.opponentID) + ' and has challenged ' + utils.makeTag(opponent) + ' instead' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
 					challengerEntry.opponentID = opponent;
 					//Return bet
 					if(challengerEntry.bet > 0) {
-						utils.chSend(message, makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
-						addBank(challenger, challengerEntry.bet);
+						utils.chSend(message, utils.makeTag(challenger) + ', your previous bet of ' + challengerEntry.bet + ' credits was returned.');
+						utils.addBank(challenger, challengerEntry.bet, bankroll);
 					}
 					
 					
 					//Update the bet
-					addBank(challenger, -bet);
+					utils.addBank(challenger, -bet, bankroll);
 					challengerEntry.bet = bet;
 				}
 				//We allow the player to challenge people who are busy dueling
@@ -3040,13 +2796,13 @@ spongeBot.duel = {
 				if(opponentEntry.status === 'challenging' && opponentEntry.opponentID === challenger) {
 					challengerEntry.status = 'ready';
 					opponentEntry.status = 'ready';
-					utils.chSend(message, makeTag(challenger) + ' to ' + makeTag(opponent) + ': *Challenge accepted!*');
-					utils.chSend(message, makeTag(challenger) + ': Get ready!');
-					utils.chSend(message, makeTag(opponent) + ': Get ready!');
+					utils.chSend(message, utils.makeTag(challenger) + ' to ' + utils.makeTag(opponent) + ': *Challenge accepted!*');
+					utils.chSend(message, utils.makeTag(challenger) + ': Get ready!');
+					utils.chSend(message, utils.makeTag(opponent) + ': Get ready!');
 					utils.chSend(message, 'You will be assigned a random unknown \'target\' number between 0 and 1000. When I say \"Draw!\", enter numbers with `!d <number>` to fire at your opponent! The closer your input is to the target, the more likely you will hit your opponent!');
 					//Start the duel!
 					var duelTimer = setTimeout(function() {
-						utils.chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ': **Draw!**');
+						utils.chSend(message, utils.makeTag(challenger) + ', ' + utils.makeTag(opponent) + ': **Draw!**');
 						
 						challengerEntry.status = 'dueling';
 						opponentEntry.status = 'dueling';
@@ -3059,7 +2815,7 @@ spongeBot.duel = {
 					
 					var stalemateTimer = setTimeout(function() {
 						//If nobody wins, we don't pay out any bets
-						utils.chSend(message, 'The duel between ' + makeTag(challenger) + ' and ' + makeTag(opponent) + ' has ended in a stalemate! All bets have been claimed by me.');
+						utils.chSend(message, 'The duel between ' + utils.makeTag(challenger) + ' and ' + utils.makeTag(opponent) + ' has ended in a stalemate! All bets have been claimed by me.');
 						//addBank(challenger, challengerEntry.bet);
 						//addBank(opponent, opponentEntry.bet);
 						delete challengerEntry.bet;
@@ -3071,19 +2827,19 @@ spongeBot.duel = {
 					opponentEntry.stalemateTimer = stalemateTimer;
 				} else {
 					//Update the bet
-					addBank(challenger, -bet);
+					utils.addBank(challenger, -bet, bankroll);
 					challengerEntry.bet = bet;
 					
 					//Opponent is either idle, ready, or dueling at this point
 					//We wait for the opponent to reciprocate @challenger's request
-					utils.chSend(message, makeTag(challenger) + ' has challenged ' + makeTag(opponent) + ' to a duel' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
-					utils.chSend(message, makeTag(opponent) + ', if you accept this challenge, then return the favor!');
+					utils.chSend(message, utils.makeTag(challenger) + ' has challenged ' + utils.makeTag(opponent) + ' to a duel' + ((bet > 0) ? (' with a bet of ' + bet + ' credits!') : '!'));
+					utils.chSend(message, utils.makeTag(opponent) + ', if you accept this challenge, then return the favor!');
 					if(opponentEntry.status === 'ready' || opponentEntry.status === 'dueling') {
-						utils.chSend(message, makeTag(challenger) + ', ' + makeTag(opponent) + ' is busy dueling ' + makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
+						utils.chSend(message, utils.makeTag(challenger) + ', ' + utils.makeTag(opponent) + ' is busy dueling ' + utils.makeTag(opponentEntry.opponentID) + 'so they may not respond right away');
 					}
 				}
 			} else {
-				utils.chSend(message, makeTag(challenger) + ', use `!help duel`');
+				utils.chSend(message, utils.makeTag(challenger) + ', use `!help duel`');
 			}
 		},
 		help: '`!duel challenge <user>`: Challenge another user to a duel.\n'
@@ -3100,7 +2856,7 @@ spongeBot.d = {
 				var author = message.author.id;
 				var entry = duelManager[author];
 				if(!entry) {
-					utils.chSend(message, makeTag(author) + ', who are you and what are you doing here with that gun?');
+					utils.chSend(message, utils.makeTag(author) + ', who are you and what are you doing here with that gun?');
 				} else if(entry.status === 'dueling') {
 					args = parseInt(args);
 					if ((args >= 0) && (args <= 1000)) {
@@ -3116,13 +2872,13 @@ spongeBot.d = {
 						 * 250			0
 						 */
 						if(Math.random()*100 < chance) {
-							utils.chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and hits!');
-							utils.chSend(message, makeTag(entry.opponentID) + ' has lost the duel with ' + makeTag(author) + '!');
+							utils.chSend(message, utils.makeTag(author) + ' fires at ' + utils.makeTag(entry.opponentID) + ' and hits!');
+							utils.chSend(message, utils.makeTag(entry.opponentID) + ' has lost the duel with ' + utils.makeTag(author) + '!');
 							
 							var reward = entry.bet;
 							if(reward > 0) {
-								utils.chSend(message, makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
-								addBank(author, reward);
+								utils.chSend(message, utils.makeTag(author) + ' has won back the bet of ' + reward + ' credits.');
+								utils.addBank(author, reward, bankroll);
 							}
 							
 							var opponent = entry.opponentID;
@@ -3132,16 +2888,16 @@ spongeBot.d = {
 							if(author !== opponent) {
 								reward = opponentEntry.bet;
 								if(reward > 0) {
-									utils.chSend(message, makeTag(author) + ' has won ' + makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
-									addBank(author, reward);
+									utils.chSend(message, utils.makeTag(author) + ' has won ' + utils.makeTag(opponent) + '\'s bet of ' + reward + ' credits.');
+									utils.addBank(author, reward, bankroll);
 								}
 								
 								//We also take up to our bet amount in credits from the opponent
 								reward = Math.min(entry.bet, bankroll[opponent]);
 								if(reward > 0) {
-									utils.chSend(message, makeTag(author) + ' has also won ' + reward + ' credits from ' + makeTag(opponent) + '!');
-									addBank(author, reward);
-									addBank(opponent, -reward);
+									utils.chSend(message, utils.makeTag(author) + ' has also won ' + reward + ' credits from ' + utils.makeTag(opponent) + '!');
+									utils.addBank(author, reward, bankroll);
+									utils.addBank(opponent, -reward, bankroll);
 								}
 							}
 							
@@ -3165,19 +2921,19 @@ spongeBot.d = {
 							entry.kills++;
 							opponentEntry.deaths++;
 						} else {
-							utils.chSend(message, makeTag(author) + ' fires at ' + makeTag(entry.opponentID) + ' and misses!');
+							utils.chSend(message, utils.makeTag(author) + ' fires at ' + utils.makeTag(entry.opponentID) + ' and misses!');
 							if(difference < 50) {
-                                utils.chSend(message, makeTag(author) + ', you were so close!');
+                                utils.chSend(message, utils.makeTag(author) + ', you were so close!');
                             } else if(difference < 100) {
-                                utils.chSend(message, makeTag(author) + ', your shot just barely missed!');
+                                utils.chSend(message, utils.makeTag(author) + ', your shot just barely missed!');
                             } else if(difference < 150) {
-                                utils.chSend(message, makeTag(author) + ', your aim is getting closer!');
+                                utils.chSend(message, utils.makeTag(author) + ', your aim is getting closer!');
                             } else if(difference < 200) {
-                                utils.chSend(message, makeTag(author) + ', your aim could be better!');
+                                utils.chSend(message, utils.makeTag(author) + ', your aim could be better!');
                             } else if(difference < 250) {
-                                utils.chSend(message, makeTag(author) + ', try aiming at your opponent!');
+                                utils.chSend(message, utils.makeTag(author) + ', try aiming at your opponent!');
                             } else {
-                                utils.chSend(message, makeTag(author) + ', you\'re aiming in the wrong direction!');
+                                utils.chSend(message, utils.makeTag(author) + ', you\'re aiming in the wrong direction!');
                             }
 						}
 					} else {
@@ -3185,11 +2941,11 @@ spongeBot.d = {
 					}
 				}
 				else if(entry.status === 'ready') {
-					utils.chSend(message, makeTag(author) + ', *no cheating!*');
+					utils.chSend(message, utils.makeTag(author) + ', *no cheating!*');
 				} else if(entry.status === 'challenging') {
-					utils.chSend(message, makeTag(author) + ', sorry, but shooting at your opponent before they even accept your challenge is just plain murder.');
+					utils.chSend(message, utils.makeTag(author) + ', sorry, but shooting at your opponent before they even accept your challenge is just plain murder.');
 				} else {
-					utils.chSend(message, makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
+					utils.chSend(message, utils.makeTag(author) + ', sorry, but gratuitous violence is not allowed.');
 				}
 			}
 		},
@@ -3220,9 +2976,9 @@ spongeBot.sponge = {
 		}
 		if(!found) {
 			sponge[author] = true;
-			utils.chSend(message, makeTag(author) + ', you have been polymorphed into a sponge!');
+			utils.chSend(message, utils.makeTag(author) + ', you have been polymorphed into a sponge!');
 		} else {
-			utils.chSend(message, makeTag(author) + ', you have been polymorphed back to normal!');
+			utils.chSend(message, utils.makeTag(author) + ', you have been polymorphed back to normal!');
 		}
 	}
 }
@@ -3230,25 +2986,28 @@ spongeBot.sponge = {
 spongeBot.v = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
-		utils.chSend(message, '`' + VERSION_STRING + '`');
+		utils.chSend(message, '`' + cons.VERSION_STRING + '`');
 	},
-	help: 'Outputs the current bot code VERSION_STRING.'
+	help: 'Outputs the current bot code cons.VERSION_STRING.'
 }
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
-		utils.chSend(message, ':robot:` SpongeBot v.' + VERSION_STRING + ' online.');
-		utils.chSend(message, SPONGEBOT_INFO);
+		utils.chSend(message, ':robot:` SpongeBot v.' + cons.VERSION_STRING + ' online.');
+		utils.chSend(message, cons.SPONGEBOT_INFO);
 	},
 	help: 'Outputs the current bot code version and other info.'
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-  utils.debugPrint('Spongebot version ' + VERSION_STRING + ' READY!');
+  utils.debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(SPAMCHAN_ID).send('I live!');}
-  loadBanks();
-  loadStats();
+  
+  // now loading via require():
+  // loadBanks();
+  // loadStats();
+  
 });
 //-----------------------------------------------------------------------------
 BOT.on('message', message => {
@@ -3265,7 +3024,7 @@ BOT.on('message', message => {
 		parms = parms.slice(1); // remove leading space
 		
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			utils.debugPrint('  ' + makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			utils.debugPrint('  ' + utils.makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
 				if (spongeBot[theCmd].access) {
@@ -3304,7 +3063,7 @@ BOT.on('message', message => {
 		}
 	} else {
 		if(sponge[message.author.id]) {
-			utils.chSend(message, makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
+			utils.chSend(message, utils.makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
 		}
 	}
 });
