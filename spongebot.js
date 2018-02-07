@@ -48,7 +48,7 @@ const SPAMCHAN_ID = "402591405920223244";
 const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9983';
+const VERSION_STRING = '0.9984';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -637,7 +637,7 @@ var addBank = function(who, amt) {
 	
 	bankroll[who] += parseInt(amt);
 	saveBanks();
-	return true;
+	return bankroll[who];
 };
 var makeBankFile = function(bankdata) {
 	var theFile = '';
@@ -943,6 +943,48 @@ spongeBot.zclear = {
 	}
 }
 //-----------------------------------------------------------------------------
+spongeBot.collect = {
+	help: 'Collects from your weekly loot bag! What will you find?',
+	timedCmd: {
+		howOften: ONE_WEEK,
+		gracePeriod: ONE_HOUR,
+		failResponse: 'You open up your loot bag to `!collect`, but it\'s ' +
+		  'completely empty. :slight_frown: . It takes <<howOften>> for new ' +
+		  'loot to appear in your `!collect`ion bag. Yours will be ready in <<next>>'},
+	do: function(message) {
+		var who = message.author.id;	
+		if (!collectTimer(message, who, 'collect')) {
+			// not time yet. since we used collectTimer();, the rejection message
+			// is automatic, and we can just return; here if we want
+			return;
+		} else {
+			// if we're here, it's time to collect, and collectTime has been updated to now
+			var messStr =  ':moneybag: Loot bag `!collect`ed!  :moneybag:\n\n';
+			var collectVal = 12500;
+			
+			//small extra fruit bonus for now using loot tree code/formula (300 / fr.)
+			if (tree.trees.hasOwnProperty(who)) {
+				fruitBonus += 750 * tree.trees[who].length;
+				messStr += ' :money_mouth: Bonus of ' + fruitBonus + ' for trying ' +
+				' the `!tree fruit` alpha-testing feature since last bot restart!\n';
+			}
+			var numTix = 1;
+			
+			
+			messStr += makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
+			  'and ' + numTix + 'x :tickets: (raffle tickets) to your bank. \n';
+			 messStr += makeTag(who) + ', you now have ' + alterStat(who, 'raffle', 'ticketCount', numTix) +
+			   ' :tickets: s and ' + addBank(who, collectVal) + ' credits! ';
+			//random saying extra bit on end (using tree sayings for now)
+					
+			// so we don't hurt the original
+			var sayings = JSON.stringify(tree.config.harvestMessages);
+			sayings = JSON.parse(sayings);
+			messStr += listPick(sayings);
+			chSend(message, messStr);
+		}
+	}
+}
 spongeBot.tree = {
 	subCmd: {
 		check: {
