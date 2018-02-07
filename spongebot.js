@@ -25,6 +25,7 @@ const Discord = require('discord.js');
 const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
 const SCRAMWORDS = require('../data/scramwords.json');
+const ESO_SCRAMWORDS = require('../data/esowords.json'); // Temporary. Elder Scrolls Online words for side project
 const BOT = new Discord.Client();
 
 const FS = require('fs');
@@ -39,6 +40,7 @@ const ONE_HOUR = 3600000;
 
 const FRUIT_VAL = 300; // temporary!
 
+
 const SPONGE_ID = "167711491078750208";
 const ARCH_ID = "306645821426761729";
 const MAINCHAN_ID = "402126095056633863";
@@ -46,7 +48,7 @@ const SPAMCHAN_ID = "402591405920223244";
 const DEBUGCHAN_ID = "410435013813862401";
 const SERVER_ID = "402126095056633859";
 const START_BANK = 10000;
-const VERSION_STRING = '0.9982.fruit.by.the.foot+debug.tools+e';
+const VERSION_STRING = '0.9983';
 const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon ' +
   '\nreleased under MIT license. Bot source code can be found at: ' +
   '\n https://github.com/SpongeJr/spongebot-discord' +
@@ -54,9 +56,11 @@ const SPONGEBOT_INFO = 'SpongeBot (c) 2018 by Josh Kline and 0xABCDEF/Archcannon
 //-----------------------------------------------------------------------------
 var debugMode = true;
 var enableDebugChan = true;
-var autoEmbed = true;
+var autoEmbed = false;
 var spongeBot = {};
 var story = '';
+//-----------------------------------------------------------------------------
+// var iFic = require('../games/ific.js');
 //-----------------------------------------------------------------------------
 var acro = {
 	runState: false,
@@ -95,7 +99,7 @@ var acro = {
 	]
 };
 var listPick = function(theList) {
-	// takes Array, returns a random element destructively pulled from it
+	// expects Array, returns a random element destructively pulled from it
 	var choice = Math.random() * theList.length;
 	return theList.splice(choice, 1);
 };
@@ -179,8 +183,11 @@ var tree = {
 	}
 }
 var scram = {};
-
-// should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
+var scramWordLists = {
+	"278588293321326594": ESO_SCRAMWORDS,
+	"402126095056633859": SCRAMWORDS
+};
+// these should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
 // note: make sure wordDelay - wordDelayVariation > guessTime to prevent overlap!
 var scramConfig = {
 	wordDelay: 195000,
@@ -791,10 +798,9 @@ var bigLetter = function(inp) {
 		ch = inp.charAt(i);
 		
 		if (ch === ' ') {
-			//TODO: figure out how to do this bit:
-			//outp += ':blank1: ';
-			
-			outp += '    ';
+			//TODO: figure out how to do the blank tile emoji
+			//outp += '<:blank:410757195836293120>';
+			outp += '____ ' ;
 		} else {
 			ch = ch.toLowerCase();
 			outp += ':regional_indicator_' + ch + ': ';
@@ -889,6 +895,11 @@ var collectTimer = function(message, who, command) {
 			chSend(message, failStr);
 			return false;
 		}
+	}
+}
+spongeBot.blank = {
+	do: function(message) {
+		message.react('410754653249339403');
 	}
 }
 //-----------------------------------------------------------------------------
@@ -1487,6 +1498,18 @@ spongeBot.s = {
 
 		parms = parms.toLowerCase();
 		
+		if (!scram.hasOwnProperty(server.id)) {
+			debugPrint('!s: No key ' + server.id + ' in scram variable! Someone probably ran !s before !scram.');
+			chSend(message, 'Please start `!scram` before guessing a scrambled word.');
+			return;
+		}
+		
+		if (!scram[server.id].hasOwnProperty('runState')) {
+			debugPrint('!s: No key .runState in scram.' + server.id + ' Maybe someone ran !s before !scram.');
+			chSend(message, 'Please start `!scram` before guessing a scrambled word.');
+			return;
+		}
+		
 		if (scram[server.id].runState !== 'guessing') {
 			chSend(message, 'You can\'t guess the scrambled word now! ' +
 			  'You need to wait for a new word to unscramble!');
@@ -1550,13 +1573,22 @@ spongeBot.scram = {
 		}
 		
 		if (scram[server.id].runState === 'ready') {
-			
-			var keys = Object.keys(SCRAMWORDS);
-			
+		
+			// does this server have a custome word list? use if so
+			if (scramWordLists.hasOwnProperty(server.id)) {
+				wordList = scramWordLists[server.id];
+			} else {
+				// use default list
+				wordList = SCRAMWORDS;
+			}
+			var keys = Object.keys(wordList);
 			var theCat = keys[parseInt(Math.random() * keys.length)];
-			var theWord = listPick(SCRAMWORDS[theCat].split(','))[0];
+			var catWords = wordList[theCat].split(',');
+			var theWord = listPick(catWords)[0];
+			
 			scram[server.id].word = theWord;		
 			var scramWord = scrambler(theWord);
+			debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
 			chSend(message, 'Unscramble this: ' + bigLetter(scramWord) + 
 			  '   *Category*: ' + theCat);
 			  
@@ -1564,9 +1596,12 @@ spongeBot.scram = {
 			  Math.random() * scramConfig.wordDelayVariation);
 			var guessTime = scramConfig.guessTime + scramConfig.extraGuessTime * theWord.length;
 			  
-			chSend(message, 'You have ' + parseInt(guessTime / 1000) + 
+			var theMess = ''			
+			 
+			theMess += 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
-			  parseInt(theDelay / 1000) + ' seconds.');
+			  parseInt(theDelay / 1000) + ' seconds.'
+			chSend(message, theMess);
 			scram[server.id].runState = 'guessing';
 			
 			scram[server.id].timer = setTimeout(function() {
