@@ -1600,7 +1600,7 @@ spongeBot.bank = {
 		if (parms[0] === '') {
 			who = message.author.id;
 			
-			if (typeof bankroll[who].credits === 'undefined') {
+			if (typeof bankroll[who] === 'undefined') {
 				utils.chSend(message, utils.makeTag(who) + ', I don\'t see an account ' +
 				  'for you, so I\'ll open one with ' + cons.START_BANK + ' credits.');
 				
@@ -1623,7 +1623,7 @@ spongeBot.bank = {
 			who = utils.makeId(parms[0]);
 		}
 		
-		if (typeof bankroll[who].credits === 'undefined') {
+		if (typeof bankroll[who] === 'undefined') {
 			utils.chSend(message, message.author + ', they don\'t have a bank account.');
 		} else if (isNaN(bankroll[who].credits)) {
 			utils.chSend(message, message.author + ' that bank account looks weird, thanks' +
