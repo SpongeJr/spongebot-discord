@@ -1,5 +1,21 @@
 // this var is local to the module
 var ut = require('../lib/utils.js');
+var v = {
+	story: 'Once upon a time...',
+	undoIndex: 0,
+	quotes: [
+		{
+			"who": "167711491078750208",
+			"quote": "I never said this, it's actually hardcoded."
+		},
+		{	"who": "167711491078750208",
+			quote: "I never said this, either."
+		},
+		{	"who": "Abraham Lincoln",
+			quote: "What cherry tree?!"
+		}
+	]
+}
 //-----------------------------------------------------------------------------
 // this whole .z object, .zlcear object, and .zstoryup object are all going to
 // be accessible in the global context.
@@ -8,34 +24,55 @@ var ut = require('../lib/utils.js');
 // var ific = require('ific.js'); 
 // ific.js is this file
 // ific is a variable that now holds the whole module.exports object below
+
+// The actual organiation in one of these modules is up to you,
+// but there's are useful patterns we're working on coming up with.
 //
-// Once you hit spongeBot.yourCommand.do(), you should be finding your way
-// to somemodule.do() or (better, so that you can store variables and do
-// other fancy stuff): somemodule.somethingelse.do()
+// In this example, I'm keeping a story in an object v that is local
+// to this whole module, not accessible to the outside, but fully
+// visible to everything within. I do this so it can be accessed by
+// mutliple commands in this module.
 //
-// THe actual organiation in one of these modules is up to you,
-// but there's are useful patterns we're working on coming up with
+// If I need a value back in the global scope, I should return it
+
 
 module.exports = {
 	z: {
-		v: {
-			story: 'Once upon a time...'
-		},
 		do: function(message, parms) {
-			this.story += parms + ' ';
-			chSend(message, '```' + this.story + '```');
+			v.undoIndex = v.story.length;
+			v.story += parms + ' ';
+			if (v.story !== '') {
+				ut.chSend(message, '```' + v.story + '```');
+			} else {
+				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');
+			}
 		},
 	},
+	zundo: {
+		do: function(message, parms) {
+			v.story = v.story.slice(0, v.undoIndex);
+			v.undoIndex = v.story.length;
+			if (v.story !== '') {
+				ut.chSend(message, ':pencil: ```' + v.story + '```');
+			} else {
+				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');
+			}
+		}
+	},
 	zclear: {
-		do: function(message, parms, v) {
+		do: function(message, parms) {
 			v.story = '';
-			chSend(message, '`Story cleared.`');
-			return v;
+			ut.chSend(message, '`Story cleared.`');
 		}
 	},
 	zstoryup: {
-		do: function(message, parms, v) {
+		do: function(message, parms) {
 			
+		}
+	},
+	zstorysave: {
+		do: function(mesasge, parms) {
+			ut.chSend(message, '`Story saving is still being implemented.`');
 		}
 	}
 };

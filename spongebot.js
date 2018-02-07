@@ -602,6 +602,11 @@ spongeBot.zclear = {
 		iFic.zclear.do(message, parms);
 	}
 };
+spongeBot.zundo = {
+	do: function(message, parms) {
+		iFic.zundo.do(message, parms);
+	}
+}
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
