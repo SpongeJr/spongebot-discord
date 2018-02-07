@@ -3012,10 +3012,10 @@ var hangman = {
 		}
 		var result = '';
 		for(var i = 0; i < last; i++) {
-			result += characters[i] + ' ';
+			result += hangman.characters[i] + ' ';
 		}
 		if(last > -1) {
-			result += characters[last];
+			result += hangman.characters[last];
 		}
 		return result;
 	}
