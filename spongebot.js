@@ -29,19 +29,12 @@ const BOT = new Discord.Client();
 
 const FS = require('fs');
 
-const ONE_DAY = 86400000;
-const ONE_WEEK = 604800000;
-const ONE_HOUR = 3600000;
+
 
 const FRUIT_VAL = 300; // temporary!
 
-const SPONGE_ID = "167711491078750208";
-const ARCH_ID = "306645821426761729";
-const MAINCHAN_ID = "402126095056633863";
-const SPAMCHAN_ID = "402591405920223244";
-const DEBUGCHAN_ID = "410435013813862401";
-const SERVER_ID = "402126095056633859";
-const START_BANK = 10000;
+
+
 
 //-----------------------------------------------------------------------------
 var spongeBot = {};
@@ -477,7 +470,7 @@ toppings = toppings.split(",");
 
 //-----------------------------------------------------------------------------
 var hasAccess = function(who, accessArr) {
-	return (who === SPONGE_ID || who === ARCH_ID);
+	return (who === cons.SPONGE_ID || who === cons.ARCH_ID);
 };
 //-----------------------------------------------------------------------------
 var msToTime = function(inp) {
@@ -599,28 +592,22 @@ spongeBot.backup = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.z = {
-	v: {
-		story: 'Once upon a time... '
-	},
 	help: 'Use `!z` word to keep a story going.',
 	do: function(message, parms) {
-		v = spongeBot.z.v; // get vars
-		iFic.z.do(message, parms, v)
+		iFic.z.do(message, parms);
 	}
 };
 spongeBot.zclear = {
 	do: function(message, parms) {
-		v = spongeBot.z.v; // get vars
-		iFic.zclear.do(message, parms, v)
-		spongeBot.z.v // update vars
+		iFic.zclear.do(message, parms);
 	}
 };
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
 	timedCmd: {
-		howOften: ONE_WEEK,
-		gracePeriod: ONE_HOUR,
+		howOften: cons.ONE_WEEK,
+		gracePeriod: cons.ONE_HOUR,
 		failResponse: 'You open up your loot bag to `!collect`, but it\'s ' +
 		  'completely empty. :slight_frown: . It takes <<howOften>> for new ' +
 		  'loot to appear in your `!collect`ion bag. Yours will be ready in <<next>>'},
@@ -845,7 +832,7 @@ spongeBot.loot = {
 		disabled: false,
 		access: false,
 		timedCmd: {
-			howOften: ONE_HOUR,
+			howOften: cons.ONE_HOUR,
 			gracePeriod: 60000,
 			failResponse: '`!loot` boxes take about an hour to recharge. ' +
 			' You still have about <<next>> to wait. :watch:'
@@ -1567,7 +1554,7 @@ spongeBot.give = {
 spongeBot.gift = {
 	cmdGroup: 'Bankroll',
 	do: function(message, parms) {
-		if (message.author.id === SPONGE_ID) {
+		if (message.author.id === cons.SPONGE_ID) {
 			
 			if (!parms) {
 				utils.chSend(message, 'You forgot the target to !gift.');
@@ -1605,7 +1592,7 @@ spongeBot.bank = {
 			
 			if (typeof bankroll[who].credits === 'undefined') {
 				utils.chSend(message, utils.makeTag(who) + ', I don\'t see an account ' +
-				  'for you, so I\'ll open one with ' + START_BANK + ' credits.');
+				  'for you, so I\'ll open one with ' + cons.START_BANK + ' credits.');
 				
 				/*
 				var server = bot.guilds.get(SERVER_ID);
@@ -1618,7 +1605,7 @@ spongeBot.bank = {
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
 				*/
 				
-				bankroll[who].credits = START_BANK;
+				bankroll[who].credits = cons.START_BANK;
 				utils.saveBanks(cons.BANK_FILENAME, bankroll);
 				utils.debugPrint('New bankroll made for ' + who + ' via !bank.');
 			} 
@@ -1630,8 +1617,8 @@ spongeBot.bank = {
 			utils.chSend(message, message.author + ', they don\'t have a bank account.');
 		} else if (isNaN(bankroll[who].credits)) {
 			utils.chSend(message, message.author + ' that bank account looks weird, thanks' +
-			  ' for pointing it out. I\'ll reset it to ' + START_BANK);
-			bankroll[who].credits = START_BANK;
+			  ' for pointing it out. I\'ll reset it to ' + cons.START_BANK);
+			bankroll[who].credits = cons.START_BANK;
 			utils.saveBanks(cons.BANK_FILENAME, bankroll);
 			utils.debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
 			  
@@ -2064,7 +2051,8 @@ var buildHelp = function() {
 //-----------------------------------------------------------------------------
 spongeBot.ticket = {
 	do: function(message, parms) {
-		if (message.author.id === SPONGE_ID) {
+		// replace with access check someday
+		if (message.author.id === cons.SPONGE_ID) {
 			
 			if (!parms) {
 				utils.chSend(message, 'You forgot the target to for !ticket.');
@@ -2189,7 +2177,7 @@ spongeBot.time = {
 			// <time> tells how long from now until <time + (1 day | 1 week)> or if it's already passed
 			var howMuch;
 			var when;
-			if (parms[0] === 'nextWeek') {howMuch = ONE_WEEK;} else {howMuch = ONE_DAY;};
+			if (parms[0] === 'nextWeek') {howMuch = cons.ONE_WEEK;} else {howMuch = cons.ONE_DAY;};
 			when = parseInt(parms[1]) + howMuch - now.valueOf();
 			if (when < 0) {
 				utils.chSend(message, 'That was ' + msToTime(Math.abs(when)) + ' ago');
@@ -2214,7 +2202,7 @@ spongeBot.say = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 		
-		if (message.author.id === SPONGE_ID) {
+		if (message.author.id === cons.SPONGE_ID) {
 			if (parms === '') {return;}			
 			var chan;
 			if (parms.startsWith('#')) {
@@ -2223,7 +2211,7 @@ spongeBot.say = {
 				parms.shift();
 				parms = parms.join(' ');
 			} else {
-				chan = MAINCHAN_ID;
+				chan = cons.MAINCHAN_ID;
 			}
 			BOT.channels.get(chan).send(parms);
 		} else {
@@ -2606,11 +2594,11 @@ spongeBot.a = {
 spongeBot.arch = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
-		if(message.author.id === ARCH_ID) {
-			utils.chSend(message, utils.makeTag(ARCH_ID) + ', your bank has been reset');
-			bankroll[ARCH_ID] = 50000;
+		if(message.author.id === cons.ARCH_ID) {
+			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', your bank has been reset');
+			bankroll[cons.ARCH_ID] = 50000;
 		} else {
-			utils.chSend(message, utils.makeTag(ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
+			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
 }
@@ -3002,7 +2990,7 @@ spongeBot.version = {
 BOT.on('ready', () => {
   utils.debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
-  if (Math.random() < 0.1) {BOT.channels.get(SPAMCHAN_ID).send('I live!');}
+  if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
   
   // now loading via require():
   // loadBanks();
