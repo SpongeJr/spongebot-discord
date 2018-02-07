@@ -3031,7 +3031,7 @@ spongeBot.hangman = {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', hangman is currently inactive. Start new game with `!hangman start <answer> <hint>`.');
 			} else {
 				var reply = 'Hangman';
-				reply += '\nAnswer: ' + hangman.answer;
+				reply += '\nAnswer: ' + '`' + hangman.display + '`';
 				reply += '\nHint: ' + hangman.hint;
 				reply += '\nCharacters: ' + hangman.displayCharacters();
 				reply += '\nChances Left: ' + hangman.chances;
