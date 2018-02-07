@@ -2321,7 +2321,7 @@ spongeBot.acro = {
 		var CATEGORY_DEFAULT = 'None / General'
 		var category = CATEGORY_DEFAULT;
 		
-		var acroLen = 3 + Math.floor(Math.random() * 3);
+		var acroLen = 0;
 		var table = '';
 		
 		for(var i = 0; i < parms.length; i++) {
@@ -2368,15 +2368,23 @@ spongeBot.acro = {
 					return;
 				}
 			} else if(parameter === 'playtime') {
-				timeAllowed = parseInt(argument);
-				if(!timeAllowed) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `playtime` argument');
+				argument = parseInt(argument);
+				if(!argument) {
+					chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
 					return;
 				}
+				if(argument <= 0) {
+					chSend(message, makeTag(message.author.id) + ', `playtime` argument must be greater than 0');
+				}
+				timeAllowed = argument;
+				
 			} else if(parameter === 'length') {
 				
 				var argument = parseInt(argument);
 				if(argument) {
+					if(argument <= 0) {
+						chSend(message, makeTag(message.author.id) + ', `length` argument must be greater than 0');
+					}
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
 						utils.chSend(message, utils.makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
@@ -2405,11 +2413,12 @@ spongeBot.acro = {
 			var catNo = Math.floor(Math.random() * acro.categories.length);
 			category = acro.categories[catNo];
 		}
-		if(!timeAllowed) {
-			timeAllowed = acroLen * 10 + 20;
-		}
-		//Initialize the letters
+		//Initialize the letters if we haven't chosen a custom set
 		if(letters === '') {
+			//If we use custom letters, then acroLen has already been initialized
+			if(acroLen <= 0) {
+				acroLen = 3 + Math.floor(Math.random() * 3);
+			}
 			//Check for custom table
 			if(table === '') {
 				letters = acro.pickLetters(acroLen);
@@ -2417,6 +2426,11 @@ spongeBot.acro = {
 				letters = acro.pickLettersCustom(acroLen, table);
 			}
 		}
+		
+		if(!timeAllowed) {
+			timeAllowed = acroLen * 10 + 20;
+		}
+		
 		acro.letters = letters;
 		
 		//Recycle this variable
