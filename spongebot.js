@@ -3023,7 +3023,9 @@ var hangman = {
 spongeBot.hangman = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
+		args = args.split(' ');
 		var action = args[0] || '';
+		action = action.toLowerCase();
 		if(action === '') {
 			if(!hangman.active) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', hangman is currently inactive. Start new game with `!hangman start <answer> <hint>`.');
@@ -3037,8 +3039,7 @@ spongeBot.hangman = {
 				utils.chSend(message, reply);
 			}
 			return;
-		}
-		else if(action === 'start') {
+		} else if(action === 'start') {
 			if(!hangman.active) {
 				var answer = args[1] || '';
 				if(answer === '') {
@@ -3081,7 +3082,7 @@ spongeBot.hangman = {
 		}
 		
 		if(!hangman.active) {
-			utils.chSend(message, utils.makeTag(message.author.id) + ', hangman is currently inactive. Start new game with `!hangman start <answer>`.');
+			utils.chSend(message, utils.makeTag(message.author.id) + ', hangman is currently inactive. Start new game with `!hangman start <answer> <hint>`.');
 			return;
 		}
 		
