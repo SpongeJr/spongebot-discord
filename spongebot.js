@@ -3035,7 +3035,7 @@ spongeBot.hangman = {
 				reply += '\nHint: ' + hangman.hint;
 				reply += '\nCharacters: ' + hangman.displayCharacters();
 				reply += '\nChances Left: ' + hangman.chances;
-				reply += '\nBounty: ' + reward;
+				reply += '\nBounty: ' + hangman.reward;
 				utils.chSend(message, reply);
 			}
 			return;
