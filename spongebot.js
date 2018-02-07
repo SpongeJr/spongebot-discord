@@ -3110,10 +3110,10 @@ spongeBot.hangman = {
 			var nextDisplay = '';
 			for(var i = 0; i < hangman.answer.length; i++) {
 				if(hangman.answer.charAt(i).toLowerCase() === character) {
-					nextDisplay = hangman.answer.charAt(i);
+					nextDisplay += hangman.answer.charAt(i);
 					found++;
 				} else {
-					nextDisplay = hangman.display.charAt(i);
+					nextDisplay += hangman.display.charAt(i);
 				}
 			}
 			hangman.display = nextDisplay;
