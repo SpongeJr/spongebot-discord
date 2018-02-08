@@ -2336,7 +2336,7 @@ spongeBot.acro = {
 		var CATEGORY_DEFAULT = 'None / General'
 		var category = CATEGORY_DEFAULT;
 		
-		var acroLen = 3 + Math.floor(Math.random() * 3);
+		var acroLen = 0;
 		var table = '';
 		
 		for(var i = 0; i < parms.length; i++) {
@@ -2383,15 +2383,23 @@ spongeBot.acro = {
 					return;
 				}
 			} else if(parameter === 'playtime') {
-				timeAllowed = parseInt(argument);
-				if(!timeAllowed) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', invalid `playtime` argument');
+				argument = parseInt(argument);
+				if(!argument) {
+					chSend(message, makeTag(message.author.id) + ', invalid `playtime` argument');
 					return;
 				}
+				if(argument <= 0) {
+					chSend(message, makeTag(message.author.id) + ', `playtime` argument must be greater than 0');
+				}
+				timeAllowed = argument;
+				
 			} else if(parameter === 'length') {
 				
 				var argument = parseInt(argument);
 				if(argument) {
+					if(argument <= 0) {
+						chSend(message, makeTag(message.author.id) + ', `length` argument must be greater than 0');
+					}
 					//We only change "table" if we haven't yet set the letters
 					if(letters !== '') {
 						utils.chSend(message, utils.makeTag(message.author.id) + ', warning: `length` argument overridden by `letters` argument');
@@ -2420,11 +2428,12 @@ spongeBot.acro = {
 			var catNo = Math.floor(Math.random() * acro.categories.length);
 			category = acro.categories[catNo];
 		}
-		if(!timeAllowed) {
-			timeAllowed = acroLen * 10 + 20;
-		}
-		//Initialize the letters
+		//Initialize the letters if we haven't chosen a custom set
 		if(letters === '') {
+			//If we use custom letters, then acroLen has already been initialized
+			if(acroLen <= 0) {
+				acroLen = 3 + Math.floor(Math.random() * 3);
+			}
 			//Check for custom table
 			if(table === '') {
 				letters = acro.pickLetters(acroLen);
@@ -2432,6 +2441,11 @@ spongeBot.acro = {
 				letters = acro.pickLettersCustom(acroLen, table);
 			}
 		}
+		
+		if(!timeAllowed) {
+			timeAllowed = acroLen * 10 + 20;
+		}
+		
 		acro.letters = letters;
 		
 		//Recycle this variable
@@ -3090,6 +3104,7 @@ spongeBot.hangman = {
 				hangman.active = true;
 				utils.chSend(message, utils.makeTag(message.author.id) + ' has taken a random person for hostage and has threatened to hang the hostage unless someone guesses the secret password! The hostage has promised a reward of ' + hangman.reward + ' credits to whoever reveals the correct answer!');
 				utils.chSend(message, 'Answer: `' + hangman.display + '`');
+				utils.chSend(message, 'Hint: ' + hangman.hint);
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', a game of hangman is already running');
 			}
@@ -3133,29 +3148,31 @@ spongeBot.hangman = {
 			}
 			hangman.display = nextDisplay;
 			hangman.characters.push(character);
-			utils.chSend(message, 'Answer: `' + hangman.display + '`');
 			if(found > 0) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', you have found ' + found + ' instances of ' + character.toUpperCase() + ' in the answer.');
+				utils.chSend(message, 'Answer: `' + hangman.display + '`');
 				//Check if we already revealed the answer
 				for(var i = 0; i < hangman.answer.length; i++) {
 					if(hangman.answer.charAt(i).toLowerCase() !== hangman.display.charAt(i).toLowerCase()) {
 						return;
 					}
 				}
-				hangman.active = false;
+				
 				utils.chSend(message, utils.makeTag(message.author.id) + ' has completed the answer!');
 				utils.chSend(message, utils.makeTag(message.author.id) + ' wins ' + hangman.reward + ' credits!');
 				utils.addBank(message.author.id, hangman.reward, bankroll);
+				hangman.active = false;
 				return;
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', you have found 0 instances of ' + character.toUpperCase() + ' in the answer.');
+				utils.chSend(message, 'Answer: `' + hangman.display + '`');
 				hangman.chances--;
 				if(hangman.chances < 1) {
 					utils.chSend(message, 'The hangman has died! Game over!');
 					utils.chSend(message, utils.makeTag(message.author.id) + ', think about what you have done! The hangman is now dead because of you!');
 					hangman.active = false;
 				} else {
-					utils.chSend(hangman.chances + ' chances remain!');
+					utils.chSend(message, hangman.chances + ' chances remain!');
 				}
 			}
 		} else if(action === 'answer') {
@@ -3163,9 +3180,10 @@ spongeBot.hangman = {
 			if(answer === '') {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', what? Cat got your tongue? If you have an answer, then speak!');
 			} else if(answer.toLowerCase() === hangman.answer) {
-				utils.chSend(message, utils.makeTag(message.author.id) + ' speaks the correct answer and saved the day!');
+				utils.chSend(message, utils.makeTag(message.author.id) + ' speaks the correct answer and saves the day!');
 				utils.chSend(message, utils.makeTag(message.author.id) + ' wins ' + hangman.reward + ' credits!');
 				utils.addBank(message.author.id, hangman.reward, bankroll);
+				hangman.active = false;
 			} else {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', that is not the correct answer!');
 				hangman.chances--;
