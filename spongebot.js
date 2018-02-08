@@ -660,7 +660,7 @@ spongeBot.collect = {
 			messStr += utils.makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
 			  'and ' + numTix + 'x :tickets: (raffle tickets) to your bank. \n';
 			 messStr += utils.makeTag(who) + ', you now have ' + utils.alterStat(who, 'raffle', 'ticketCount', numTix, gameStats) +
-			   ' :tickets: s and ' + utils.utils.addBank(who, collectVal, bankroll) + ' credits! ';
+			   ' :tickets: s and ' + utils.addBank(who, collectVal, bankroll) + ' credits! ';
 			//random saying extra bit on end (using tree sayings for now)
 					
 			// so we don't hurt the original
@@ -1629,7 +1629,7 @@ spongeBot.bank = {
 				
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
 				*/
-				
+				bankroll[who] = {};
 				bankroll[who].credits = cons.START_BANK;
 				utils.saveBanks(cons.BANK_FILENAME, bankroll);
 				utils.debugPrint('New bankroll made for ' + who + ' via !bank.');
@@ -2635,7 +2635,10 @@ spongeBot.arch = {
 	do: function(message, args) {
 		if(message.author.id === cons.ARCH_ID) {
 			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', your bank has been reset');
-			bankroll[cons.ARCH_ID] = 50000;
+			if (!bankroll.hasOwnProperty(cons.ARCH_ID)) {
+				bankroll[cons.ARCH_ID] = {}; // just in case user doesn't exist
+			}
+			bankroll[cons.ARCH_ID].credits = 50000;
 		} else {
 			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
