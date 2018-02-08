@@ -66,8 +66,22 @@ module.exports = {
 			// for each user with tickets...
 			for (var who in numTix) {
 				
-				// show the number they have
-				str += who + '(' + numTix[who] + ')  |  ';
+				// show user & number of tickets they have in parenthesis
+				// use their stored nick if possible
+				if (gameStats[who].hasOwnProperty('profile')) {
+					// they have .profile...
+					if (gameStats[who].profile.hasOwnProperty('nick')) {
+						// they have .profile.nick, use it
+						str += gameStats[who].profile.nick;
+					} else {
+						// profile but no .nick, just put an @ and their id (don't ping them)
+						str += '@' + who;
+					}
+				} else {
+					// no .profile, just put an @ and their id (don't ping them)
+					str += '@' + who;
+				}
+				str += '(' + numTix[who] + ')   | '; // number of tickets in parens
 
 				// for each ticket belonging to them...
 				for (var i = 0; i < numTix[who]; i++) {
