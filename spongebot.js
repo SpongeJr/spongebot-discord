@@ -2824,7 +2824,11 @@ var minesweeper = {
 	active: false,
 	getDisplay: function() {
 		var result = '';
-		for(var y = 0; y < minesweeper.height; y++) {
+		for(var x = 0; x < minesweeper.width; x++) {
+			var cell = '' + x + '_' + (minesweeper.height - 1);
+			result += minesweeper.display[cell];
+		}
+		for(var y = minesweeper.height - 2; y > -1; y--) {
 			result += '\n';
 			for(var x = 0; x < minesweeper.width; x++) {
 				var cell = '' + x + '_' + y;
@@ -2835,7 +2839,7 @@ var minesweeper = {
 		return result;
 	},
 	sendDisplay: function(message) {
-		var result = minesweeper.getDisplay();
+		/*
 		result = result.split('\n');
 		var send = '';
 		for(var i = 0; i < result.length; i++) {
@@ -2850,6 +2854,8 @@ var minesweeper = {
 		if(send.length > 0) {
 			utils.chSend(message, send);
 		}
+		*/
+		utils.chSend(message, '```\n' + minesweeper.getDisplay() + '\n```');
 	},
 }
 spongeBot.minesweeper = {
@@ -2881,7 +2887,8 @@ spongeBot.minesweeper = {
 					if(mine) {
 						minesweeper.mines++;
 					}
-					minesweeper.display[cell] = ':white_large_square:';
+					//minesweeper.display[cell] = ':white_large_square:';
+					minesweeper.display[cell] = '.';
 				}
 			}
 			minesweeper.active = true;
@@ -2897,7 +2904,7 @@ spongeBot.minesweeper = {
 		
 		if(action === 'step') {
 			var x = parseInt(args[1]);
-			var y = parseInt(args[2]);
+			var y = parseInt(args[2]) - 1;
 			debugPrint('x: ' + x + ', y: ' + y);
 			if(!x || !y) {
 				if(!x && !y) {
@@ -2913,7 +2920,8 @@ spongeBot.minesweeper = {
 			debugPrint('cell = ' + cell);
 			if(minesweeper.grid[cell]) {
 				minesweeper.active = false;
-				minesweeper.display[cell] = ':bomb:';
+				//minesweeper.display[cell] = ':bomb:';
+				minesweeper.display[cell] = 'X';
 				minesweeper.sendDisplay(message);
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
@@ -2928,7 +2936,8 @@ spongeBot.minesweeper = {
 				surrounding + (grid[(x+1) + '_' + (y-1)] ? 1 : 0);
 				surrounding + (grid[(x+1) + '_' + (y)] ? 1 : 0);
 				surrounding + (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
-				minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+				//minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+				minesweeper.display[cell] = [' ', '1', '2', '3', '4', '5', '6', '7', '8', '9'][surrounding];
 				minesweeper.sendDisplay(message);
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + surrounding + ' mines!');
 				minesweeper.cellsLeft--;
