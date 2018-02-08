@@ -2833,7 +2833,24 @@ var minesweeper = {
 			
 		}
 		return result;
-	}
+	},
+	sendDisplay: function(message) {
+		var result = minesweeper.getDisplay();
+		result = result.split('\n');
+		var send = '';
+		for(var i = 0; i < result.length; i++) {
+			var line = result[i];
+			if(send.length + line.length > 1999) {
+				utils.chSend(message, send);
+				send = line;
+			} else {
+				send += line;
+			}
+		}
+		if(send.length > 0) {
+			utils.chSend(message, send);
+		}
+	},
 }
 spongeBot.minesweeper = {
 	cmdGroup: 'Fun and Games',
@@ -2842,7 +2859,8 @@ spongeBot.minesweeper = {
 		var action = args[0] || '';
 		if(action === '') {
 			if(minesweeper.active) {
-				utils.chSend(message, 'Minesweeper' + minesweeper.getDisplay());
+				utils.chSend(message, 'Minesweeper');
+				minesweeper.sendDisplay(message);
 			} else {
 				utils.chSend(message, utils.makeAuthorTag(message) + ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
 			}
@@ -2869,6 +2887,7 @@ spongeBot.minesweeper = {
 			minesweeper.active = true;
 			utils.chSend(message, utils.makeAuthorTag(message) + ' has built a deadly minefield around Sponge\'s Reef! Identify and clear all the mines before anyone gets hurt!');
 			utils.chSend(message, 'Use `!minesweeper step <x> <y>` to step on a spot to see how many mines are surrounding it. If you step on a mine, then game over!');
+			minesweeper.sendDisplay(message);
 			return;
 		}
 		if(!minesweeper.active) {
@@ -2895,6 +2914,7 @@ spongeBot.minesweeper = {
 			if(minesweeper.grid[cell]) {
 				minesweeper.active = false;
 				minesweeper.display[cell] = ':bomb:';
+				minesweeper.sendDisplay(message);
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
 			} else {
@@ -2909,6 +2929,7 @@ spongeBot.minesweeper = {
 				surrounding + (grid[(x+1) + '_' + (y)] ? 1 : 0);
 				surrounding + (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
 				minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+				minesweeper.sendDisplay(message);
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + surrounding + ' mines!');
 				minesweeper.cellsLeft--;
 				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
