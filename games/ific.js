@@ -54,7 +54,7 @@ module.exports = {
 			if (v.story !== '') {
 				ut.chSend(message, '```' + v.story + '```');
 			} else {
-				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');
+				ut.chSend(message, ':pencil2: start a new story with `!z` :pen_fountain:');
 			}
 		},
 	},
@@ -65,7 +65,7 @@ module.exports = {
 			if (v.story !== '') {
 				ut.chSend(message, ':pencil: ```' + v.story + '```');
 			} else {
-				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');
+				ut.chSend(message, ':pencil2: start a new story with `!z` :pen_fountain:');
 			}
 		}
 	},
@@ -77,7 +77,12 @@ module.exports = {
 	},
 	zshow: {
 		do: function(message, parms) {
-			ut.chSend(message, '```' + v.story + '```');
+			
+			if (v.story !== '') {
+				ut.chSend(message, '```' + v.story + '```');
+			} else {
+				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');	
+			}
 		}
 	},
 	zsave: {
@@ -103,7 +108,7 @@ module.exports = {
 		do: function(message, parms) {
 			var ch = v.story.length;
 			if (!ch) {
-				ut.chSend(message, '`There is no story to speak of.\n' +
+				ut.chSend(message, 'There is no story to speak of.\n' +
 				  'You can start one with `!z`.');
 			} else {
 				ut.chSend(message, '`Current story: ' + ch + ' characters.`');

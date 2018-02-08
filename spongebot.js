@@ -33,9 +33,23 @@ const FS = require('fs');
 
 const FRUIT_VAL = 300; // temporary!
 
-
-
-
+var debugPrint =function(inpString){
+// throw away that old console.log and try our brand new debugPrint!
+// can add all sorts of goodies here, like sending output to a Discord chan or DN
+// for now, just checks if the global debugMode is true. If it isn't,
+// doesn't output, just returns
+	if (utils.debugMode) {
+		console.log(inpString);
+		if (utils.enableDebugChan) {
+			if ((inpString !== '') && (typeof inpString === 'string')) {
+				// todo: rate limiter?
+				if (inpString.length < 1024) {
+					BOT.channels.get(cons.DEBUGCHAN_ID).send(inpString);
+				}
+			}
+		}
+	}
+};
 //-----------------------------------------------------------------------------
 var spongeBot = {};
 var story = '';
@@ -396,7 +410,7 @@ var loot = {
     };
 //-----------------------------------------------------------------------------
 var incStat = function(who, game, stat) {
-	utils.debugPrint('!incStat: WARNING! Deprecated, use alterStat()');
+	debugPrint('!incStat: WARNING! Deprecated, use alterStat()');
 	// DEPRECATED! Use: untils.alterStat(who, game, stat, 1, gameStats)
 };
 var slots = {
@@ -506,9 +520,9 @@ var checkTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		utils.debugPrint(' BEFORE: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
-		utils.debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		utils.debugPrint(' AFTER: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
+		debugPrint(' BEFORE: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
+		debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		debugPrint(' AFTER: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
 		return true;
 	} else {
 		return false;
@@ -535,7 +549,7 @@ var collectTimer = function(message, who, command) {
 	now = now.valueOf();
 	
 	if (now > nextCol) {
-		utils.debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
+		debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
 		utils.setStat(utils.makeId(who), 'lastUsed', command, now, gameStats);
 		return true;
 	} else {
@@ -586,7 +600,7 @@ spongeBot.backup = {
 		utils.saveBanks(cons.BANK_BACKUP_FILENAME, bankroll);
 		utils.saveStats(cons.STATS_BACKUP_FILENAME, gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
-		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + cons.BANK_BACKUP_FILENAME +
+		debugPrint('!backup:  MANUALLY BACKED UP TO: `' + cons.BANK_BACKUP_FILENAME +
 		  '` and `' + cons.STATS_BACKUP_FILENAME +  '`');
 	}
 };
@@ -1207,7 +1221,7 @@ spongeBot.showCode = {
 		var theCode = spongeBot[parms];
 		
 		utils.chSend(message, theCode);
-		utils.debugPrint(theCode);
+		debugPrint(theCode);
 	},
 	help: 'shows code.',
 	disabled: true
@@ -1227,13 +1241,13 @@ spongeBot.s = {
 		parms = parms.toLowerCase();
 		
 		if (!scram.hasOwnProperty(server.id)) {
-			utils.debugPrint('!s: No key ' + server.id + ' in scram variable! Someone probably ran !s before !scram.');
+			debugPrint('!s: No key ' + server.id + ' in scram variable! Someone probably ran !s before !scram.');
 			utils.chSend(message, 'Please start `!scram` before guessing a scrambled word.');
 			return;
 		}
 		
 		if (!scram[server.id].hasOwnProperty('runState')) {
-			utils.debugPrint('!s: No key .runState in scram.' + server.id + ' Maybe someone ran !s before !scram.');
+			debugPrint('!s: No key .runState in scram.' + server.id + ' Maybe someone ran !s before !scram.');
 			utils.chSend(message, 'Please start `!scram` before guessing a scrambled word.');
 			return;
 		}
@@ -1293,7 +1307,7 @@ spongeBot.scram = {
 		
 		if (!scram.hasOwnProperty(server.id)) {
 			// key doesn't exist for this server, so init
-			utils.debugPrint('!scram: Adding instance for ' + server.id + ' ('
+			debugPrint('!scram: Adding instance for ' + server.id + ' ('
 			  + server.name + ')');
 			scram[server.id] = {};
 			scram[server.id].announce = true;
@@ -1316,7 +1330,7 @@ spongeBot.scram = {
 			
 			scram[server.id].word = theWord;		
 			var scramWord = scrambler(theWord);
-			utils.debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
+			debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
 			/*
 			utils.chSend(message, 'Unscramble this: ' + utils.bigLet(scramWord) + 
 			  '   *Category*: ' + theCat);
@@ -1443,7 +1457,7 @@ spongeBot.giveaways = {
 			var role = message.guild.roles.find('name', 'giveaways');
 			
 			if (message.member.roles.has('408789879590354944')) {
-				utils.debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
+				debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
 				utils.chSend(message, message.author + ' I think you already had that role.');
 			} else {
 				message.member.addRole(role);
@@ -1463,7 +1477,7 @@ spongeBot.giveaways = {
 			var whoStr = ''
 			for (var who of whoHas.keys()) {
 				whoStr += utils.makeTag(who) + '   ';
-				utils.debugPrint(who);
+				debugPrint(who);
 			}
 			utils.chSend(message, whoStr);
 			*/
@@ -1624,7 +1638,7 @@ spongeBot.bank = {
 				var role = server.roles.find('name', 'Tester');
 			
 				if (server.roles.has('name', 'Tester')) {
-					utils.debugPrint(' we have a tester!');
+					debugPrint(' we have a tester!');
 				}
 				
 				//message.member.roles.has(message.guild.roles.find("name", "insert role name here"))
@@ -1632,7 +1646,7 @@ spongeBot.bank = {
 				bankroll[who] = {};
 				bankroll[who].credits = cons.START_BANK;
 				utils.saveBanks(cons.BANK_FILENAME, bankroll);
-				utils.debugPrint('New bankroll made for ' + who + ' via !bank.');
+				debugPrint('New bankroll made for ' + who + ' via !bank.');
 			} 
 		} else {
 			who = utils.makeId(parms[0]);
@@ -1645,7 +1659,7 @@ spongeBot.bank = {
 			  ' for pointing it out. I\'ll reset it to ' + cons.START_BANK);
 			bankroll[who].credits = cons.START_BANK;
 			utils.saveBanks(cons.BANK_FILENAME, bankroll);
-			utils.debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
+			debugPrint('Corrupted bankroll fixed for ' + who + ' via !bank.');
 			  
 		} else {
 			utils.chSend(message, utils.makeTag(who) + ' has ' + bankroll[who].credits + ' credits.');
@@ -1903,7 +1917,7 @@ spongeBot.slots = {
 					rarity: slots.config.symbols[sym].rarity
 				});
 			}
-			utils.debugPrint('.slots: First run, built symbol array.');
+			debugPrint('.slots: First run, built symbol array.');
 		};
 
 		var payTab = slots.config.payTable;
@@ -2127,7 +2141,7 @@ spongeBot.help = {
 			
 			if (!botStorage.fullHelp) {
 				// "cached" help doesn't exist, so build it...
-				utils.debugPrint('!help: building help text for first time');
+				debugPrint('!help: building help text for first time');
 				botStorage.fullHelp = buildHelp();
 			} 
 			
@@ -2240,7 +2254,7 @@ spongeBot.say = {
 			}
 			BOT.channels.get(chan).send(parms);
 		} else {
-			utils.debugPrint(message.author.id + ' tried to put words in my mouth!');
+			debugPrint(message.author.id + ' tried to put words in my mouth!');
 			utils.auSend(message, 'I don\'t speak for just anyone.');
 		}
 	},
@@ -3334,7 +3348,7 @@ spongeBot.minesweeper = {
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-  utils.debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
+  debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
   
@@ -3358,7 +3372,7 @@ BOT.on('message', message => {
 		parms = parms.slice(1); // remove leading space
 		
 		if (typeof spongeBot[theCmd] !== 'undefined') {
-			utils.debugPrint('  ' + utils.makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
+			debugPrint('  ' + utils.makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			
 			if (!spongeBot[theCmd].disabled) {
 				if (spongeBot[theCmd].access) {
@@ -3369,7 +3383,7 @@ BOT.on('message', message => {
 					} else {
 						// missing spongebot.command.do
 						if (!spongeBot[theCmd].hasOwnProperty('do')) {
-							utils.debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
 							  ', ignoring limited-access command !' + theCmd);
 						} else {
 							// all good, run it
@@ -3379,10 +3393,10 @@ BOT.on('message', message => {
 				} else {
 					
 					if (message.author.bot) {
-						utils.debugPrint('Blocked a bot-to-bot !command.');
+						debugPrint('Blocked a bot-to-bot !command.');
 					} else {
 						if (!spongeBot[theCmd].hasOwnProperty('do')) {
-							utils.debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
+							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
 							  ', ignoring user command !' + theCmd);
 						} else {
 							spongeBot[theCmd].do(message, parms);
