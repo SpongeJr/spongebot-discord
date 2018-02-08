@@ -583,7 +583,7 @@ spongeBot.backup = {
 	disabled: true,
 	access: [],
 	do: function(message) {
-		saveBanks(cons.BANK_BACKUP_FILENAME);
+		utils.saveBanks(cons.BANK_BACKUP_FILENAME, bankroll);
 		utils.saveStats(cons.STATS_BACKUP_FILENAME, gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
 		utils.debugPrint('!backup:  MANUALLY BACKED UP TO: `' + cons.BANK_BACKUP_FILENAME +
@@ -592,7 +592,7 @@ spongeBot.backup = {
 };
 //-----------------------------------------------------------------------------
 spongeBot.z = {
-	help: 'Use `!z` word to keep a story going.',
+	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
 		iFic.z.do(message, parms);
 	}
@@ -612,6 +612,21 @@ spongeBot.zsave = {
 		iFic.zsave.do(message, parms, gameStats);
 	}
 };
+spongeBot.zchars = {
+	do: function(message, parms) {
+		iFic.zchars.do(message, parms);
+	}
+};
+spongeBot.zload = {
+	do: function(message, parms) {
+		iFic.zload.do(message, parms, gameStats);
+	}
+}
+spongeBot.zshow = {
+	do: function(message, parms) {
+		iFic.zshow.do(message, parms);
+	}
+}
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
@@ -1670,7 +1685,7 @@ spongeBot.exchange = {
 //-----------------------------------------------------------------------------
 spongeBot.savebanks = {
 	do: function() {
-		utils.saveBanks();
+		utils.saveBanks(cons.BANK_FILENAME, bankroll);
 	},
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true

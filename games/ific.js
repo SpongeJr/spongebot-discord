@@ -46,6 +46,11 @@ module.exports = {
 		do: function(message, parms) {
 			v.undoIndex = v.story.length;
 			v.story += parms + ' ';
+			
+			if (!parms) {
+				ut.chSend(message, message.author + ', you added nothing.');
+			}
+			
 			if (v.story !== '') {
 				ut.chSend(message, '```' + v.story + '```');
 			} else {
@@ -70,17 +75,39 @@ module.exports = {
 			ut.chSend(message, '`Story cleared.`');
 		}
 	},
-	zstoryup: {
+	zshow: {
 		do: function(message, parms) {
-			
+			ut.chSend(message, '```' + v.story + '```');
 		}
 	},
 	zsave: {
 		do: function(message, parms, gameStats) {
-			ut.chSend(message, '`Story saving is still being implemented.`');
 			ut.setStat(message.author.id, 'profile', 'story', v.story, gameStats);
-			ut.chSend(message, '...but I think I saved it to your profile ' +
-			  'anyway, ' + message.author + '! Check with `!stats` for me?');
+			ut.chSend(message, 'I saved the current story to your profile' +
+			  message.author + '! You can check it out with `!stats` for now.');
+		}
+	},
+	zload: {
+		do: function(message, parms, gameStats) {
+			var loadedStory = ut.getStat(message.author.id, 'profile', 'story', gameStats);
+			if (!loadedStory) {
+				ut.chSend(message, 'I see no story on your profile, so I\'ll keep the ' +
+				'current story as it is, ' + message.author + '.');
+			} else {
+				v.story = loadedStory;
+				ut.chSend(message, 'I\'ve loaded the story on your profile, ' + message.author);
+			}
+		}
+	},
+	zchars: {
+		do: function(message, parms) {
+			var ch = v.story.length;
+			if (!ch) {
+				ut.chSend(message, '`There is no story to speak of.\n' +
+				  'You can start one with `!z`.');
+			} else {
+				ut.chSend(message, '`Current story: ' + ch + ' characters.`');
+			}
 		}
 	},
 	quote: {
