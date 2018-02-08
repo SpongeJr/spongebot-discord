@@ -60,6 +60,7 @@ const cons = require('./lib/constants.js');
 var utils = require('./lib/utils.js');
 var iFic = require('./games/ific.js');
 var acro = require('./games/acro.js');
+var raffle = require('./games/raffle');
 var ebon = require('./lib/eboncmds.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
@@ -1946,6 +1947,12 @@ var buildHelp = function() {
 	return theHelp;
 };
 //-----------------------------------------------------------------------------
+spongeBot.raffle = {
+	cmdGroup: 'Giveaways and Raffle',
+	do: function(message, parms) {
+		raffle.do(message, parms, gameStats, bankroll);
+	}
+}
 spongeBot.ticket = {
 	do: function(message, parms) {
 		// replace with access check someday
