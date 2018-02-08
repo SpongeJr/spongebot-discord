@@ -67,12 +67,8 @@ module.exports = {
 			for (var who in numTix) {
 				
 				// show the number they have
-				user = client.fetchUser(who);
-				console.log(user);
-				
-				
 				str += who + '(' + numTix[who] + ')  |  ';
-				
+
 				// for each ticket belonging to them...
 				for (var i = 0; i < numTix[who]; i++) {
 					
@@ -89,7 +85,7 @@ module.exports = {
 				}	
 			}
 			str += '```';
-			utils.chSend(message, str, {"description": str});
+			utils.chSend(message, str);
 			str2 += '```';
 			//utils.chSend(message, str2);
 			

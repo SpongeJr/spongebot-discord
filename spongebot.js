@@ -1973,10 +1973,7 @@ spongeBot.ticket = {
 				who = message.mentions.users.find('id', who);
 			}
 			
-			console.log('WHO is NOW ' + who);
 			//var who = utils.makeId(parms[0]);
-			
-			console.log(message.mentions.users);
 			var str;
 			
 			if (parms[1] === '' || typeof parms[1] === 'undefined') {
@@ -1985,7 +1982,7 @@ spongeBot.ticket = {
 				var amt = parseInt(parms[1]);	
 			}
 			
-			str = utils.makeTag(who) + ' now has ';
+			str = who + ' now has ';
 			str += utils.alterStat(who, 'raffle', 'ticketCount', amt, gameStats);
 			str += ' raffle tickets.';
 			
