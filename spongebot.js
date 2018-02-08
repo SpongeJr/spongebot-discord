@@ -1706,12 +1706,21 @@ spongeBot.stats = {
 			who = utils.makeId(parms);
 		}
 		
+		if (message.mentions.users.has(who)) {
+			// there's an @ mention, and it matches the id sent up
+			// so we can pass a user up to alterStat for nick nicking
+			who = message.mentions.users.find('id', who);
+		}
+		
 		if (!gameStats[who]) {
 			utils.chSend(message, message.author + ', I don\'t have any stats for them.');
 			return;
 		}
 		
-		var theStr = ' :bar_chart:  STATS FOR ' + utils.makeTag(who) + '  :bar_chart:\n```';
+		
+		
+		var theStr = ' :bar_chart:  STATS FOR ' + who + '  :bar_chart:\n```';
+		
 		for (var game in gameStats[who]) {
 			theStr += '> ' + game + ':\n';
 			for (var stat in gameStats[who][game]) {
