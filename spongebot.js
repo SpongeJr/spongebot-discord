@@ -3010,7 +3010,9 @@ spongeBot.sponge = {
 		} else {
 			utils.chSend(message, utils.makeTag(author) + ', you have been polymorphed back to normal!');
 		}
-	}
+	},
+	help: 'TODO',
+	longHelp: 'TODO'
 }
 //-----------------------------------------------------------------------------
 spongeBot.v = {
@@ -3205,7 +3207,130 @@ spongeBot.hangman = {
 			utils.chSend(message, utils.makeTag(message.author.id) + ' you\'re going to do ***WHAT*** to the hangman?!');
 		}
 	},
-	help: ''
+	help: 'TODO',
+	longHelp: 'TODO',
+}
+//-----------------------------------------------------------------------------
+var memory = {
+	grid: [],
+	visible: [],
+	active: false
+}
+spongeBot.memory = {
+	cmdGroup: 'Fun and Games',
+	do: function(message, args) {
+		args = args.split(' ');
+		
+	},
+	help: 'TODO',
+	longHelp: 'TODO'
+}
+//-----------------------------------------------------------------------------
+var minesweeper = {
+	grid: {},			//An object containing a field for each cell (boolean; true if mine, false if empty)
+	display: {},		//An object containing a field for each cell (string, name of char to display)
+	mineCount: 0,		//Number of mines placed
+	cellsLeft: 0,		//Number of invisible cells remaining
+	width: 48,
+	height: 48,
+	active: false,
+	getDisplay: function() {
+		var result = '';
+		for(var y = 0; y < minesweeper.height; y++) {
+			result += '\n';
+			for(var x = 0; x < minesweeper.width; x++) {
+				var cell = '' + x + '_' + y;
+				result += display[cell];
+			}
+			
+		}
+		return result;
+	}
+}
+spongeBot.minesweeper = {
+	cmdGroup: 'Fun and Games',
+	do: function(message, args) {
+		args = args.split(' ');
+		var action = args[0] || '';
+		if(action === '') {
+			if(minesweeper.active) {
+				utils.chSend(message, 'Minesweeper' + minesweeper.getDisplay());
+			} else {
+				utils.chSend(message, utils.makeAuthorTag(message), ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
+			}
+			return;
+		} else if(action === 'start') {
+			minesweeper.grid = {};
+			minesweeper.display = {};
+			var width = minesweeper.width;
+			var height = minesweeper.height;
+			minesweeper.mines = 0;
+			minesweeper.cellsLeft = width*height;
+			//Place mines
+			for(var x = 0; x < width; x++) {
+				for(var y = 0; y < height; y++) {
+					var cell = '' + x + '_' + y;		//Name that we will use to access this point
+					var mine = (Math.random() < 0.3);	//boolean; if true, this cell contains a mine
+					minesweeper.grid[cell] = mine;
+					if(mine) {
+						minesweeper.mines++;
+					}
+					minesweeper.display[cell] = ':white_large_square:';
+				}
+			}
+			minesweeper.active = true;
+			utils.chSend(message, utils.makeAuthorTag(message), ' has built a deadly minefield around Sponge\'s Reef! Identify and clear all the mines before anyone gets hurt!');
+			utils.chSend(message, 'Use `!minesweeper step <x> <y>` to step on a spot to see how many mines are surrounding it. If you step on a mine, then game over!');
+			return;
+		}
+		if(!minesweeper.active) {
+			utils.chSend(message, utils.makeAuthorTag(message), ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
+			return;
+		}
+		
+		if(action === 'step') {
+			var x = parseInt(ars[1]);
+			var y = parseInt(args[2]);
+			if(!x || !y) {
+				if(!x && !y) {
+					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `x` and `y`.');
+				} else if(!x) {
+					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `x`.');
+				} else if(!y) {
+					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `y`.');
+				}
+				return;
+			}
+			var cell = '' + x + '_' + y;
+			if(grid[cell]) {
+				minesweeper.active = false;
+				display[cell] = ':bomb:';
+				utils.chSend(message, utils.makeAuthorTag(message), ' has stepped on a mine!');
+				utils.chSend(message, 'Game over!');
+			} else {
+				var surrounding = 0;
+				surrounding += (grid[(x-1) + '_' + (y-1)] ? 1 : 0);
+				surrounding += (grid[(x-1) + '_' + (y)] ? 1 : 0);
+				surrounding += (grid[(x-1) + '_' + (y+1)] ? 1 : 0);
+				surrounding += (grid[(x) + '_' + (y-1)] ? 1 : 0);
+				surrounding += (grid[(x) + '_' + (y+1)] ? 1 : 0);
+				surrounding += (grid[(x+1) + '_' + (y-1)] ? 1 : 0);
+				surrounding += (grid[(x+1) + '_' + (y)] ? 1 : 0);
+				surrounding += (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
+				display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+				utils.chSend(message, utils.makeAuthorTag(message), ' has stepped on an empty spot near ' + surrounding + ' mines!');
+				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
+					utils.chSend(message, 'All the mines have been located safely, and Sponge\'s Reef is safe once again!');
+					minesweeper.active = false;
+				}
+			}
+		} else if(action === 'quit') {
+			utils.chSend(message, utils.makeAuthorTag(message), ' detonated the entire minefield, turning Sponge\'s Reef into a massive crater!');
+			minesweeper.active = false;
+		}
+	},
+	help: 'TODO',
+	longHelp: 'TODO'
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
