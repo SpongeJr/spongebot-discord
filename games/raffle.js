@@ -16,7 +16,7 @@ var utils = require('../lib/utils.js');
 // ific is a variable that now holds the whole module.exports object below
 
 // The actual organiation in one of these modules is up to you,
-// but there's are useful patterns we're working on coming up with.
+// but there's are useful patterns we're working on coming up with.7
 //
 // In this example, I'm keeping a story in an object v that is local
 // to this whole module, not accessible to the outside, but fully
@@ -29,36 +29,72 @@ module.exports = {
 	startNum: 1000,
 	v: {},
 	subCmds: {},
-	do: function(message, parms, gameStats, bankroll) {
+	do: function(message, parms, gameStats, bankroll, client) {
+		var user;
+		var nick;
 		var str = '';
+		var str2 = '';
 		if (parms === 'test') {
-			console.log('this.startnum = ' + this.startNum);
 			var tNum = this.startNum;
 			var tix = [];
 			var numTix = {};
+			var numUsers = 0;
 			for (var who in gameStats) {
 				if (gameStats[who].hasOwnProperty('raffle')) {
 					if (!gameStats[who].raffle.hasOwnProperty('ticketCount')) {
 						debugPrint('!raffle: ' + who + ' has .raffle but no .ticketCount');
 					} else {
-						tNum++;
+						numUsers++;
+						// push one new object onto tix[] for every ticket they have
+						// user is this user, ticket is sequential from startNum
+						// IOW, the tickets are "handed out in order" first
 						numTix[who] = gameStats[who].raffle.ticketCount;
-						tix.push({"num": tNum, "user": who});
+						for (var i = 0; i < numTix[who]; i++) {
+							tix.push({"num": tNum, "user": who});
+							tNum++;
+						}
 					}
 				}
 			}			
 			str += ':tickets: :tickets: :tickets:   `RAFFLE TIME!`   :tickets: :tickets: :tickets:\n';
 			str += ' I have ' + tix.length + ' tickets here in my digital bucket, numbered from `' +
 			  this.startNum + '` through `' + (this.startNum + tix.length - 1);
-			str += '`! Checking my stats, I see:\n';
+			str += '`! They belong to ' + numUsers + ' users:\n```';
+			
+			newTix = [];
+			str2 += '```\n';
+			// for each user with tickets...
 			for (var who in numTix) {
-				str += numTix[who] + ' for ' + who + '\n';
+				
+				// show the number they have
+				user = client.fetchUser(who);
+				console.log(user);
+				
+				
+				str += who + '(' + numTix[who] + ')  |  ';
+				
+				// for each ticket belonging to them...
+				for (var i = 0; i < numTix[who]; i++) {
+					
+					// pick 1 random ticket from those left in original array,
+					// yank it out and put in ranTick. It's an object.
+					// .slice() is destructive to the original array. good.
+					ranTick = tix.splice(Math.floor(Math.random() * tix.length), 1);
+					ranTick = ranTick[0]; // .splice() gave us an array with 1 element
+					
+					// modify the "user" property to match the new owner
+					ranTick.user = who;
+					newTix.push(ranTick); // push it into new array
+					str2 += who + ':  Ticket #' + ranTick.num + '    | ';
+				}	
 			}
-			utils.debugPrint(str);
-			utils.chSend(message, str);
+			str += '```';
+			utils.chSend(message, str, {"description": str});
+			str2 += '```';
+			//utils.chSend(message, str2);
 			
 		} else {
-			utils.chSend(message, 'RAFFLE IS IN TEST-ONLY MODE !!!')
+			utils.chSend(message, 'RAFFLE IS IN TEST-ONLY MODE !!!');
 		}
 	}
 };

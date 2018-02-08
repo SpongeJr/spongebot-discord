@@ -1950,7 +1950,7 @@ var buildHelp = function() {
 spongeBot.raffle = {
 	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		raffle.do(message, parms, gameStats, bankroll);
+		raffle.do(message, parms, gameStats, bankroll, BOT);
 	}
 }
 spongeBot.ticket = {
@@ -1964,8 +1964,19 @@ spongeBot.ticket = {
 			}
 			
 			parms = parms.split(' ');
-			var amt;
 			var who = utils.makeId(parms[0]);
+
+			var amt;
+			if (message.mentions.users.has(who)) {
+				// there's an @ mention, and it matches the id sent up
+				// so we can pass a user up to alterStat for nick nicking
+				who = message.mentions.users.find('id', who);
+			}
+			
+			console.log('WHO is NOW ' + who);
+			//var who = utils.makeId(parms[0]);
+			
+			console.log(message.mentions.users);
 			var str;
 			
 			if (parms[1] === '' || typeof parms[1] === 'undefined') {
