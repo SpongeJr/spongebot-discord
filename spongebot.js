@@ -2638,7 +2638,7 @@ spongeBot.arch = {
 			if (!bankroll.hasOwnProperty(cons.ARCH_ID)) {
 				bankroll[cons.ARCH_ID] = {}; // just in case user doesn't exist
 			}
-			bankroll[cons.ARCH_ID].credits = 50000;
+			bankroll[cons.ARCH_ID] = {"credits": 50000};
 		} else {
 			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
