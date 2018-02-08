@@ -453,11 +453,13 @@ spongeBot.backup = {
 	disabled: true,
 	access: [],
 	do: function(message) {
-		utils.saveBanks(cons.BANK_BACKUP_FILENAME, bankroll);
-		utils.saveStats(cons.STATS_BACKUP_FILENAME, gameStats);
+		var now = new Date();
+		var t = timey.timeStr(['raw'], now);
+		utils.saveBanks(cons.BANK_BACKUP_FILENAME +  t + '.bak', bankroll);
+		utils.saveStats(cons.STATS_BACKUP_FILENAME +  t + '.bak', gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
-		debugPrint('!backup:  MANUALLY BACKED UP TO: `' + cons.BANK_BACKUP_FILENAME +
-		  '` and `' + cons.STATS_BACKUP_FILENAME +  '`');
+		debugPrint('!backup:  MANUALLY BACKED UP TO: ' + cons.BANK_BACKUP_FILENAME + 
+		  t + '.bak and ' + cons.STATS_BACKUP_FILENAME + t + '.bak');
 	}
 };
 //-----------------------------------------------------------------------------
@@ -1132,18 +1134,8 @@ spongeBot.s = {
 	disabled: false
 };
 spongeBot.scram = {
-	cmdGroup: 'Fun and Games',
-	subCmd: {
-		config: {
-			do: function(message, parms) {
-				utils.chSend(message, 'can\'t config scram right now');
-			}
-		}
-	},
-	do: function(message, parms) {
-		
+	do: function(message, parms, gameStats, bankroll) {
 		var server = message.guild;
-		
 		if (!server) {
 			utils.auSend(message, 'The word scramble game is meant to be played in public, and '+
 			'not direct messages. Sorry! It\'s more fun with others, anyway!');
@@ -2043,39 +2035,29 @@ spongeBot.timer = {
 	},
 	help: '`!timer <sec>` sets a timer to go off in _<sec>_ seconds.'
 };
-spongeBot.time = {
-	
-	cmdGroup: 'Miscellaneous',
-	do: function(message, parms) {
-		var now = new Date();
-		
-		parms = parms.split(' ');
-		
+timey = {
+	timeStr: function(parms, when) {
+		console.log(' WH ' + when);
 		if (!parms[0]) {
-			utils.chSend(message, now.toTimeString());
-			return;
+			return when.toTimeString();
 		}
 		
 		if (parms[0] === 'long') {
-			utils.chSend(message, now.toString());
-			return;
+			return when.toString();
 		}
 		
 		if (parms[0] === 'iso') {
-			utils.chSend(message, now.toISOString());
-			return;
+			return when.toISOString();
 		}
 		
 		if (parms[0] === 'raw') {
-			utils.chSend(message, '`' + now.valueOf() + '`');
-			return;
+			return when.valueOf();
 		}
 		
 		if (parms[0] === 'diff') {
 			// <t1, t2>, returns difference between the two -- either order (abs value)
 			var timeElapsed = msToTime(Math.abs(parseInt(parms[1]) - parseInt(parms[2])));
-			utils.chSend(message, timeElapsed);
-			return;
+			return timeElapsed;
 		}
 		
 		if ((parms[0] === 'nextWeek') || (parms[0] === 'nextDay')) {
@@ -2083,17 +2065,23 @@ spongeBot.time = {
 			var howMuch;
 			var when;
 			if (parms[0] === 'nextWeek') {howMuch = cons.ONE_WEEK;} else {howMuch = cons.ONE_DAY;};
-			when = parseInt(parms[1]) + howMuch - now.valueOf();
+			when = parseInt(parms[1]) + howMuch - when.valueOf();
 			if (when < 0) {
-				utils.chSend(message, 'That was ' + msToTime(Math.abs(when)) + ' ago');
-				return;
+				return 'That was ' + msToTime(Math.abs(when)) + ' ago';
 			} else {
-				utils.chSend(message, 'Coming up in ' + msToTime(when));
-				return;
+				return 'Coming up in ' + msToTime(when);	
 			}
-		};
-		
-		utils.chSend(message, now.toString());
+		}
+	}
+};
+spongeBot.time = {
+	cmdGroup: 'Miscellaneous',
+	do: function(message, parms) {
+		var now = new Date();
+		var outp = '';
+		parms = parms.split(' ');
+		outp = '`' + timey.timeStr(parms, now) +`'`;
+		utils.chSend(message, outp);
 	},
 	help: '`time [long | iso]`: Shows current time.`',
 	longHelp: '`time [long | iso]`: Shows current time.' +
