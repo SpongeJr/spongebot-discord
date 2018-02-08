@@ -60,6 +60,7 @@ const cons = require('./lib/constants.js');
 var utils = require('./lib/utils.js');
 var iFic = require('./games/ific.js');
 var acro = require('./games/acro.js');
+var ebon = require('./lib/eboncmds.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
@@ -160,114 +161,8 @@ var bankroll = {};
 var gameStats = require('../data/gamestats.json');
 var bankroll = require('../data/banks.json');
 if (utils.debugMode) {console.log(bankroll);}
+var giveaways = require('../data/giveaways.json');
 
-var giveaways = {
-	'Shelter': {
-		info: {
-			description: 'Shelter (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/244710/Shelter/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'Shelter 2': {
-		info: {
-			description: 'Shelter 2 (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/275100/Shelter_2/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'DiRT Showdown': {
-		info: {
-			description: 'DiRT Showdown (game) gift on Steam.',
-			infoUrl: 'https://en.wikipedia.org/wiki/Dirt:_Showdown'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'Splatter': {
-		info: {
-			description: 'Splatter: Blood red edition (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/281920/Splatter__Zombie_Apocalypse/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'YAZD': {
-		info: {
-			description: 'Yet Another Zombie Defense (game) gift on Steam.',
-			infoUrl: 'http://store.steampowered.com/app/270550/Yet_Another_Zombie_Defense/'
-		},
-		enabled: true,
-		type: 'game'
-	},
-	'MusicMaker80s': {
-		info: {
-			description: 'Music Maker 80s edition + add-on(s)(?) by Magix',
-			infoUrl: 'http://www.magix.com/us/music-maker/80s-edition/'
-		},
-		enabled: true,
-		type: 'software'
-	},
-	'MusicMakerHipHop': {
-		info: {
-			description: 'Music Maker Hip Hop Beat Producer by Magix',
-			infoUrl: 'http://www.magix.com/us/music-maker/hip-hop-beat-producer-edition/ (I think?)'
-		},
-		enabled: true,
-		type: 'software'
-	},
-	'TwitchSub': {
-		info: {
-			description: 'Will subscribe to your Twitch channel if you are a Twitch partner. Will legit check your content regularly and stuff.',
-			infoUrl: 'http://www.twitch.tv'
-		},
-		type: 'other'
-	},
-	'Amazon3': {
-		info: {
-			description: '$3.00 USD Amazon gift code',
-			infoUrl: 'https://www.amazon.com/gc/redeem/'
-		},
-		type: 'gift card'
-	},
-	'Amazon5': {
-		info: {
-			description: '$5.00 USD Amazon gift code',
-			infoUrl: 'https://www.amazon.com/gc/redeem/'
-		},
-		type: 'gift card'
-	},
-	'nitro': {
-		info: {
-			description: 'One month of Discord Nitro',
-			infoUrl: 'https://discordapp.com/nitro'
-		},
-		type: 'other'
-	},
-	'GTAIII': {
-		info: {
-			description: 'Grand Theft Auto III (18+ or w/parents permssion)',
-			infoUrl: 'http://store.steampowered.com/app/12100/Grand_Theft_Auto_III/'
-		},
-		type: 'game'
-	},
-	'GTA: VC': {
-		info: {
-			description: 'Grand Theft Auto: Vice City (18+ or w/parents permssion)',
-			infoUrl: 'http://store.steampowered.com/app/12110/Grand_Theft_Auto_Vice_City/'
-		},
-		type: 'game'
-	},
-	'iOS10forBeginners': {
-		info: {
-			description: 'iOS 10 Programming for Beginners (ebook) (PDF, EPUB or MOBI format)',
-			infoUrl: 'https://www.packtpub.com/application-development/ios-10-programming-beginners'
-		},
-		type: 'ebook'
-	}
-};
 var loot = {
 		discountPercent: 75,
         boxes: {
@@ -374,10 +269,6 @@ var loot = {
         }
     };
 //-----------------------------------------------------------------------------
-var incStat = function(who, game, stat) {
-	debugPrint('!incStat: WARNING! Deprecated, use alterStat()');
-	// DEPRECATED! Use: untils.alterStat(who, game, stat, 1, gameStats)
-};
 var slots = {
 	config: {
 		symbols: {
@@ -1343,16 +1234,7 @@ spongeBot.scram = {
 spongeBot.ttc = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
-		
-		if (!parms) {
-			utils.chSend(message, 'To look up an item on Tamriel Trade Centre (EU/PC), just use `!ttc <item>`.' +
-			  '\nUse an exact item name, or you can search for partial matches.');
-			return;
-		}
-		var theLink = 'https://eu.tamrieltradecentre.com/pc/Trade/SearchResult?ItemNamePattern='
-		parms = parms.replace(/ /g, '+');
-		theLink += parms + '&SortBy=Price&Order=asc';
-		utils.chSend(message, theLink);
+		ebon.ttc(message, parms);
 	},
 	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
 	  + ' Use an exact item name, or you can search for partial matches.'
@@ -1380,20 +1262,32 @@ spongeBot.giveaways = {
 		
 		parms = parms.split(' ');
 		
+		if (parms[0] === 'suggest') {
+			
+		}
+		
 		if (parms[0] === 'list') {
 			
 			parms.shift();
 			parms = parms.join(' ');
 			
 			var str = 'Use `!giveaways info <item>` for more info.\n';
-			
+			var count = 0;
 			for (var item in giveaways) {
 				if ((giveaways[item].hasOwnProperty('type') && giveaways[item].type === parms) || parms === '') {
 					str += '`' + item + '`   ';
+					count++;
 				}
 			}
-
-			str += '\n List subject to change.';
+			str += '\n';
+			
+			
+			count = count || 'No';
+			str += count + ' item(s) found';
+			if (parms !== '') {
+				str += ' for category: **' + parms + ' **';
+			}
+			str += '\nList subject to change.';
 			utils.chSend(message, str);
 		}
 		
@@ -1645,15 +1539,22 @@ spongeBot.exchange = {
 				return;
 			}
 			
-			if (bankroll[message.author.id] < 100000) {
+			if (!bankroll[message.author.id].hasOwnProperty('credits')) {
+				// had no credits proprety
+				utils.chSend(message, message.author + ', you have a bank ' +
+				'account but no credits account. You have no credits to speak of.');
+				return;
+			}
+			
+			if (bankroll[message.author.id].credits < 100000) {
 				utils.chSend(message, message.author + ', you don\'t have enough credits.');
 				return;
 			}
 			
 			utils.addBank(message.author.id, -100000, bankroll);
-			var newTix = alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats);
+			var newTix = utils.alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats);
 			utils.chSend(message, message.author + ', you now have ' +
-			  bankroll[message.author.id] + ' credits, and ' + newTix + ' tickets.');
+			  bankroll[message.author.id].credits + ' credits, and ' + newTix + ' tickets.');
 		} else {
 			utils.chSend(message, message.author + ', be sure you want to tade 100K ' +
 			  'credits for one raffle ticket, then type `!exchange iamsure` to do so.');

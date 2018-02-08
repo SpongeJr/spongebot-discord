@@ -25,12 +25,11 @@ var utils = require('../lib/utils.js');
 //
 // If I need a value back in the global scope, I should return it
 
-
 module.exports = {
 	runState: false,
 	timer: {},
 	letters: '',
-	freq: 'aaaaabbbbbbccccccddddddeeeeeeffffffgggggghhhhhhiiiiijjkllllllmmmmmmnnnnnnoooopppppqqrrrrrrssssssttttttuuuuvvvvwwwwyyyz',
+	freq: 'aaaaaabbbbbbccccccddddddeeeeeeeffffffgggggghhhhhhiiiiijjkllllllmmmmmmnnnnnnooooopppppqqrrrrrrrsssssstttttttuuuuuvvvvwwwwyyyz',
 	pickLetters: function(count) {
 		var letters = '';
 		for (var i = 0; i < count; i++) {
@@ -215,7 +214,7 @@ module.exports = {
 		}
 		
 		if(!timeAllowed) {
-			timeAllowed = acroLen * 1 + 2; // * 10 + 20
+			timeAllowed = acroLen * 12 + 14;
 		}
 		
 		this.letters = letters;
@@ -239,8 +238,6 @@ module.exports = {
 			
 			// Array-ify our object, order now matters
 			var tempArr = [];
-			
-
 			for (var entry in acro.entries) {
 				tempArr.push({
 					author: entry,
