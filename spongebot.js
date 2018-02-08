@@ -2819,7 +2819,7 @@ var minesweeper = {
 			result += '\n';
 			for(var x = 0; x < minesweeper.width; x++) {
 				var cell = '' + x + '_' + y;
-				result += display[cell];
+				result += minesweeper.display[cell];
 			}
 			
 		}
@@ -2883,26 +2883,25 @@ spongeBot.minesweeper = {
 			}
 			var cell = '' + x + '_' + y;
 			debugPrint('cell = ' + cell);
-			
-			grid = minesweeper.grid; // ?
-			
-			if(grid[cell]) {
+			if(minesweeper.grid[cell]) {
 				minesweeper.active = false;
-				display[cell] = ':bomb:';
+				minesweeper.display[cell] = ':bomb:';
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
 			} else {
+				var grid = minesweeper.grid;
 				var surrounding = 0;
 				surrounding += (grid[(x-1) + '_' + (y-1)] ? 1 : 0);
-				surrounding += (grid[(x-1) + '_' + (y)] ? 1 : 0);
-				surrounding += (grid[(x-1) + '_' + (y+1)] ? 1 : 0);
-				surrounding += (grid[(x) + '_' + (y-1)] ? 1 : 0);
-				surrounding += (grid[(x) + '_' + (y+1)] ? 1 : 0);
-				surrounding += (grid[(x+1) + '_' + (y-1)] ? 1 : 0);
-				surrounding += (grid[(x+1) + '_' + (y)] ? 1 : 0);
-				surrounding += (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
-				display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+				surrounding + (grid[(x-1) + '_' + (y)] ? 1 : 0);
+				surrounding + (grid[(x-1) + '_' + (y+1)] ? 1 : 0);
+				surrounding + (grid[(x) + '_' + (y-1)] ? 1 : 0);
+				surrounding + (grid[(x) + '_' + (y+1)] ? 1 : 0);
+				surrounding + (grid[(x+1) + '_' + (y-1)] ? 1 : 0);
+				surrounding + (grid[(x+1) + '_' + (y)] ? 1 : 0);
+				surrounding + (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
+				minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + surrounding + ' mines!');
+				minesweeper.cellsLeft--;
 				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
 					utils.chSend(message, 'All the mines have been located safely, and Sponge\'s Reef is safe once again!');
 					minesweeper.active = false;
