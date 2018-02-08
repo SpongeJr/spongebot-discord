@@ -3270,7 +3270,7 @@ spongeBot.minesweeper = {
 			if(minesweeper.active) {
 				utils.chSend(message, 'Minesweeper' + minesweeper.getDisplay());
 			} else {
-				utils.chSend(message, utils.makeAuthorTag(message), ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
+				utils.chSend(message, utils.makeAuthorTag(message) + ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
 			}
 			return;
 		} else if(action === 'start') {
@@ -3293,33 +3293,38 @@ spongeBot.minesweeper = {
 				}
 			}
 			minesweeper.active = true;
-			utils.chSend(message, utils.makeAuthorTag(message), ' has built a deadly minefield around Sponge\'s Reef! Identify and clear all the mines before anyone gets hurt!');
+			utils.chSend(message, utils.makeAuthorTag(message) + ' has built a deadly minefield around Sponge\'s Reef! Identify and clear all the mines before anyone gets hurt!');
 			utils.chSend(message, 'Use `!minesweeper step <x> <y>` to step on a spot to see how many mines are surrounding it. If you step on a mine, then game over!');
 			return;
 		}
 		if(!minesweeper.active) {
-			utils.chSend(message, utils.makeAuthorTag(message), ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
+			utils.chSend(message, utils.makeAuthorTag(message) + ', minesweeper is currently inactive. Start a new game with `!minesweeper start`.');
 			return;
 		}
 		
 		if(action === 'step') {
-			var x = parseInt(ars[1]);
+			var x = parseInt(args[1]);
 			var y = parseInt(args[2]);
+			debugPrint('x: ' + x + ', y: ' + y);
 			if(!x || !y) {
 				if(!x && !y) {
-					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `x` and `y`.');
+					utils.chSend(message, utils.makeAuthorTag(message) + ', invalid values for `x` and `y`.');
 				} else if(!x) {
-					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `x`.');
+					utils.chSend(message, utils.makeAuthorTag(message) + ', invalid values for `x`.');
 				} else if(!y) {
-					utils.chSend(message, utils.makeAuthorTag(message), ', invalid values for `y`.');
+					utils.chSend(message, utils.makeAuthorTag(message) + ', invalid values for `y`.');
 				}
 				return;
 			}
 			var cell = '' + x + '_' + y;
+			debugPrint('cell = ' + cell);
+			
+			grid = minesweeper.grid; // ?
+			
 			if(grid[cell]) {
 				minesweeper.active = false;
 				display[cell] = ':bomb:';
-				utils.chSend(message, utils.makeAuthorTag(message), ' has stepped on a mine!');
+				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
 			} else {
 				var surrounding = 0;
@@ -3332,14 +3337,14 @@ spongeBot.minesweeper = {
 				surrounding += (grid[(x+1) + '_' + (y)] ? 1 : 0);
 				surrounding += (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
 				display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
-				utils.chSend(message, utils.makeAuthorTag(message), ' has stepped on an empty spot near ' + surrounding + ' mines!');
+				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + surrounding + ' mines!');
 				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
 					utils.chSend(message, 'All the mines have been located safely, and Sponge\'s Reef is safe once again!');
 					minesweeper.active = false;
 				}
 			}
 		} else if(action === 'quit') {
-			utils.chSend(message, utils.makeAuthorTag(message), ' detonated the entire minefield, turning Sponge\'s Reef into a massive crater!');
+			utils.chSend(message, utils.makeAuthorTag(message) + ' detonated the entire minefield, turning Sponge\'s Reef into a massive crater!');
 			minesweeper.active = false;
 		}
 	},
