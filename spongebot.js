@@ -1973,7 +1973,7 @@ var buildHelp = function() {
 spongeBot.raffle = {
 	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		raffle.do(message, parms, gameStats, bankroll, BOT);
+		raffle.do(message, parms, gameStats, bankroll);
 	}
 }
 spongeBot.ticket = {

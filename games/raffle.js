@@ -29,7 +29,7 @@ module.exports = {
 	startNum: 1000,
 	v: {},
 	subCmds: {},
-	do: function(message, parms, gameStats, bankroll, client) {
+	do: function(message, parms, gameStats, bankroll) {
 		var user;
 		var nick;
 		var str = '';
