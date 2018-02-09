@@ -48,36 +48,59 @@ module.exports = {
 			}
 		},
 		test: {
-			do: function(message, parms, gameStats) {
+			do: function(message, parms, gameStats, raf) {
+				// raf is "this" from previous scope, which is global module context
+				// OUR "this" refers to the "subCmd" object
+				
+				parms = parms.split(' ');
+				if (parms[0] === '') {
+					utils.chSend(message, ' Use: `!raffle drawing list` or `!raffle drawing run`');
+					return;
+				}
+				
+				else if (parms[0] === 'list') {
+					
+				} else if (parms[0] === 'run') {
+					
+				}
+				
 				var user;
 				var nick;
 				var str = '';
 				var str2 = '';
-				var tNum = this.startNum;
+				var tNum = raf.startNum;
 				var tix = [];
 				var numTix = {};
 				var numUsers = 0;
+				
+				// go find all the tickets by iterating over gameStats
 				for (var who in gameStats) {
 					if (gameStats[who].hasOwnProperty('raffle')) {
 						if (!gameStats[who].raffle.hasOwnProperty('ticketCount')) {
 							debugPrint('!raffle: ' + who + ' has .raffle but no .ticketCount');
 						} else {
-							numUsers++;
-							// push one new object onto tix[] for every ticket they have
-							// user is this user, ticket is sequential from startNum
-							// IOW, the tickets are "handed out in order" first
-							numTix[who] = gameStats[who].raffle.ticketCount;
-							for (var i = 0; i < numTix[who]; i++) {
-								tix.push({"num": tNum, "user": who});
-								tNum++;
+							var tCount = parseInt(gameStats[who].raffle.ticketCount);
+							if (isNaN(tCount)) {
+								debugPrint('WARNING: ' + who + '.raffle.ticketCount was NaN: ' + tCount);
+							} else if (tCount >= 1) {
+								// only count users that have at least 1 ticket
+								numUsers++;
+								// push one new object onto tix[] for every ticket they have
+								// user is this user, ticket is sequential from startNum
+								// IOW, the tickets are "handed out in order" first
+								numTix[who] = gameStats[who].raffle.ticketCount;
+								for (var i = 0; i < numTix[who]; i++) {
+									tix.push({"num": tNum, "user": who});
+									tNum++;
+								}
 							}
 						}
 					}
 				}
 				
-				str += ':tickets: :tickets: :tickets:   `RAFFLE TIME!`   :tickets: :tickets: :tickets:\n';
+				str2 += ':tickets: :tickets: :tickets:   `RAFFLE TIME!`   :tickets: :tickets: :tickets:\n';
 				str += ' I have ' + tix.length + ' tickets here in my digital bucket, numbered from `' +
-				  this.startNum + '` through `' + (this.startNum + tix.length - 1);
+				  raf.startNum + '` through `' + (raf.startNum + tix.length - 1);
 				str += '`! They belong to ' + numUsers + ' users:\n```';
 				
 				newTix = [];
@@ -152,15 +175,17 @@ module.exports = {
 		var sub = parms[0].toLowerCase(); // sub is the possible subcommand
 		parms.shift(); // lop off the command that got us here
 		
+		
+		
 		if (this.subCmd.hasOwnProperty(sub)) {
 			//we've found a found sub-command, so do it...
 			// our default behavior: again, lop off the subcommand,
 			// then put the array back together and send up a String
-			// that has lopped offthe command and subcommand,
+			// that has lopped off the command and subcommand,
 			// and otherwise left the user's input unharmed
-			parms.join(' ');
+			parms = parms.join(' ');
 			utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
-			this.subCmd[sub].do(message, parms, gameStats);
+			this.subCmd[sub].do(message, parms, gameStats, this);
 			return;
 		} else {
 			utils.chSend(message, 'What are you trying to do to that raffle?!');
