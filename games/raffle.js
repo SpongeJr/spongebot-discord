@@ -34,8 +34,9 @@ module.exports = {
 		var nick;
 		var str = '';
 		var str2 = '';
+		raf = this;
 		if (parms === 'test') {
-			var tNum = this.startNum;
+			var tNum = raf.startNum;
 			var tix = [];
 			var numTix = {};
 			var numUsers = 0;
@@ -58,7 +59,7 @@ module.exports = {
 			}			
 			str += ':tickets: :tickets: :tickets:   `RAFFLE TIME!`   :tickets: :tickets: :tickets:\n';
 			str += ' I have ' + tix.length + ' tickets here in my digital bucket, numbered from `' +
-			  this.startNum + '` through `' + (this.startNum + tix.length - 1);
+			  raf.startNum + '` through `' + (raf.startNum + tix.length - 1);
 			str += '`! They belong to ' + numUsers + ' users:\n```';
 			
 			newTix = [];
