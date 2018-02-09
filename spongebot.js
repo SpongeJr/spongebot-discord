@@ -2974,6 +2974,7 @@ spongeBot.minesweeper = {
 			//Check invalid spot
 			if(x < 1 || x > minesweeper.width || y < 1 || y > minesweeper.height) {
 				utils.chSend(message, utils.makeAuthorTag(message) + ' tried to slack off on the job by stepping on an invalid spot!');
+				return;
 			}
 			
 			x -= 1;
