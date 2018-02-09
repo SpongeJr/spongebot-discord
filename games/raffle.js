@@ -47,6 +47,14 @@ module.exports = {
 				  ' this is subject to bugs, unexpected circumstances, and whimsy.');
 			}
 		},
+		hype: {
+			do: function(message) {
+				var str = '';
+				var when = new Date(cons.NEXT_RAFFLE);
+				utils.chSend(message, 'The next raffle is on ' + when + '! Are you ready?!\n' +
+				  '(use !time to find out official server time)');
+			}
+		},
 		test: {
 			do: function(message, parms, gameStats, raf) {
 				// raf is "this" from previous scope, which is global module context
