@@ -97,7 +97,7 @@ Fruit.prototype.pick = function(message) {
 	this.stats.valueMult = 0;
 	
 	return outP;
-};
+},
 Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
 	
@@ -142,7 +142,7 @@ var tree = {
 			new Fruit({})
 		]
 	}
-};
+}
 var scram = {};
 var scramWordLists = {
 	"278588293321326594": cons.ESO_SCRAMWORDS,
@@ -157,7 +157,7 @@ var scramConfig = {
 	letterBounus: 150, 
 	guessTime: 29000,
 	extraGuessTime: 2000
-};
+}
 var botStorage = {};
 var bankroll = {};
 var gameStats = require('../data/gamestats.json');
@@ -337,7 +337,7 @@ toppings = toppings.split(",");
 	sammich += "topped with " + utils.listPick(toppings);
 
 	return sammich;
-};
+}
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -385,7 +385,7 @@ var checkTimer = function(message, who, command) {
 	} else {
 		return false;
 	}
-};
+}
 var collectTimer = function(message, who, command) {
 	// who: (String) an id, or a tag (will be sent through utils.makeId() )
 	// command: String that !!!should be a valid command!!!
@@ -429,12 +429,12 @@ var collectTimer = function(message, who, command) {
 			return false;
 		}
 	}
-};
+}
 spongeBot.blank = {
 	do: function(message) {
 		message.react('410754653249339403');
 	}
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.debug = {
 	do: function(message) {
@@ -501,12 +501,12 @@ spongeBot.zload = {
 	do: function(message, parms) {
 		iFic.zload.do(message, parms, gameStats);
 	}
-};
+}
 spongeBot.zshow = {
 	do: function(message, parms) {
 		iFic.zshow.do(message, parms);
 	}
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
@@ -550,7 +550,7 @@ spongeBot.collect = {
 			utils.chSend(message, messStr);
 		}
 	}
-};
+}
 spongeBot.tree = {
 	subCmd: {
 		check: {
@@ -732,7 +732,7 @@ spongeBot.tree = {
 			utils.chSend(message, 'What are you trying to do to that tree?!');
 		}
 	}
-};
+}
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -915,7 +915,7 @@ spongeBot.loot = {
         },
         help: '`!loot`: Buy a loot box and see what\'s inside!',
 		longHelp: 'Try `!loot unbox <name>`, `!loot boxes`, `loot box <name>`, etc.'
-    };
+    }
 //-----------------------------------------------------------------------------
 spongeBot.roll = {
 	cmdGroup: 'Fun and Games',
@@ -980,7 +980,7 @@ spongeBot.roll = {
 	  ' individual die rolls, and show the total (which would be between 3 and 18\n' +
 	  ' inclusive in this example.)',
 	disabled: false
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.rot13 = {
 	cmdGroup: 'Miscellaneous',
@@ -1002,7 +1002,7 @@ spongeBot.rot13 = {
 	help: '`!rot13 <message>` spits back the ROT-13 ciphertext of your message.',
 	longHelp: '	You could use this in DM and then use the result in public chat if you were giving spoilers or something I guess.',
 	disabled: false
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.enable = {
 	do: function(message, parms) {
@@ -1062,7 +1062,7 @@ spongeBot.restrict = {
 	},
 	help: ':warning: Toggles whether commands require special access.'
 	
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.server = {
 	cmdGroup: 'Miscellaneous',
@@ -1080,7 +1080,7 @@ spongeBot.server = {
 		utils.chSend(message, str);
 	},
 	help: 'Gives info about the server on which you send me the command.'
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.showCode = {
 	do: function(message, parms) {
@@ -1091,7 +1091,7 @@ spongeBot.showCode = {
 	},
 	help: 'shows code.',
 	disabled: true
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.s = {
 	cmdGroup: 'Fun and Games',
@@ -1569,7 +1569,7 @@ spongeBot.savebanks = {
 	},
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true
-};
+}
 spongeBot.loadbanks = {
 	do: function() {
 		//utils.loadBanks(botStorage, bankroll);
@@ -1588,7 +1588,7 @@ spongeBot.loadstats = {
 	help: 'force a stat reload from persistent storage',
 	access: [],
 	disabled: true
-};
+}
 spongeBot.savestats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
@@ -1598,7 +1598,7 @@ spongeBot.savestats = {
 	help: 'force a stat save to persistent storage',
 	access: [],
 	disabled: true	
-};
+}
 spongeBot.delstat = {
 	cmdGroup: 'Admin',
 	do: function(message, parms) {
@@ -1941,7 +1941,7 @@ spongeBot.slots = {
 		
 	},
 	help: '`!slots`: give the slot machine a spin!'
-};
+}
 //-----------------------------------------------------------------------------
 var buildHelp = function() {
 	
@@ -1975,7 +1975,7 @@ spongeBot.raffle = {
 	do: function(message, parms) {
 		raffle.do(message, parms, gameStats, bankroll);
 	}
-};
+}
 spongeBot.ticket = {
 	do: function(message, parms) {
 		// replace with access check someday
@@ -2015,7 +2015,7 @@ spongeBot.ticket = {
 	access: true,
 	disabled: false,
 	help: '`!ticket <who> <#>` Gives <#> tickets to <who>. With no #, gives one.'
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.help = {
 	cmdGroup: 'Miscellaneous',
@@ -2176,7 +2176,7 @@ spongeBot.stopacro = {
 	},
 	help: '`!stopacro` stops the currently running `!acro` game.',
 	access: true
-};
+}
 spongeBot.acrocfg = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -2248,7 +2248,7 @@ spongeBot.arch = {
 			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.biglet = {
 	cmdGroup: 'miscellanous',
@@ -2265,7 +2265,7 @@ spongeBot.biglet = {
 		utils.chSend(message, utils.bigLet(txt));
 	},
 	help: '`!biglet <message>` says your message back in big letters'
-};
+}
 //-----------------------------------------------------------------------------
 var duelManager = {
 	challengerID: {
@@ -2586,7 +2586,7 @@ spongeBot.d = {
 		},
 		help: '`!d <number>`: Fire at your duel opponent.',
 		longHelp: '`!d <number>`: TO DO: Help Text'
-};
+}
 //-----------------------------------------------------------------------------
 var sponge = {};
 spongeBot.sponge = {
@@ -2618,7 +2618,7 @@ spongeBot.sponge = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.v = {
 	cmdGroup: 'Miscellaneous',
@@ -2626,7 +2626,7 @@ spongeBot.v = {
 		utils.chSend(message, '`' + cons.VERSION_STRING + '`');
 	},
 	help: 'Outputs the current bot code cons.VERSION_STRING.'
-};
+}
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
@@ -2634,7 +2634,7 @@ spongeBot.version = {
 		utils.chSend(message, cons.SPONGEBOT_INFO);
 	},
 	help: 'Outputs the current bot code version and other info.'
-};
+}
 //-----------------------------------------------------------------------------
 var hangman = {
 	answer: '',		//The answer
@@ -2658,7 +2658,7 @@ var hangman = {
 		}
 		return result;
 	}
-};
+}
 spongeBot.hangman = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
@@ -2814,13 +2814,13 @@ spongeBot.hangman = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO',
-};
+}
 //-----------------------------------------------------------------------------
 var memory = {
 	grid: [],
 	visible: [],
 	active: false
-};
+}
 spongeBot.memory = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
@@ -2829,7 +2829,7 @@ spongeBot.memory = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-};
+}
 //-----------------------------------------------------------------------------
 var minesweeper = {
 	grid: {},			//An object containing a field for each cell (boolean; true if mine, false if empty)
@@ -2911,7 +2911,7 @@ var minesweeper = {
 		}
 		
 	}
-};
+}
 spongeBot.minesweeper = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
@@ -3038,12 +3038,12 @@ spongeBot.minesweeper = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-};
+}
 //-----------------------------------------------------------------------------
 <<<<<<< HEAD
 var bindings = {
 	
-};
+}
 spongeBot.bind = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
@@ -3077,7 +3077,7 @@ spongeBot.bind = {
 	},
 	help: '`!bind <name> <macro>` binds a custom command for your convenience',
 	longHelp: 'TODO'
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.unbind = {
 	cmdGroup: 'Admin',
@@ -3103,7 +3103,7 @@ spongeBot.unbind = {
 	},
 	help: '`!unbind <name>` unbinds a custom command for your convenience.',
 	longHelp: 'TODO'
-};
+}
 //-----------------------------------------------------------------------------
 spongeBot.bindings = {
 	cmdGroup: 'Admin',
@@ -3122,7 +3122,7 @@ spongeBot.bindings = {
 	},
 	help: '`!bindings` lists all current bindings.',
 	longHelp: '`!bindings` lists all current bindings.',
-};
+}
 //-----------------------------------------------------------------------------
 =======
 >>>>>>> parent of 35cacf4... Merge branch 'master' of https://github.com/SpongeJr/spongebot-discord
@@ -3142,9 +3142,6 @@ BOT.on('message', message => {
 		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
 <<<<<<< HEAD
 		var spaceIndex = botCmd.indexOf(' ');	//Index of the space that separates command from args
-		if(spaceIndex === -1) {
-			spaceIndex = botCmd.length;
-		}
 		var theCmd = botCmd.substring(0, spaceIndex);
 		
 		//If our command is bound to something, then replace it
@@ -3169,7 +3166,6 @@ BOT.on('message', message => {
 		theCmd = theCmd.toLowerCase();
 		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
-			debugPrint('  [FAIL]  ' + utils.makeTag(message.author.id) + ': !' + theCmd + ' (' + parms + ') : ' + message.channel);
 			utils.chSend(message, utils.makeAuthorTag(message) + ', unknown command');
 			return;
 		}
