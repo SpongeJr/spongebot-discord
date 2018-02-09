@@ -2069,8 +2069,6 @@ spongeBot.timer = {
 timey = {
 	timeStr: function(parms, when) {
 		
-		console.log(parms);
-		
 		if (!parms[0]) {
 			return when.toTimeString();
 		}

@@ -66,6 +66,23 @@ module.exports = {
 			// for each user with tickets...
 			for (var who in numTix) {
 				
+				// buklds second message user sections
+				str2 += '\n';
+				var fixedLuser = '                    ';
+				if (gameStats[who].hasOwnProperty('profile')) {
+					// they have .profile...
+					if (gameStats[who].profile.hasOwnProperty('nick')) {
+						// they have .profile.nick, use it
+						fixedLuser += gameStats[who].profile.nick;
+						fixedLuser = fixedLuser.slice(-20);
+						str2 += fixedLuser + ': ';
+					}
+				} else {
+					fixedLuser += who;
+					fixedLuser = fixedLuser.slice(-20);
+					str2 += fixedLuser +': ';
+				}
+				
 				// show user & number of tickets they have in parenthesis
 				// use their stored nick if possible
 				if (gameStats[who].hasOwnProperty('profile')) {
@@ -85,7 +102,6 @@ module.exports = {
 
 				// for each ticket belonging to them...
 				for (var i = 0; i < numTix[who]; i++) {
-					
 					// pick 1 random ticket from those left in original array,
 					// yank it out and put in ranTick. It's an object.
 					// .slice() is destructive to the original array. good.
@@ -95,13 +111,13 @@ module.exports = {
 					// modify the "user" property to match the new owner
 					ranTick.user = who;
 					newTix.push(ranTick); // push it into new array
-					str2 += who + ':  Ticket #' + ranTick.num + '    | ';
+					str2 += ' [#' + ranTick.num + '] | ';
 				}	
 			}
 			str += '```';
 			utils.chSend(message, str);
 			str2 += '```';
-			//utils.chSend(message, str2);
+			utils.chSend(message, str2);
 			
 		} else {
 			utils.chSend(message, 'RAFFLE IS IN TEST-ONLY MODE !!!');
