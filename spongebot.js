@@ -1706,18 +1706,10 @@ spongeBot.stats = {
 			who = utils.makeId(parms);
 		}
 		
-		if (message.mentions.users.has(who)) {
-			// there's an @ mention, and it matches the id sent up
-			// so we can pass a user up to alterStat for nick nicking
-			who = message.mentions.users.find('id', who);
-		}
-		
 		if (!gameStats[who]) {
 			utils.chSend(message, message.author + ', I don\'t have any stats for them.');
 			return;
 		}
-		
-		
 		
 		var theStr = ' :bar_chart:  STATS FOR ' + who + '  :bar_chart:\n```';
 		
@@ -1729,6 +1721,21 @@ spongeBot.stats = {
 		}
 		theStr += '```';
 		utils.chSend(message, theStr);
+		
+		if (message.mentions.users.has(who)) {
+			// there was an @ mention, and it matches the id sent up
+			// so we can pass a user up to addNick for nick nicking
+			var user = message.mentions.users.find('id', who);
+			utils.addNick(who, user.username, gameStats);
+		}
+		
+		if (!parms) {
+			// no parms were sent, so we can nick message.author 's nick
+			if (message.author.id) {
+				utils.addNick(message.author, message.author.username, gameStats);
+			}
+		}
+		
 	},
 	help: '`!stats <user>` shows game stats for <user>. Omit <user> for yourself.'
 };
@@ -2061,7 +2068,9 @@ spongeBot.timer = {
 };
 timey = {
 	timeStr: function(parms, when) {
-		console.log(' WH ' + when);
+		
+		console.log(parms);
+		
 		if (!parms[0]) {
 			return when.toTimeString();
 		}
@@ -2104,13 +2113,16 @@ spongeBot.time = {
 		var now = new Date();
 		var outp = '';
 		parms = parms.split(' ');
-		outp = '`' + timey.timeStr(parms, now) +`'`;
+		outp = '`' + timey.timeStr(parms, now) + '`';
 		utils.chSend(message, outp);
 	},
-	help: '`time [long | iso]`: Shows current time.`',
-	longHelp: '`time [long | iso]`: Shows current time.' +
+	help: '`!time [ long | iso | raw ]`: Shows current time.',
+	longHelp: '`time [long | iso | raw]`: Shows current time.' +
 	  '`!time long` includes the date. ' + 
-	  '`!time iso` gives an ISO standard time and date',
+	  '`!time iso` gives an ISO standard time and date' +
+	  '`!time raw` gives you milliseconds since Jan 1, 1970' +
+	  '`!time diff <t1> <t2>` returns a plain-language difference of two ' +
+	    ' dates or times supplied in ms since Jan 1, 1970 format',
 	access: []
 };
 //-----------------------------------------------------------------------------

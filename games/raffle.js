@@ -81,7 +81,7 @@ module.exports = {
 					// no .profile, just put an @ and their id (don't ping them)
 					str += '@' + who;
 				}
-				str += '(' + numTix[who] + ')   | '; // number of tickets in parens
+				str += ' (x' + numTix[who] + ')   | '; // number of tickets in parens
 
 				// for each ticket belonging to them...
 				for (var i = 0; i < numTix[who]; i++) {
