@@ -2995,7 +2995,7 @@ spongeBot.minesweeper = {
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
 			} else {
-				var mines = minesweeper.countSurrounding(x, y);
+				var mines = minesweeper.countSurroundingMines(x, y);
 				if(!minesweeper.reveal(x, y)) {
 					//If this spot was already visible, then we skip
 					utils.chSend(message, utils.makeAuthorTag(message) + ' has verified that an empty spot near ' + mines + ' mines is still indeed empty!');
