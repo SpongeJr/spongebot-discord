@@ -2836,8 +2836,8 @@ var minesweeper = {
 	display: {},		//An object containing a field for each cell (string, name of char to display)
 	mineCount: 0,		//Number of mines placed
 	cellsLeft: 0,		//Number of invisible cells remaining
-	width: 42,
-	height: 42,
+	width: 42,		//Max: 42
+	height: 42,		//Max: 42
 	active: false,
 	getDisplay: function() {
 		var result = '';
@@ -2874,6 +2874,43 @@ var minesweeper = {
 		*/
 		utils.chSend(message, '```\n' + minesweeper.getDisplay() + '\n```');
 	},
+	countSurroundingMines: function(x, y) {
+		var grid = minesweeper.grid;
+		return	(grid[(x-1) + '_' + (y-1)] ? 1 : 0)
+			+ (grid[(x-1) + '_' + (y)] ? 1 : 0)
+			+ (grid[(x-1) + '_' + (y+1)] ? 1 : 0)
+			+ (grid[(x) + '_' + (y-1)] ? 1 : 0)
+			+ (grid[(x) + '_' + (y+1)] ? 1 : 0)
+			+ (grid[(x+1) + '_' + (y-1)] ? 1 : 0)
+			+ (grid[(x+1) + '_' + (y)] ? 1 : 0)
+			+ (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
+	},
+	getSurrounding: function(x, y) {
+		var result = [];
+		result.push({x:x-1, y:y-1});
+		result.push({x:x-1, y:y});
+		result.push({x:x-1, y:y+1});
+		result.push({x:x, y:y-1});
+		result.push({x:x, y:y+1});
+		result.push({x:x+1, y:y-1});
+		result.push({x:x+1, y:y});
+		result.push({x:x+1, y:y+1});
+		return result;
+	},
+	reveal: function(x, y) {
+		//Return true if this space used to be hidden, false otherwise
+		var cell = '' + x + '_' + y;
+		//minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
+		if(minesweeper.display[cell] === '.') {
+			minesweeper.cellsLeft--;
+			var mines = minesweeper.countSurroundingMines(x, y);
+			minesweeper.display[cell] = [' ', '1', '2', '3', '4', '5', '6', '7', '8', '9'][mines];
+			return true;
+		} else {
+			return false;
+		}
+		
+	}
 }
 spongeBot.minesweeper = {
 	cmdGroup: 'Fun and Games',
@@ -2899,7 +2936,7 @@ spongeBot.minesweeper = {
 			for(var x = 0; x < width; x++) {
 				for(var y = 0; y < height; y++) {
 					var cell = '' + x + '_' + y;		//Name that we will use to access this point
-					var mine = (Math.random() < 0.3);	//boolean; if true, this cell contains a mine
+					var mine = (Math.random() < 0.6);	//boolean; if true, this cell contains a mine
 					minesweeper.grid[cell] = mine;
 					if(mine) {
 						minesweeper.mines++;
@@ -2945,21 +2982,36 @@ spongeBot.minesweeper = {
 				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on a mine!');
 				utils.chSend(message, 'Game over!');
 			} else {
-				var grid = minesweeper.grid;
-				var surrounding = 0;
-				surrounding += (grid[(x-1) + '_' + (y-1)] ? 1 : 0);
-				surrounding + (grid[(x-1) + '_' + (y)] ? 1 : 0);
-				surrounding + (grid[(x-1) + '_' + (y+1)] ? 1 : 0);
-				surrounding + (grid[(x) + '_' + (y-1)] ? 1 : 0);
-				surrounding + (grid[(x) + '_' + (y+1)] ? 1 : 0);
-				surrounding + (grid[(x+1) + '_' + (y-1)] ? 1 : 0);
-				surrounding + (grid[(x+1) + '_' + (y)] ? 1 : 0);
-				surrounding + (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
-				//minesweeper.display[cell] = [':blank1:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][surrounding];
-				minesweeper.display[cell] = [' ', '1', '2', '3', '4', '5', '6', '7', '8', '9'][surrounding];
+				var mines = minesweeper.countSurrounding(x, y);
+				if(!minesweeper.reveal(x, y)) {
+					//If this spot was already visible, then we skip
+					utils.chSend(message, utils.makeAuthorTag(message) + ' has verified that an empty spot near ' + mines + ' mines is still indeed empty!');
+					return;
+				}
 				minesweeper.sendDisplay(message);
-				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + surrounding + ' mines!');
-				minesweeper.cellsLeft--;
+				utils.chSend(message, utils.makeAuthorTag(message) + ' has stepped on an empty spot near ' + mines + ' mines!');
+				//If this space is empty, we flood all surrounding spaces until we 
+				if(mines === 0) {
+					var revealed = 0;
+					var surrounding = minesweeper.getSurrounding(x, y);
+					for(var i = 0; i < surrounding.length; i++) {
+						//If we are surrounded by empty spaces, we iterate through those spaces later
+						var point_i = surrounding[i];
+						var x_i = point_i.x;
+						var y_i = point_i.y;
+						var mines_i = minesweeper.countSurroundingMines(x_i, y_i);
+						if(mines_i === 0) {
+							var surrounding_i = minesweeper.getSurrounding(x_i, y_i);
+							for(var j = 0; j < mines_i.length; j++) {
+								surrounding.push(surrounding_i[j]);
+							}
+						}
+						if(minesweeper.reveal(x_i, y_i)) {
+							revealed++;
+						}
+					}
+				}
+				utils.chSend(message, utils.makeAuthorTag(message) + ' has scouted the clearing and revealed ' + revealed + ' empty spaces!');
 				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
 					utils.chSend(message, 'All the mines have been located safely, and Sponge\'s Reef is safe once again!');
 					minesweeper.active = false;
