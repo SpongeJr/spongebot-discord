@@ -3024,8 +3024,8 @@ spongeBot.minesweeper = {
 							revealed++;
 						}
 					}
+					utils.chSend(message, utils.makeAuthorTag(message) + ' has scouted the clearing and revealed ' + revealed + ' empty spaces!');
 				}
-				utils.chSend(message, utils.makeAuthorTag(message) + ' has scouted the clearing and revealed ' + revealed + ' empty spaces!');
 				if(minesweeper.minesLeft === minesweeper.cellsLeft) {
 					utils.chSend(message, 'All the mines have been located safely, and Sponge\'s Reef is safe once again!');
 					minesweeper.active = false;
