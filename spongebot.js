@@ -2635,18 +2635,6 @@ spongeBot.version = {
 	},
 	help: 'Outputs the current bot code version and other info.'
 }
-spongeBot.bind = {
-	help: '`!bind <newCommand> <oldCommand>` to make an alias, but don\'t hose yourself. Limited access.',
-	access: [],
-	cmdGroup: 'Admin',
-	do: function(message, parms) {
-		parms = parms.split(' ');
-		var newCom = parms[0];
-		var oldCom = parms[1];
-		
-		spongeBot[newCom] = spongeBot[oldCom];
-	}
-};
 //-----------------------------------------------------------------------------
 var hangman = {
 	answer: '',		//The answer
@@ -3061,43 +3049,53 @@ spongeBot.bind = {
 		//Only Arch is crazy enough to (ab)use bindings
 		if(message.author.id !== ARCH_ID) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!bind <name> <macro>` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+			return;
 		}
 		var spaceIndex = args.indexOf(' ');
 		var name = args.substring(0, spaceIndex);
 		//If spaceIndex === -1, then !bind was the only input
 		if(spaceIndex === -1 || name === '') {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `name` argument.');
+			return;
 		}
 		var macro = args.substring(spaceIndex+1);
 		if(macro === '') {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `macro` argument.');
+			return;
 		}
-		/*
+		if(name === macro) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', don\'t try to crash me.');
+			return;
+		}
 		if(spongeBot.hasOwnProperty(macro)) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', cannot overwrite existing command.');
+			return;
 		}
-		*/
 		utils.chSend(message, utils.makeAuthorTag(message) + ', bound `' + name + ' -> !' + macro + '`');
 		bindings[name] = macro;
 	},
 	help: '`!bind <name> <macro>` binds a custom command for your convenience',
 	longHelp: 'TODO'
 }
+//-----------------------------------------------------------------------------
 spongeBot.unbind = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
 		//Only Arch is crazy enough to (ab)use bindings
 		if(message.author.id !== ARCH_ID) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!unbind <name>` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+			return;
 		}
 		var spaceIndex = args.indexOf(' ');
 		var name = args.substring(0, spaceIndex);
 		//If spaceIndex === -1, then !bind was the only input
 		if(spaceIndex === -1 || name === '') {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `name` argument.');
+			return;
 		}
 		if(!bindings[name]) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', no such binding exists');
+			return;
 		}
 		utils.chSend(message, utils.makeAuthorTag(message) + ', unbound `' + name + ' -> !' + bindings[name] + '`');
 		delete bindings[name];
@@ -3105,14 +3103,16 @@ spongeBot.unbind = {
 	help: '`!unbind <name>` unbinds a custom command for your convenience.',
 	longHelp: 'TODO'
 }
+//-----------------------------------------------------------------------------
 spongeBot.bindings = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
 		if(message.author.id !== ARCH_ID) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!bindings` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+			return;
 		}
 		var reply = 'Bindings\n';
-		var reply += '```\n';
+		reply += '```\n';
 		for(var name in bindings) {
 			reply += '!' + name + ' -> !' + bindings[name] + '\n';
 		}
@@ -3144,8 +3144,8 @@ BOT.on('message', message => {
 		/*if*/while(bindings[theCmd]) {
 			//Only Arch is crazy enough to (ab)use bindings
 			if(message.author.id !== ARCH_ID) {
-				utils.chSend(message, utils.makeAuthorTag(message.author.id) + ', sorry, but only ' + utils.makeAuthorTag(ARCH_ID) + ' is crazy enough to ~~ab~~use bindings.');
-				break;
+				utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but only ' + utils.makeAuthorTag(ARCH_ID) + ' is crazy enough to ~~ab~~use bindings.');
+				return;
 			}
 			
 			botCmd = bindings[theCmd] + botCmd.substring(spaceIndex);
@@ -3157,6 +3157,7 @@ BOT.on('message', message => {
 		theCmd = theCmd.toLowerCase();
 		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
+			utils.chSend(message, utils.makeAuthorTag(message) + ', unknown command');
 			return;
 		}
 		parms = parms.slice(1); // remove leading space
