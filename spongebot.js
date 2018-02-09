@@ -2936,7 +2936,7 @@ spongeBot.minesweeper = {
 			for(var x = 0; x < width; x++) {
 				for(var y = 0; y < height; y++) {
 					var cell = '' + x + '_' + y;		//Name that we will use to access this point
-					var mine = (Math.random() < 0.6);	//boolean; if true, this cell contains a mine
+					var mine = (Math.random() < 0.4);	//boolean; if true, this cell contains a mine
 					minesweeper.grid[cell] = mine;
 					if(mine) {
 						minesweeper.mines++;
@@ -2970,10 +2970,23 @@ spongeBot.minesweeper = {
 				}
 				return;
 			}
+			
+			//Check invalid spot
+			if(x < 1 || x > minesweeper.width || y < 1 || y > minesweeper.height) {
+				utils.chSend(message, utils.makeAuthorTag(message) + ' tried to slack off on the job by stepping on an invalid spot!');
+			}
+			
 			x -= 1;
 			y -= 1;
 			var cell = '' + x + '_' + y;
 			debugPrint('cell = ' + cell);
+			
+			//First step is always safe
+			if(minesweeper.cellsLeft === (minesweeper.width * minesweeper.height)) {
+				minesweeper.grid[cell] = false;
+				minesweeper.minesLeft--;
+			}
+			
 			if(minesweeper.grid[cell]) {
 				minesweeper.active = false;
 				//minesweeper.display[cell] = ':bomb:';
