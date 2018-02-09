@@ -3052,6 +3052,77 @@ spongeBot.minesweeper = {
 	longHelp: 'TODO'
 }
 //-----------------------------------------------------------------------------
+var bindings = {
+	
+}
+spongeBot.bind = {
+	cmdGroup: 'Admin',
+	do: function(message, args) {
+		//Only Arch is crazy enough to (ab)use bindings
+		if(message.author.id !== ARCH_ID) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!bind <name> <macro>` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+		}
+		var spaceIndex = args.indexOf(' ');
+		var name = args.substring(0, spaceIndex);
+		//If spaceIndex === -1, then !bind was the only input
+		if(spaceIndex === -1 || name === '') {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `name` argument.');
+		}
+		var macro = args.substring(spaceIndex+1);
+		if(macro === '') {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `macro` argument.');
+		}
+		/*
+		if(spongeBot.hasOwnProperty(macro)) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', cannot overwrite existing command.');
+		}
+		*/
+		utils.chSend(message, utils.makeAuthorTag(message) + ', bound `' + name + ' -> !' + macro + '`');
+		bindings[name] = macro;
+	},
+	help: '`!bind <name> <macro>` binds a custom command for your convenience',
+	longHelp: 'TODO'
+}
+spongeBot.unbind = {
+	cmdGroup: 'Admin',
+	do: function(message, args) {
+		//Only Arch is crazy enough to (ab)use bindings
+		if(message.author.id !== ARCH_ID) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!unbind <name>` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+		}
+		var spaceIndex = args.indexOf(' ');
+		var name = args.substring(0, spaceIndex);
+		//If spaceIndex === -1, then !bind was the only input
+		if(spaceIndex === -1 || name === '') {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid `name` argument.');
+		}
+		if(!bindings[name]) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', no such binding exists');
+		}
+		utils.chSend(message, utils.makeAuthorTag(message) + ', unbound `' + name + ' -> !' + bindings[name] + '`');
+		delete bindings[name];
+	},
+	help: '`!unbind <name>` unbinds a custom command for your convenience.',
+	longHelp: 'TODO'
+}
+spongeBot.bindings = {
+	cmdGroup: 'Admin',
+	do: function(message, args) {
+		if(message.author.id !== ARCH_ID) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', sorry, but there is absolutely nothing to see here. If you expected `!bindings` to do something interesting, I am sorry to tell you that such a command does not exist at all.');
+		}
+		var reply = 'Bindings\n';
+		var reply += '```\n';
+		for(var name in bindings) {
+			reply += '!' + name + ' -> !' + bindings[name] + '\n';
+		}
+		reply += '```';
+		utils.chSend(message, reply);
+	},
+	help: '`!bindings` lists all current bindings.',
+	longHelp: '`!bindings` lists all current bindings.',
+}
+//-----------------------------------------------------------------------------
 BOT.on('ready', () => {
   debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
@@ -3066,9 +3137,23 @@ BOT.on('ready', () => {
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
-		var theCmd = botCmd.split(' ')[0];
-
-		var parms = botCmd.replace(theCmd, ''); // remove the command itself, rest is parms
+		var spaceIndex = botCmd.indexOf(' ');	//Index of the space that separates command from args
+		var theCmd = botCmd.substring(0, spaceIndex);
+		
+		//If our command is bound to something, then replace it
+		/*if*/while(bindings[theCmd]) {
+			//Only Arch is crazy enough to (ab)use bindings
+			if(message.author.id !== ARCH_ID) {
+				utils.chSend(message, utils.makeAuthorTag(message.author.id) + ', sorry, but only ' + utils.makeAuthorTag(ARCH_ID) + ' is crazy enough to ~~ab~~use bindings.');
+				break;
+			}
+			
+			botCmd = bindings[theCmd] + botCmd.substring(spaceIndex);
+			spaceIndex = botCmd.indexOf(' ');
+			theCmd = botCmd.substring(0, spaceIndex);
+		}
+		
+		var parms = botCmd.substring(spaceIndex+1); // remove the command itself, rest is parms
 		theCmd = theCmd.toLowerCase();
 		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
