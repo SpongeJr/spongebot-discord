@@ -62,6 +62,7 @@ var iFic = require('./games/ific.js');
 var acro = require('./games/acro.js');
 var raffle = require('./games/raffle');
 var ebon = require('./lib/eboncmds.js');
+var quotes = require('./games/quotes.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
@@ -464,6 +465,12 @@ spongeBot.backup = {
 	}
 };
 //-----------------------------------------------------------------------------
+spongeBot.quote = {
+	help: 'Add something a user said to the quotes database, hear a random quote, and more!',
+	do: function(message, parms) {
+		quotes.q.do(message, parms);
+	}
+};
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
