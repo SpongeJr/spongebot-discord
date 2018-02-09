@@ -2635,6 +2635,18 @@ spongeBot.version = {
 	},
 	help: 'Outputs the current bot code version and other info.'
 }
+spongeBot.bind = {
+	help: '`!bind <newCommand> <oldCommand>` to make an alias, but don\'t hose yourself. Limited access.',
+	access: [],
+	cmdGroup: 'Admin',
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		var newCom = parms[0];
+		var oldCom = parms[1];
+		
+		spongeBot[newCom] = spongeBot[oldCom];
+	}
+};
 //-----------------------------------------------------------------------------
 var hangman = {
 	answer: '',		//The answer
