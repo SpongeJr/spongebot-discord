@@ -3040,6 +3040,7 @@ spongeBot.minesweeper = {
 	longHelp: 'TODO'
 }
 //-----------------------------------------------------------------------------
+<<<<<<< HEAD
 var bindings = {
 	
 }
@@ -3123,6 +3124,8 @@ spongeBot.bindings = {
 	longHelp: '`!bindings` lists all current bindings.',
 }
 //-----------------------------------------------------------------------------
+=======
+>>>>>>> parent of 35cacf4... Merge branch 'master' of https://github.com/SpongeJr/spongebot-discord
 BOT.on('ready', () => {
   debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
@@ -3137,6 +3140,7 @@ BOT.on('ready', () => {
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
+<<<<<<< HEAD
 		var spaceIndex = botCmd.indexOf(' ');	//Index of the space that separates command from args
 		var theCmd = botCmd.substring(0, spaceIndex);
 		
@@ -3154,6 +3158,11 @@ BOT.on('message', message => {
 		}
 		
 		var parms = botCmd.substring(spaceIndex+1); // remove the command itself, rest is parms
+=======
+		var theCmd = botCmd.split(' ')[0];
+
+		var parms = botCmd.replace(theCmd, ''); // remove the command itself, rest is parms
+>>>>>>> parent of 35cacf4... Merge branch 'master' of https://github.com/SpongeJr/spongebot-discord
 		theCmd = theCmd.toLowerCase();
 		if (!spongeBot.hasOwnProperty(theCmd)) {
 			// not a valid command
