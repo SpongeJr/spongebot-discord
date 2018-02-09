@@ -158,7 +158,6 @@ module.exports = {
 			// then put the array back together and send up a String
 			// that has lopped offthe command and subcommand,
 			// and otherwise left the user's input unharmed
-			parms.shift();
 			parms.join(' ');
 			utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
 			this.subCmd[sub].do(message, parms, gameStats);
