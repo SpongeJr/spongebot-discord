@@ -2819,8 +2819,8 @@ var minesweeper = {
 	display: {},		//An object containing a field for each cell (string, name of char to display)
 	mineCount: 0,		//Number of mines placed
 	cellsLeft: 0,		//Number of invisible cells remaining
-	width: 48,
-	height: 48,
+	width: 42,
+	height: 42,
 	active: false,
 	getDisplay: function() {
 		var result = '';
@@ -2904,7 +2904,7 @@ spongeBot.minesweeper = {
 		
 		if(action === 'step') {
 			var x = parseInt(args[1]);
-			var y = parseInt(args[2]) - 1;
+			var y = parseInt(args[2]);
 			debugPrint('x: ' + x + ', y: ' + y);
 			if(!x || !y) {
 				if(!x && !y) {
@@ -2916,6 +2916,8 @@ spongeBot.minesweeper = {
 				}
 				return;
 			}
+			x -= 1;
+			y -= 1;
 			var cell = '' + x + '_' + y;
 			debugPrint('cell = ' + cell);
 			if(minesweeper.grid[cell]) {
