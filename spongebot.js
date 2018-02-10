@@ -2637,10 +2637,11 @@ spongeBot.self = {
 		var parms = args.substring(spaceIndex+1);
 		command = command.toLowerCase();
 		if (!spongeBot.hasOwnProperty(command)) {
+			
 			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid command');
+			debugPrint('!self ' + command);
 			return;
 		}
-		parms = parms.slice(1); // remove leading space
 		if (typeof spongeBot[command] !== 'undefined') {
 			debugPrint('  ' + utils.makeTag(message.author.id) + ': !' + command + ' (' + parms + ') : ' + message.channel);
 			
@@ -2678,6 +2679,7 @@ spongeBot.self = {
 			}
 		} else {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', invalid command');
+			debugPrint('!self ' + command);
 		}
 	},
 	help: '`!self <command>` runs a command as myself.',
