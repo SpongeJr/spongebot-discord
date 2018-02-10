@@ -23,7 +23,7 @@ const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
 
 const BOT = new Discord.Client();
-const SPONGEBOT_ID = 411687722256957440;
+const SPONGEBOT_ID = 402122635552751616;
 
 const FS = require('fs');
 
