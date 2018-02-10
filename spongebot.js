@@ -148,13 +148,15 @@ var scramWordLists = {
 };
 // these should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
 // note: make sure wordDelay - wordDelayVariation > guessTime to prevent overlap!
+// also, timer will eventually end up in the new timer pattern I'm working on
+// it just isn't ready for multi-server scram yet
 var scramConfig = {
-	wordDelay: 195000,
+	wordDelay: 375000,
 	wordDelayVariation: 15000,
-	baseAward: 900,
-	letterBounus: 150, 
+	baseAward: 600,
+	letterBounus: 100, 
 	guessTime: 29000,
-	extraGuessTime: 2000
+	extraGuessTime: 2500
 }
 var botStorage = {};
 var bankroll = {};
@@ -164,7 +166,7 @@ if (utils.debugMode) {console.log(bankroll);}
 var giveaways = require('../data/giveaways.json');
 
 var loot = {
-		discountPercent: 75,
+		discountPercent: 40,
         boxes: {
 			sports: {
 				count: 7,
@@ -709,8 +711,8 @@ spongeBot.tree = {
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 3200000,
-		gracePeriod: 10000,
+		howOften: 32768000,
+		gracePeriod: 300000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
 		  'is nothing to harvest on it yet. It looks like it\'ll yield loot in ' +
 		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
