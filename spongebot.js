@@ -23,6 +23,7 @@ const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
 
 const BOT = new Discord.Client();
+const SPONGEBOT_ID = 411687722256957440;
 
 const FS = require('fs');
 
@@ -2624,7 +2625,7 @@ spongeBot.self = {
 		}
 		
 		//Set the bot as the author
-		message.author.id = cons.BOT;
+		message.author.id = SPONGEBOT_ID;
 		
 		var spaceIndex = args.indexOf(' ');
 		if(spaceIndex === -1) {
