@@ -2797,7 +2797,7 @@ spongeBot.hangman = {
 			var answer = args[1] || '';
 			if(answer === '') {
 				utils.chSend(message, utils.makeTag(message.author.id) + ', what? Cat got your tongue? If you have an answer, then speak!');
-			} else if(answer.toLowerCase() === hangman.answer) {
+			} else if(answer.toLowerCase() === hangman.answer.toLowerCase()) {
 				utils.chSend(message, utils.makeTag(message.author.id) + ' speaks the correct answer and saves the day!');
 				utils.chSend(message, utils.makeTag(message.author.id) + ' wins ' + hangman.reward + ' credits!');
 				utils.addBank(message.author.id, hangman.reward, bankroll);
