@@ -2622,6 +2622,7 @@ spongeBot.self = {
 	do: function(message, args) {
 		if(message.author.id !== cons.ARCH_ID) {
 			utils.chSend(message, utils.makeAuthorTag(message) + ', you do know that there is no such command called `!self <command>`, right?');
+			return;
 		}
 		
 		//Set the bot as the author
