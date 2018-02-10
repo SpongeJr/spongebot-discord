@@ -1440,7 +1440,7 @@ spongeBot.give = {
 		} else {
 			utils.addBank(giver, -amt, bankroll);
 			utils.chSend(message, ':gift: OK, I moved ' + amt +
-			  ' of your credits to ' + utils.makeTag(who) + ', ' + utils.makeTag(giver));
+			  ' of your credits to ' + utils.makeTag(who) + ', ' + giver);
 		}
 	},
 	help: '`!give <user> <amount>` gives someone some of your credits.',
