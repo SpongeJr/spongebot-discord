@@ -8,19 +8,6 @@ var ut = require('../lib/utils.js');
 var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
-	quotes: [
-		{
-			"who": "167711491078750208",
-			"quote": "I never said this, it's actually hardcoded."
-		},
-		{	"who": "167711491078750208",
-			quote: "I never said this, either."
-		},
-		{	"who": "Abraham Lincoln",
-			quote: "What cherry tree?!"
-		}
-	]
-}
 //-----------------------------------------------------------------------------
 // this whole .z object, .zlcear object, and .zstoryup object are all going to
 // be accessible in the global context.
@@ -115,9 +102,4 @@ module.exports = {
 			}
 		}
 	},
-	quote: {
-		do: function(message, parms) {
-			
-		}
-	}
 };
