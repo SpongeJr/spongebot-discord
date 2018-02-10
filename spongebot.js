@@ -2619,6 +2619,13 @@ spongeBot.sponge = {
 spongeBot.self = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
+		if(message.author.id !== cons.ARCH_ID) {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', you do know that there is no such command called `!self <command>`, right?');
+		}
+		
+		//Set the bot as the author
+		message.author.id = cons.BOT;
+		
 		var spaceIndex = args.indexOf(' ');
 		if(spaceIndex === -1) {
 			spaceIndex = args.length;
@@ -2632,7 +2639,6 @@ spongeBot.self = {
 			return;
 		}
 		parms = parms.slice(1); // remove leading space
-		
 		if (typeof spongeBot[command] !== 'undefined') {
 			debugPrint('  ' + utils.makeTag(message.author.id) + ': !' + command + ' (' + parms + ') : ' + message.channel);
 			
@@ -2661,8 +2667,6 @@ spongeBot.self = {
 							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + command +
 							  ', ignoring user command !' + command);
 						} else {
-							//Set the bot as the author
-							message.author.id = cons.BOT;
 							spongeBot[command].do(message, parms);
 						}
 					}
