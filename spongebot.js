@@ -152,7 +152,7 @@ var scramWordLists = {
 // also, timer will eventually end up in the new timer pattern I'm working on
 // it just isn't ready for multi-server scram yet
 var scramConfig = {
-	wordDelay: 375000,
+	wordDelay: 105000,
 	wordDelayVariation: 15000,
 	baseAward: 600,
 	letterBounus: 100, 
@@ -648,9 +648,10 @@ spongeBot.tree = {
 					utils.chSend(message, fruitMess);
 				} else {
 					utils.chSend(message, 'I see no fruit for you to check, ' + message.author +
-					  '\nI\'ll give you two starter fruit. You can !tree tend or !tree pick them' +
+					  '\nI\'ll give you three starter fruit. You can !tree tend or !tree pick them' +
 					  ' at any time, for now.');
 					tree.trees[who] = [];
+					tree.trees[who].push(new Fruit({}));
 					tree.trees[who].push(new Fruit({}));
 					tree.trees[who].push(new Fruit({}));
 				}
@@ -666,7 +667,7 @@ spongeBot.tree = {
 					// tend to each Fruit
 					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
 					for (var i = 0; i < fruit.length; i++) {
-						ageIt = (Math.random() < 0.5); // 50% per fruit chance of aging
+						ageIt = (Math.random() < 0.67); // 67% per fruit chance of aging
 						if (ageIt) {
 							fruit[i].age();
 						}
@@ -1788,8 +1789,28 @@ spongeBot.topstats = {
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
+	subCmd: {
+		symbol: {
+			access: [],
+			do: function(message, parms) {
+				
+				// temporary access check, will use slots.subCmd.symbol.access later
+				if (!hasAccess(message.author.id)) {
+					utils.chSend(message, 'Please step away from those machines!');
+					return;
+				}
+				parms = parms.split(' ');
+				oldSym = parms[0];
+				newSym = parms[1];
+				if (!oldSym || !newSym) {
+					utils.chSend(message, ' Try again.');
+				} else {
+					utils.chSend(message, ' So, change ' + oldSym + ' to ' + newSym + ' then?');
+				}
+			}
+		}
+	},
 	do: function(message, parms) {
-		
 		if (!slots.config.symArr) {
 			// must be first time around, we need to build the symbol array
 			slots.config.symArr = [];
@@ -1802,17 +1823,36 @@ spongeBot.slots = {
 			}
 			debugPrint('.slots: First run, built symbol array.');
 		};
-
-		var payTab = slots.config.payTable;
 		
-		if (parms === '') {
+		// --- default command handler ---
+		parms = parms.split(' ');
+		if (parms[0] === '') {
 			utils.chSend(message, 'Try `!slots spin <bet>` or `!slots paytable`.');
 			return;
-		}	
+		}
+		var sub = parms[0].toLowerCase(); // sub is the possible subcommand
+
 		
-		parms = parms.toLowerCase();
-		parms = parms.split(' ');		
+		if (this.subCmd.hasOwnProperty(sub)) {
+			parms.shift(); // lop off the command that got us here
+			parms = parms.join(' ');
+			//utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
+			this.subCmd[sub].do(message, parms);
+			return;
+		} else {
+			// commented out until slots subcommands are refactored into .subCmd
+			//utils.chSend(message, 'What are you trying to do to that slot machine?!');
+			//return;
+		}
+		// --- end default command handler ---
 		
+		// if we're here, there were parms, but not found in .subCmd
+		
+		console.log(parms);
+		console.log(parms[0]);
+
+		var payTab = slots.config.payTable;
+				
 		if (parms[0] === 'paytable') {
 	
 			var rarityTot = 0;
