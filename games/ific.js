@@ -8,6 +8,7 @@ var ut = require('../lib/utils.js');
 var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
+}
 //-----------------------------------------------------------------------------
 // this whole .z object, .zlcear object, and .zstoryup object are all going to
 // be accessible in the global context.
@@ -26,8 +27,6 @@ var v = {
 // mutliple commands in this module.
 //
 // If I need a value back in the global scope, I should return it
-
-
 module.exports = {
 	z: {
 		do: function(message, parms) {

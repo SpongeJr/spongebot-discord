@@ -1139,6 +1139,7 @@ spongeBot.s = {
 	disabled: false
 };
 spongeBot.scram = {
+	subCmd: {},
 	do: function(message, parms, gameStats, bankroll) {
 		var server = message.guild;
 		if (!server) {
