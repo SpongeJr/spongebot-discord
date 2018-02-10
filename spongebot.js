@@ -1789,12 +1789,24 @@ spongeBot.topstats = {
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
+	buildArray: function() {
+		// called to build slots array for first time !slots is run
+		// then also called after changing a symbol
+		slots.config.symArr = [];
+		for (var sym in slots.config.symbols) {
+			slots.config.symArr.push({
+				sym: sym,
+				emo: slots.config.symbols[sym].emo,
+				rarity: slots.config.symbols[sym].rarity
+			});
+		}
+	},
 	subCmd: {
 		symbol: {
 			access: [],
-			do: function(message, parms) {
+			do: function(message, parms, botSlots) {
 				
-				// temporary access check, will use slots.subCmd.symbol.access later
+				// temporary access check, will use slots.subCmd.symbol.access[] later
 				if (!hasAccess(message.author.id)) {
 					utils.chSend(message, 'Please step away from those machines!');
 					return;
@@ -1805,7 +1817,18 @@ spongeBot.slots = {
 				if (!oldSym || !newSym) {
 					utils.chSend(message, ' Try again.');
 				} else {
-					utils.chSend(message, ' So, change ' + oldSym + ' to ' + newSym + ' then?');
+					
+					if (!slots.config.symbols.hasOwnProperty(oldSym)) {
+						utils.chSend('That\'s not valid. Probably because the ' +
+						' command doesn\'t yet do exactly what it is supposed to do.');
+					} else {
+						slots.config.symbols[oldSym].emo = newSym;
+					}
+					
+					botSlots.buildArray();
+					debugPrint('.slots symbol: Rebuilt symbol array.');
+					utils.chSend(message, ' I changed ' + oldSym + ' to ' + newSym +
+					  ' on all the `!slots` machines for you.');
 				}
 			}
 		}
@@ -1813,14 +1836,7 @@ spongeBot.slots = {
 	do: function(message, parms) {
 		if (!slots.config.symArr) {
 			// must be first time around, we need to build the symbol array
-			slots.config.symArr = [];
-			for (var sym in slots.config.symbols) {
-				slots.config.symArr.push({
-					sym: sym,
-					emo: slots.config.symbols[sym].emo,
-					rarity: slots.config.symbols[sym].rarity
-				});
-			}
+			this.buildArray();
 			debugPrint('.slots: First run, built symbol array.');
 		};
 		
@@ -1837,7 +1853,7 @@ spongeBot.slots = {
 			parms.shift(); // lop off the command that got us here
 			parms = parms.join(' ');
 			//utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
-			this.subCmd[sub].do(message, parms);
+			this.subCmd[sub].do(message, parms, this);
 			return;
 		} else {
 			// commented out until slots subcommands are refactored into .subCmd
