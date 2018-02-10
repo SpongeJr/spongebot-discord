@@ -1959,12 +1959,16 @@ var buildHelp = function() {
 		if (!theHelp[cGroup]) {theHelp[cGroup] = '';}
 	
 		if (spongeBot[cmd].disabled !== true) {
-			if (spongeBot[cmd].access) {theHelp[cGroup] += '*'}
-			theHelp[cGroup] += '`!' + cmd + '`: ';
-			if (spongeBot[cmd].help) {
-				theHelp[cGroup] += spongeBot[cmd].help;
+			if (spongeBot[cmd].access) {
+				//theHelp[cGroup] += '*'
+			} else {
+				theHelp[cGroup] += '`!' + cmd + '`: ';
+			
+				if (spongeBot[cmd].help) {
+					theHelp[cGroup] += spongeBot[cmd].help;
+				}
+				theHelp[cGroup]+= '\n';
 			}
-			theHelp[cGroup]+= '\n';
 		}
 	}
 	return theHelp;
@@ -2044,11 +2048,9 @@ spongeBot.help = {
 			// since help text is built, just regurgitate it
 			utils.chSend(message, message.author + ', incoming DM spam!');
 			for (var cat in botStorage.fullHelp) {
-				utils.auSend(message, '\n**' + cat +'**\n');
-				utils.auSend(message, '---\n' + botStorage.fullHelp[cat]);
+				utils.auSend(message, '\n**' + cat +'**\n' + botStorage.fullHelp[cat]);
 			}
-			utils.auSend(message, '---\n( * - Denotes restricted access command. )' +
-			  ' Type `!help <command>` for more info on a specific command.');
+			utils.auSend(message, ' Type `!help <command>` for more info on a specific command.');
 			}
 		},
 	help: '`!help`: for when you need somebody, not just anybody. '
@@ -2251,7 +2253,7 @@ spongeBot.arch = {
 }
 //-----------------------------------------------------------------------------
 spongeBot.biglet = {
-	cmdGroup: 'miscellanous',
+	cmdGroup: 'Miscellanous',
 	do: function(message, txt) {
 		if (txt === '') {
 			utils.chSend(message, message.author + ', I have nothing to supersize.');
