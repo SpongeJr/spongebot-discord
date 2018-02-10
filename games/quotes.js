@@ -78,6 +78,9 @@ module.exports = {
 						"quote": said,
 						"addedBy": message.author.id,
 					});
+					if (!quotes.guild[who]) {
+						quotes.guild[who] = [];
+					}
 					quotes.guild[who].push(theQ);
 					utils.chSend(message, '**Added:** ' + theQ.quote + '" _-' + who +
 					  '_ on ' + theQ.timestamp + ' (added by ' + message.author.id + ')');
