@@ -61,6 +61,7 @@ var acro = require('./games/acro.js');
 var raffle = require('./games/raffle');
 var ebon = require('./lib/eboncmds.js');
 var quotes = require('./games/quotes.js');
+var adspam = require('./lib/adspam.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
