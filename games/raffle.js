@@ -55,7 +55,7 @@ module.exports = {
 				  '(use !time to find out official server time)');
 			}
 		},
-		test: {
+		drawing: {
 			do: function(message, parms, gameStats, raf) {
 				// raf is "this" from previous scope, which is global module context
 				// OUR "this" refers to the "subCmd" object
@@ -64,14 +64,11 @@ module.exports = {
 				if (parms[0] === '') {
 					utils.chSend(message, ' Use: `!raffle drawing list` or `!raffle drawing run`');
 					return;
+				} else if (parms[0] !== 'list' && parms[0] !== 'run') {
+					utils.chSend(message, ' Only `!raffle drawing list` and `run` work right now.');
+					return;
 				}
-				
-				else if (parms[0] === 'list') {
-					
-				} else if (parms[0] === 'run') {
-					
-				}
-				
+
 				var user;
 				var nick;
 				var str = '';
@@ -113,6 +110,8 @@ module.exports = {
 				
 				newTix = [];
 				str2 += '```\n';
+				
+				var column = 0;
 				// for each user with tickets...
 				for (var who in numTix) {
 					
@@ -148,7 +147,9 @@ module.exports = {
 						// no .profile, just put an @ and their id (don't ping them)
 						str += '@' + who;
 					}
-					str += ' (x' + numTix[who] + ')   | '; // number of tickets in parens
+					str += ' (x' + numTix[who] + ')\n'; // number of tickets in parens
+					column++;
+					//if (column % 3 === 0) {str += '\n'}
 
 					// for each ticket belonging to them...
 					for (var i = 0; i < numTix[who]; i++) {
@@ -164,11 +165,16 @@ module.exports = {
 						str2 += ' [#' + ranTick.num + '] | ';
 					}	
 				} // end for each user w/tix
+				
 				// finally output the strings we built
-				str += '```';
-				utils.chSend(message, str);
-				str2 += '```';
-				utils.chSend(message, str2);
+				if (parms[0] === 'list') {
+					str += '```';
+					utils.chSend(message, str);
+				} else if (parms[0] === 'run') {
+					str2 += '```';
+					utils.chSend(message, str2);
+				}
+				
 			}
 		}
 	},
