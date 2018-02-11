@@ -1789,6 +1789,11 @@ spongeBot.topstats = {
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
+	timedCmd: {
+		howOften: 2500,
+		gracePeriod: 0,
+		
+	},
 	buildArray: function() {
 		// called to build slots array for first time !slots is run
 		// then also called after changing a symbol
@@ -1838,6 +1843,11 @@ spongeBot.slots = {
 				var payTab = slots.config.payTable;
 				var who = message.author.id;
 
+				if (!collectTimer(message, who, 'slots')) {
+					return;
+				}
+				
+				
 				if (!bankroll.hasOwnProperty(who)) {
 					utils.chSend(message, message.author + ', please open a `!bank` account before playing slots.');
 					return;
@@ -1898,7 +1908,7 @@ spongeBot.slots = {
 				for (var i = 0; i < 3; i++) {
 					spinString += slots.config.symbols[spinArr[i]].emo;
 				}
-				utils.chSend(message, spinString + ' (spun by ' + message.author + ')');
+				spinString += ' (spun by ' + message.author + ')';
 				
 				for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
 					
@@ -1915,16 +1925,17 @@ spongeBot.slots = {
 						if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
 							// winner winner chicken dinner
 							var winAmt = betAmt * payTab[pNum].payout;
-							utils.chSend(message, ':slot_machine: ' +
+							spinString += '\n :slot_machine: ' +
 							  message.author + ' is a `!slots` winner!\n' + 
 							  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
-							  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
+							  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt;
 							utils.addBank(who, winAmt, bankroll)
 							won = true;					
 						}
 						reel++;
 					}
-				}			
+				}
+				utils.chSend(message, spinString);
 			}
 		},
 		paytable: {
@@ -2642,7 +2653,8 @@ var sponge = {};
 spongeBot.sponge = {
 	timedCmd: {
 		howOften: 20000,
-		gracePeriod: 0
+		gracePeriod: 0,
+		failResponse:  '   :warning:   Not quite so fast on the `!slots`, eh?'
 	},
 	cmdGroup: 'Miscellaneous',
 	do: function(message, args) {
