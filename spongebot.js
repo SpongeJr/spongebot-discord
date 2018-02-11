@@ -275,13 +275,13 @@ var loot = {
 var slots = {
 	config: {
 		symbols: {
-			btcn: {emo: ':rhino:', rarity: 1},
+			btcn: {emo: ':cupid:', rarity: 1},
 			peng: {emo: ':penguin:', rarity: 3},
 			dolr: {emo: ':dollar:', rarity: 4},
 			sevn: {emo: ':seven:', rarity: 6},
 			mush: {emo: ':mushroom:', rarity: 9},
 			cher: {emo: ':cherries:', rarity: 12},
-			tato: {emo: ':potato:', rarity: 11},
+			tato: {emo: ':tangerine:', rarity: 11},
 		},
 		payTable: [
 			{payout: 3200, pattern: ['btcn', 'btcn', 'btcn']},
@@ -1804,7 +1804,7 @@ spongeBot.slots = {
 	subCmd: {
 		symbol: {
 			access: [],
-			do: function(message, parms, botSlots) {
+			do: function(message, parms, bankroll, sl) {
 				
 				// temporary access check, will use slots.subCmd.symbol.access[] later
 				if (!hasAccess(message.author.id)) {
@@ -1825,11 +1825,145 @@ spongeBot.slots = {
 						slots.config.symbols[oldSym].emo = newSym;
 					}
 					
-					botSlots.buildArray();
+					sl.buildArray();
 					debugPrint('.slots symbol: Rebuilt symbol array.');
 					utils.chSend(message, ' I changed ' + oldSym + ' to ' + newSym +
 					  ' on all the `!slots` machines for you.');
 				}
+			}
+		},
+		spin: {
+			access: false,
+			do: function(message, parms, bankroll) {
+				var payTab = slots.config.payTable;
+				var who = message.author.id;
+
+				if (!bankroll.hasOwnProperty(who)) {
+					utils.chSend(message, message.author + ', please open a `!bank` account before playing slots.');
+					return;
+				}
+				
+				parms = parms.split(' ');
+				
+				var betAmt = parseInt(parms[0]) || 0;
+
+				if (betAmt === 0) {
+					utils.chSend(message, message.author + ', you can\'t play if you don\'t pay.');
+					return;
+				}
+				
+				if (betAmt < 0) {
+					utils.chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
+					return;
+				}
+				
+				if (betAmt > bankroll[who].credits) {
+					utils.chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
+					return;
+				}
+				
+				if (betAmt === bankroll[who].credits) {
+					utils.chSend(message, message.author + ' just bet the farm on `!slots`!');
+				}
+				
+				utils.addBank(who, -betAmt, bankroll);
+
+				var spinArr = [];
+				for (var reel = 0; reel < 3; reel++) {
+					
+					var bucket = [];
+					var highest = 0;
+					var buckNum = 0;
+					
+					for (var sym in slots.config.symbols) {
+						bucket[buckNum] = highest + slots.config.symbols[sym].rarity;
+						buckNum++;
+						highest += slots.config.symbols[sym].rarity;
+					};
+					
+					var theSpin = Math.random() * highest;
+					
+					var foundBuck = false;
+					var bNum = 0;
+					
+					while ((bNum < bucket.length) && (!foundBuck)) {
+						if (theSpin < bucket[bNum]) {
+							foundBuck = true;
+						} else {bNum++;}
+					}
+					spinArr.push(slots.config.symArr[bNum].sym);
+				}
+				
+				spinString = '';
+				for (var i = 0; i < 3; i++) {
+					spinString += slots.config.symbols[spinArr[i]].emo;
+				}
+				utils.chSend(message, spinString + ' (spun by ' + message.author + ')');
+				
+				for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
+					
+					var matched = true;
+					var reel = 0;
+					while (matched && reel < payTab[pNum].pattern.length) {
+						if ((spinArr[reel] === payTab[pNum].pattern[reel])
+						  || (payTab[pNum].pattern[reel] == 'any')) {
+							
+						} else {
+							matched = false;
+						}					
+						
+						if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
+							// winner winner chicken dinner
+							var winAmt = betAmt * payTab[pNum].payout;
+							utils.chSend(message, ':slot_machine: ' +
+							  message.author + ' is a `!slots` winner!\n' + 
+							  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
+							  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
+							utils.addBank(who, winAmt, bankroll)
+							won = true;					
+						}
+						reel++;
+					}
+				}			
+			}
+		},
+		paytable: {
+			access: false,
+			do: function(message, parms) {
+				var payTab = slots.config.payTable;
+				var rarityTot = 0;
+				for (var sym in slots.config.symbols) {
+					rarityTot += slots.config.symbols[sym].rarity;
+				}
+
+				ptabString = '(Using config: ' + slots.config.configName + ')\n\n';
+				ptabString += '!SLOTS PAYOUT TABLE\n`[PAYOUT]    | [PATTERN]   | [ODDS AGAINST]`\n';
+				
+				for (var i = 0; i < payTab.length; i++) {
+					var lineChance = 1;	
+					ptabString += '`' + payTab[i].payout + ' : 1';
+					
+					var tempstr = payTab[i].payout.toString() + ' : 1';
+					var stlen = tempstr.length;
+					for (var j = 0; j < 12 - stlen; j++) {
+						ptabString += ' ';
+					}
+					ptabString += '|` ';
+					
+					for (var j = 0; j < payTab[i].pattern.length; j++) {
+						if (payTab[i].pattern[j] === 'any') {
+							ptabString += ':grey_question: ';
+						} else {
+							ptabString += slots.config.symbols[payTab[i].pattern[j]].emo;
+							ptabString += ' ';
+							lineChance = lineChance * (slots.config.symbols[payTab[i].pattern[j]].rarity / rarityTot);					
+						}
+					}
+					lineChance = 1 / lineChance;
+					ptabString += '      (' + lineChance.toFixed(1) + ' : 1)';
+					ptabString += '\n';
+				}
+				utils.chSend(message, ptabString);
 			}
 		}
 	},
@@ -1853,149 +1987,13 @@ spongeBot.slots = {
 			parms.shift(); // lop off the command that got us here
 			parms = parms.join(' ');
 			//utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
-			this.subCmd[sub].do(message, parms, this);
+			this.subCmd[sub].do(message, parms, bankroll, this);
 			return;
 		} else {
-			// commented out until slots subcommands are refactored into .subCmd
-			//utils.chSend(message, 'What are you trying to do to that slot machine?!');
-			//return;
+			utils.chSend(message, 'What are you trying to do to that slot machine?!');
+			return;
 		}
 		// --- end default command handler ---
-		
-		// if we're here, there were parms, but not found in .subCmd
-		
-		console.log(parms);
-		console.log(parms[0]);
-
-		var payTab = slots.config.payTable;
-				
-		if (parms[0] === 'paytable') {
-	
-			var rarityTot = 0;
-			for (var sym in slots.config.symbols) {
-				rarityTot += slots.config.symbols[sym].rarity;
-			}
-			
-			ptabString = '(Using config: ' + slots.config.configName + ')\n\n';
-			ptabString += '!SLOTS PAYOUT TABLE\n`[PAYOUT]    | [PATTERN]   | [ODDS AGAINST]`\n';
-			
-			for (var i = 0; i < payTab.length; i++) {
-				var lineChance = 1;	
-				ptabString += '`' + payTab[i].payout + ' : 1';
-				
-				var tempstr = payTab[i].payout.toString() + ' : 1';
-				var stlen = tempstr.length;
-				for (var j = 0; j < 12 - stlen; j++) {
-					ptabString += ' ';
-				}
-				ptabString += '|` ';
-				
-				for (var j = 0; j < payTab[i].pattern.length; j++) {
-					if (payTab[i].pattern[j] === 'any') {
-						ptabString += ':grey_question: ';
-					} else {
-						ptabString += slots.config.symbols[payTab[i].pattern[j]].emo;
-						ptabString += ' ';
-						lineChance = lineChance * (slots.config.symbols[payTab[i].pattern[j]].rarity / rarityTot);					
-					}
-				}
-				lineChance = 1 / lineChance;
-				ptabString += '      (' + lineChance.toFixed(1) + ' : 1)';
-				ptabString += '\n';
-			}
-			utils.chSend(message, ptabString);
-		}
-
-		if (parms[0] === 'spin') {
-			var who = message.author.id;
-
-			if (!bankroll.hasOwnProperty(who)) {
-				utils.chSend(message, message.author + ', please open a `!bank` account before playing slots.');
-				return;
-			}
-			
-			var betAmt = parseInt(parms[1]) || 0;
-
-			if (betAmt === 0) {
-				utils.chSend(message, message.author + ', you can\'t play if you don\'t pay.');
-				return;
-			}
-			
-			if (betAmt < 0) {
-				utils.chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
-				return;
-			}
-			
-			if (betAmt > bankroll[who].credits) {
-				utils.chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
-				return;
-			}
-			
-			if (betAmt === bankroll[who].credits) {
-				utils.chSend(message, message.author + ' just bet the farm on `!slots`!');
-			}
-			
-			utils.addBank(who, -betAmt, bankroll);
-
-			var spinArr = [];
-			for (var reel = 0; reel < 3; reel++) {
-				
-				var bucket = [];
-				var highest = 0;
-				var buckNum = 0;
-				
-				for (var sym in slots.config.symbols) {
-					bucket[buckNum] = highest + slots.config.symbols[sym].rarity;
-					buckNum++;
-					highest += slots.config.symbols[sym].rarity;
-				};
-				
-				var theSpin = Math.random() * highest;
-				
-				var foundBuck = false;
-				var bNum = 0;
-				
-				while ((bNum < bucket.length) && (!foundBuck)) {
-					if (theSpin < bucket[bNum]) {
-						foundBuck = true;
-					} else {bNum++;}
-				}
-				spinArr.push(slots.config.symArr[bNum].sym);
-			}
-			
-			spinString = '';
-			for (var i = 0; i < 3; i++) {
-				spinString += slots.config.symbols[spinArr[i]].emo;
-			}
-			utils.chSend(message, spinString + ' (spun by ' + message.author + ')');
-			
-			for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
-				
-				var matched = true;
-				var reel = 0;
-				while (matched && reel < payTab[pNum].pattern.length) {
-					if ((spinArr[reel] === payTab[pNum].pattern[reel])
-					  || (payTab[pNum].pattern[reel] == 'any')) {
-						
-					} else {
-						matched = false;
-					}					
-					
-					if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
-						// winner winner chicken dinner
-						var winAmt = betAmt * payTab[pNum].payout;
-						utils.chSend(message, ':slot_machine: ' +
-						  message.author + ' is a `!slots` winner!\n' + 
-						  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
-						  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt);
-						utils.addBank(who, winAmt, bankroll)
-						won = true;
-					}
-					reel++;
-				}
-			}
-		}
-		
 	},
 	help: '`!slots`: give the slot machine a spin!'
 }
