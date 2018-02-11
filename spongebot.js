@@ -276,8 +276,8 @@ var slots = {
 	config: {
 		symbols: {
 			btcn: {emo: ':cupid:', rarity: 1},
-			peng: {emo: ':penguin:', rarity: 3},
-			dolr: {emo: ':dollar:', rarity: 4},
+			peng: {emo: ':penguin:', rarity: 4},
+			dolr: {emo: ':dollar:', rarity: 5},
 			sevn: {emo: ':seven:', rarity: 6},
 			mush: {emo: ':mushroom:', rarity: 9},
 			cher: {emo: ':cherries:', rarity: 12},
@@ -286,19 +286,19 @@ var slots = {
 		payTable: [
 			{payout: 3200, pattern: ['btcn', 'btcn', 'btcn']},
 			{payout: 160, pattern: ['btcn', 'btcn', 'any']},
-			{payout: 108, pattern: ['peng', 'peng', 'peng']},
+			{payout: 128, pattern: ['peng', 'peng', 'peng']},
 			{payout: 32, pattern: ['peng', 'peng', 'any']},
-			{payout: 21, pattern: ['dolr', 'dolr', 'dolr']},
+			{payout: 20, pattern: ['dolr', 'dolr', 'dolr']},
 			{payout: 16, pattern: ['dolr', 'dolr', 'any']},
-			{payout: 11, pattern: ['sevn', 'sevn', 'sevn']},
-			{payout: 6, pattern: ['cher', 'cher', 'cher']},
-			{payout: 3.5, pattern: ['cher', 'cher', 'any']},
+			{payout: 14, pattern: ['sevn', 'sevn', 'sevn']},
+			{payout: 9, pattern: ['cher', 'cher', 'cher']},
+			{payout: 4, pattern: ['cher', 'cher', 'any']},
 			{payout: 3, pattern: ['mush', 'mush', 'mush']},
 			{payout: 2, pattern: ['mush', 'mush', 'any']},
 			{payout: 1.5, pattern: ['tato', 'tato', 'tato']},
 			{payout: 1, pattern: ['mush', 'any', 'any']},
 		],
-		configName: "@EFHIII\'s numbers v1 - Sponge\'s loose version"
+		configName: "Sponge's Temporary Slots Promo: >107% payout!"
 	}
 };
 //-----------------------------------------------------------------------------
