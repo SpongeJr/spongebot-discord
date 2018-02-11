@@ -453,7 +453,7 @@ spongeBot.embeds = {
 };
 spongeBot.backup = {
 	cmdGroup: 'Admin',
-	disabled: true,
+	disabled: false,
 	access: [],
 	do: function(message) {
 		var now = new Date();
@@ -2131,8 +2131,7 @@ spongeBot.timer = {
 	help: '`!timer <sec>` sets a timer to go off in _<sec>_ seconds.'
 };
 timey = {
-	timeStr: function(parms, when) {
-		
+	timeStr: function(parms, when) {		
 		if (!parms[0]) {
 			return when.toTimeString();
 		}
@@ -2185,30 +2184,24 @@ spongeBot.time = {
 	  '`!time raw` gives you milliseconds since Jan 1, 1970' +
 	  '`!time diff <t1> <t2>` returns a plain-language difference of two ' +
 	    ' dates or times supplied in ms since Jan 1, 1970 format',
-	access: []
+	access: false
 };
 //-----------------------------------------------------------------------------
 spongeBot.say = {
-	// refactor to use .access check someday
+	access: [],
 	cmdGroup: 'Miscellaneous',
-	do: function(message, parms) {
-		
-		if (message.author.id === cons.SPONGE_ID) {
-			if (parms === '') {return;}			
-			var chan;
-			if (parms.startsWith('#')) {
-				parms = parms.slice(1).split(' ');
-				chan = parms[0];
-				parms.shift();
-				parms = parms.join(' ');
-			} else {
-				chan = cons.MAINCHAN_ID;
-			}
-			BOT.channels.get(chan).send(parms);
+	do: function(message, parms) {		
+		if (parms === '') {return;}			
+		var chan;
+		if (parms.startsWith('#')) {
+			parms = parms.slice(1).split(' ');
+			chan = parms[0];
+			parms.shift();
+			parms = parms.join(' ');
 		} else {
-			debugPrint(message.author.id + ' tried to put words in my mouth!');
-			utils.auSend(message, 'I don\'t speak for just anyone.');
+			chan = cons.MAINCHAN_ID;
 		}
+		BOT.channels.get(chan).send(parms);		
 	},
 	help: '`!say <stuff>` Make me speak. (limited access command)',
 	access: true
