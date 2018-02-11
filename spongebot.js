@@ -1791,9 +1791,10 @@ spongeBot.topstats = {
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
 	timedCmd: {
-		howOften: 2500,
+		howOften: 950,
 		gracePeriod: 0,
-		
+		failResponse: '  :warning:  Please pull slots no faster than about ' +
+		' once per second per user.  :warning:'
 	},
 	buildArray: function() {
 		// called to build slots array for first time !slots is run
