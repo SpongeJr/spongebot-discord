@@ -404,6 +404,7 @@ var collectTimer = function(message, who, command) {
 	var now = new Date();
 	var timedCmd = spongeBot[command].timedCmd;
 	var lastCol = utils.alterStat(utils.makeId(who), 'lastUsed', command, 0, gameStats);
+	// the alterStat call above saves to disk unnecessarily. improve later.
 	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 	now = now.valueOf();
 	
