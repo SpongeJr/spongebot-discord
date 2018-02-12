@@ -1,5 +1,4 @@
 //var quotes = require('../data/quotes.json');
-
 var quotes = {
 	"guild": {
 		"sponge": [
@@ -30,8 +29,8 @@ var quotes = {
 			}
 		]
 	}
-}
-
+};
+var cons = require('../lib/constants.js');
 var utils = require('../lib/utils.js');
 var v = {};
 
@@ -94,6 +93,15 @@ module.exports = {
 			count: {
 				do: function() {
 					console.log('Picked count ha ha haaa!');
+				}
+			},
+			save: {
+				do: function(message, parms) {
+					var server = cons.SERVER_ID;
+					var filename = cons.QUOTES_FILE;
+					utils.setStat(server, 'quotes', 'guild', quotes.guild, filename);
+					console.log(quotes.guild);
+					utils.chSend('Probably saved quotes file. Thank you drive through.');
 				}
 			}
 		},
