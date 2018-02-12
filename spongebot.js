@@ -27,8 +27,6 @@ const SPONGEBOT_ID = 402122635552751616;
 
 const FS = require('fs');
 
-
-
 const FRUIT_VAL = 300; // temporary!
 
 var debugPrint =function(inpString){
@@ -62,6 +60,7 @@ var raffle = require('./games/raffle');
 var ebon = require('./lib/eboncmds.js');
 var quotes = require('./games/quotes.js');
 var adspam = require('./lib/adspam.js');
+var memory = require('./games/memory.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
@@ -2894,16 +2893,15 @@ spongeBot.hangman = {
 	longHelp: 'TODO',
 }
 //-----------------------------------------------------------------------------
-var memory = {
-	grid: [],
-	visible: [],
-	active: false
-}
+
 spongeBot.memory = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
-		args = args.split(' ');
 		
+		// use one of the following three:
+		memory.do(message, args); // if you don't need stats or bankroll
+		// memory.do(message, parms, gameStats); // if you need stats but no banks
+		// memory.do(message, parms, gameStats, bankroll) // if you need banks
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
@@ -3122,11 +3120,6 @@ BOT.on('ready', () => {
   debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
   BOT.user.setGame("!help");
   if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
-  
-  // now loading via require():
-  // loadBanks();
-  // loadStats();
-  
 });
 //-----------------------------------------------------------------------------
 BOT.on('message', message => {
@@ -3181,9 +3174,11 @@ BOT.on('message', message => {
 			// not a valid command
 		}
 	} else {
+		/*
 		if(sponge[message.author.id]) {
 			utils.chSend(message, utils.makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
 		}
+		*/
 	}
 });
 //=============================================================================
