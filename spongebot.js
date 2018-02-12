@@ -1278,8 +1278,10 @@ spongeBot.giveaways = {
 			var count = 0;
 			for (var item in giveaways) {
 				if ((giveaways[item].hasOwnProperty('type') && giveaways[item].type === parms) || parms === '') {
-					str += '`' + item + '`   ';
-					count++;
+					if ((giveaways[item].hasOwnProperty('disabled') && giveaways[item].disabled !== "true") || (!giveaways[item].hasOwnProperty('disabled'))) {
+						str += '`' + item + '`   ';
+						count++;
+					}
 				}
 			}
 			str += '\n';
