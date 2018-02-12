@@ -161,6 +161,7 @@ var scramConfig = {
 var botStorage = {};
 var bankroll = {};
 var gameStats = require('../data/gamestats.json');
+var otherStats = {};
 var bankroll = require('../data/banks.json');
 if (utils.debugMode) {console.log(bankroll);}
 var giveaways = require('../data/giveaways.json');
@@ -1691,6 +1692,17 @@ spongeBot.setstat = {
 	access: true,
 	disabled: true
 };
+spongeBot.alterother = {
+	do: function(message, parms) {
+		parms = parms.split(' ');
+		utils.chSend(message, 'In OTHER stats file, USER: ' + parms[0] + '  GAME: ' + parms[1] +
+		  '  STAT: ' + parms[2] + ' is now ' +
+		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), otherStats, cons.DATA_DIR  + 'otherstats.json'));
+	},
+	help: 'does an alterStat on the "alternate stat file". for toasting porpoises. limited access.',
+	longHelp: 'Be careful with it!',
+	disabled: true
+};
 spongeBot.alterstat = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -1698,7 +1710,7 @@ spongeBot.alterstat = {
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), gameStats));
 	},
-	help: 'sets a game stat. limited access.',
+	help: 'changes a game stat. limited access.',
 	longHelp: 'Listen, be careful and look at ' + 
 	  ' the source for `alterStat (who, game, stat, amt)` as well as ' +
 	  ' `spongeBot.alterStat()`!',
