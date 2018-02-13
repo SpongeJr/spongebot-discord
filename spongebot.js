@@ -485,31 +485,31 @@ spongeBot.explore = {
 	do: function(message, parms) {
 		iFic.explore.do(message,parms);
 	}
-},
+};
 spongeBot.look = {
 	help: '(SpongeMUD) Look at the room you are in.',
 	do: function(message, parms) {
 		iFic.look.do(message, parms);
 	}
-}
+};
 spongeBot.joinmud = {
 	help: 'Join SpongeMUD (extremely early pre-alpha)',
 	do: function(message, parms) {
 		iFic.joinmud.do(message, parms);
 	}
-},
+};
 spongeBot.get = {
 	help: '(SpongeMUD) !get <item> to pick up something in the room.',
 	do: function(message, parms) {
 		iFic.get.do(message, parms);
 	}
-},
+};
 spongeBot.go = {
 	help: '(SpongeMUD) !get <where> to move to a different room.',
 	do: function(message, parms) {
 		iFic.go.do(message, parms);
 	}
-}
+};
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
@@ -540,12 +540,12 @@ spongeBot.zload = {
 	do: function(message, parms) {
 		iFic.zload.do(message, parms, gameStats);
 	}
-}
+};
 spongeBot.zshow = {
 	do: function(message, parms) {
 		iFic.zshow.do(message, parms);
 	}
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
