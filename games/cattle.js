@@ -8,7 +8,7 @@ var utils = require('../lib/utils.js');
 
 module.exports = {
     passwords: {
-        
+        playerID: 'password',
     },
     matches: {
         playerID: 'opponentID',
@@ -74,7 +74,7 @@ module.exports = {
             //Opponent plays first
             this.turns[opponent] = true;
             utils.chSend(message, 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
-        }
+        },
         guess: function(message, args) {
             var player = message.author.id;
             var opponent = this.matches[player];
@@ -133,7 +133,7 @@ module.exports = {
             delete this.turns[player];
             this.turns[opponent] = true;
         }
-    }
+    },
     cattle: function(message, args, bankroll) {
 		args = args.split(' ');
 		if (args[0] === '') {
