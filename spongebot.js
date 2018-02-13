@@ -118,10 +118,13 @@ Fruit.prototype.age = function() {
 };
 var tree = {
 	config: {
-		treeVal: 1200,
+		treeVal: 3500,
 		ticketRarity: 12,
 		magicSeedRarity: 8,
-		harvestMessages: ['','','','','','','Enjoy your goodies!','Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.']
+		harvestMessages: ['','','','Wow, can I get a loan?','You might need some help carrying all that!','Nice haul!','Enjoy your goodies!',
+		  'Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.','Don\'t you wish loot trees were real?',
+		  'Thanks for participating on the server!','Don\'t spend it all on the `!slots`!',':treasure:',':coin: :coin: :coin:',
+		  ':money_mouth:', 'That\'s some good loot!','If you have certain roles, you get more on your harvest!','','','','','']
 	},
 	trees: {
 		"134800705230733312": [
@@ -532,22 +535,20 @@ spongeBot.collect = {
 			var collectVal = 12500;
 			var fruitBonus = 0;
 			
-			//small extra fruit bonus for now using loot tree code/formula (300 / fr.)
+			// small extra fruit bonus for now (750 / fr.)
 			if (tree.trees.hasOwnProperty(who)) {
 				fruitBonus += 750 * tree.trees[who].length;
+				collectVal += fruitBonus;
 				messStr += ' :money_mouth: Bonus of ' + fruitBonus + ' for trying ' +
 				' the `!tree fruit` alpha-testing feature since last bot restart!\n';
 			}
+			
 			var numTix = 1;
-			
-			
 			messStr += utils.makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
 			  'and ' + numTix + 'x :tickets: (raffle tickets) to your bank. \n';
 			 messStr += utils.makeTag(who) + ', you now have ' + utils.alterStat(who, 'raffle', 'ticketCount', numTix, gameStats) +
 			   ' :tickets: s and ' + utils.addBank(who, collectVal, bankroll) + ' credits! ';
 			//random saying extra bit on end (using tree sayings for now)
-					
-			// so we don't hurt the original
 			var sayings = JSON.stringify(tree.config.harvestMessages);
 			sayings = JSON.parse(sayings);
 			messStr += utils.listPick(sayings);
@@ -589,6 +590,8 @@ spongeBot.tree = {
 					var messStr = '';
 					var collectVal = 0;
 					var fruitBonus = 0;
+					var fruitBonusStr = '';
+					
 					//fruit bonus
 					if (tree.trees.hasOwnProperty(who)) {
 						/*
@@ -596,22 +599,53 @@ spongeBot.tree = {
 							
 						}
 						*/
-						fruitBonus += 125 * tree.trees[who].length;
+						fruitBonus += 50 * tree.trees[who].length;
 					}
-					collectVal = tree.config.treeVal + fruitBonus
+					collectVal = tree.config.treeVal + fruitBonus;
+					
+					var specialRoles = {
+						"Admin": 50,
+						"Dev": 75,
+						"Emoji manager": 2000,
+						"Tester": 800,
+						"Musician": 750,
+						"Artist": 750,
+						"Writer": 750,
+						"giveaways": 300,
+					};
+					var role;
+					var roleBonusStr = '';
+					var totalRoleBonus = 0;
+					for (var roleName in specialRoles) {
+						role = message.guild.roles.find('name', roleName);
+						if (message.member.roles.has(role.id)) {
+							roleBonusStr += roleName + '(' + specialRoles[roleName] + '), ';
+							totalRoleBonus += specialRoles[roleName];
+						}
+					}
+					roleBonusStr = roleBonusStr.slice(0, roleBonusStr.length - 2); // remove last comma
+					
+					roleBonusStr = 'Included these bonuses for having special roles: ' + roleBonusStr;
+					roleBonusStr += '\n   Total role bonus: ' + totalRoleBonus + '! ';
+					collectVal += totalRoleBonus;
+					
+					if (fruitBonus > 0) {
+						fruitBonusStr += '\n Also added ' + fruitBonus + ' for trying `!tree fruit` since' +
+						  'the last bot reset.';
+					}
+					
 					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-					  utils.makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ';
+					  utils.makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ' +
+					  '\n' + roleBonusStr + fruitBonusStr;
 					utils.addBank(who, collectVal, bankroll);
 					
 					//random saying extra bit on end: 
-					
-					// so we don't hurt the original
 					var sayings = JSON.stringify(tree.config.harvestMessages);
 					sayings = JSON.parse(sayings);
-
 					messStr += utils.listPick(sayings);
+					
 					utils.chSend(message, messStr);
-						
+					
 					//magic seeds ... (do nothing right now unfortunately) =(
 					//since I'm testing and will have them set common, we're calling them "regularSeeds"
 					if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
@@ -716,7 +750,7 @@ spongeBot.tree = {
 	disabled: false,
 	access: false,
 	timedCmd: {
-		howOften: 32768000,
+		howOften: cons.ONE_DAY / 2,
 		gracePeriod: 300000,
 		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
 		  'is nothing to harvest on it yet. It looks like it\'ll yield loot in ' +
@@ -1321,8 +1355,7 @@ spongeBot.giveaways = {
 			*/
 			
 			var role = message.guild.roles.find('name', 'giveaways');
-			
-			if (message.member.roles.has('408789879590354944')) {
+			if (message.member.roles.has(role.id)) {
 				debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
 				utils.chSend(message, message.author + ' I think you already had that role.');
 			} else {
