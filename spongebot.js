@@ -2735,7 +2735,7 @@ spongeBot.sponge = {
 	timedCmd: {
 		howOften: 20000,
 		gracePeriod: 0,
-		failResponse:  '   :warning:   Not quite so fast on the `!slots`, eh?'
+		failResponse:  '   :warning:  You cannot polymorph back yet.'
 	},
 	cmdGroup: 'Miscellaneous',
 	do: function(message, args) {
