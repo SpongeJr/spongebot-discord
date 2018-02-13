@@ -2403,7 +2403,7 @@ spongeBot.biglet = {
 spongeBot.cattle = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
-		cattle.do(message, args);
+		cattle.do(message, args, gameStats, bankRoll);
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
@@ -2977,7 +2977,7 @@ spongeBot.memory = {
 	do: function(message, args) {
 		
 		// use one of the following three:
-		memory.do(message, args); // if you don't need stats or bankroll
+		memory.do(message, args, gameStats, bankroll); // if you don't need stats or bankroll
 		// memory.do(message, parms, gameStats); // if you need stats but no banks
 		// memory.do(message, parms, gameStats, bankroll) // if you need banks
 	},
