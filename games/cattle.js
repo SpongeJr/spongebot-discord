@@ -149,37 +149,37 @@ module.exports = {
 			do: function(message, args, gameStats, bankroll) {
 				var player = message.author.id;
 				if(cattleManager.matches[player]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', you are in the middle of a game!');
+					utils.chSend(message, utils.makeTag(player) + ', you are in the middle of a game!');
 					return;
 				}
 				if(!cattleManager.passwords[player]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', please set a password before starting the game.');
+					utils.chSend(message, utils.makeTag(player) + ', please set a password before starting the game.');
 					return;
 				}
 				args = args.split(' ');
 				var opponent = args[0];
 				if(!opponent) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', who are you talking to?');
+					utils.chSend(message, utils.makeTag(player) + ', who are you talking to?');
 					return;
 				}
 				opponent = utils.makeId(opponent);
 				//Check bankroll to see if opponent exists.
 				if(!bankroll[opponent]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', is that one of your imaginary friends?');
+					utils.chSend(message, utils.makeTag(player) + ', is that one of your imaginary friends?');
 					return;
 				}
 				if(cattleManager.matches[opponent]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', ' + utils.makeTag(opponent) + ' is in the middle of a game.');
+					utils.chSend(message, utils.makeTag(player) + ', ' + utils.makeTag(opponent) + ' is in the middle of a game.');
 					return;
 				}
 				if(!cattleManager.passwords[opponent]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', ' + utils.makeTag(opponent) + ' needs to set a password before starting the game.');
+					utils.chSend(message, utils.makeTag(player) + ', ' + utils.makeTag(opponent) + ' needs to set a password before starting the game.');
 					return;
 				}
 				cattleManager.matches[player] = opponent;
 				cattleManager.matches[opponent] = player;
 
-				utils.chSend(message, 'The elite hackers known as ' + utils.makeTag(message.author.id) + ' and ' + utils.makeTag(opponent) + ' are facing off in a password cracking duel!');
+				utils.chSend(message, 'The elite hackers known as ' + utils.makeTag(player) + ' and ' + utils.makeTag(opponent) + ' are facing off in a password cracking duel!');
 
 				//Opponent plays first
 				cattleManager.turns[opponent] = true;
