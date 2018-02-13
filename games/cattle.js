@@ -60,15 +60,17 @@ module.exports = {
 	help: 'TODO',
 	longHelp:	'Cattle (a.k.a. "Bulls and Cows") is a simple logic game of code-breaking between two players. '
 			+	'Before the game starts, each player sets a secret four-character alphanumeric (case-insensitive) password. '
-			+	'During the game, each player attempts to guess the opponent\'s password and gets a number of "Bulls" and "Cows" based the accuracy of the guess. '
+			+	'During the game, each player takes turns attempting to guess the opponent\'s password and gets a number of "Bulls" and "Cows" based the accuracy of the guess. '
 			+	'Bulls indicate how many characters in the guess match characters in the password at their corresponding positions. '
 			+	'Cows indicate how many characters in the guess are present in the password, but at different positions (repeating characters are each counted separately). '
 			+	'First player to completely break the other\'s password wins. '
-			+	'`!cattle password` Sets your password for your next game of `!cattle`. Send this command through DM.' + '\n'
+			+	'`!cattle info [<player>]` Shows information about the specified player' + '\n'
+			+	'`!cattle password <password>` Sets your password for your next game of `!cattle`. Send this command through DM.' + '\n'
 			+	'`!cattle vs <opponent>` Starts a game of `!cattle` between you and the specified player. '
 			+	'Both players must not be in the middle of a game and must have a password set. '
 			+	'Passwords reset after every game.' + '\n'
-			+	'`!cattle guess <password>` .' + '\n',
+			+	'`!cattle guess <password>` Guess the opponent\'s password if it is your turn.' + '\n'
+			+	'`!cattle quit` Quits your current game.' + '\n',
 	actions: {
 		info: {
 			do: function(message, args, gameStats, bankroll) {
