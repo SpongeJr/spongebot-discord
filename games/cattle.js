@@ -191,17 +191,17 @@ module.exports = {
 				var player = message.author.id;
 				var opponent = cattleManager.matches[player];
 				if(!opponent) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', you are not in a game right now.');
+					utils.chSend(message, utils.makeTag(player) + ', you are not in a game right now.');
 					return;
 				}
 				if(!cattleManager.turns[player]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', it is not your turn right now.');
+					utils.chSend(message, utils.makeTag(player) + ', it is not your turn right now.');
 					return;
 				}
 				args = args.split(' ');
 				var guess = args[0] || '';
 				if(guess.length !== 4) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', guesses must be exactly four characters long.');
+					utils.chSend(message, utils.makeTag(player) + ', guesses must be exactly four characters long.');
 					return;
 				}
 				var password = cattleManager.passwords[opponent];
@@ -231,11 +231,13 @@ module.exports = {
 					}
 				}
 				if(bulls === 4) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ' has cracked the password of ' + utils.makeTag(opponent) + ' and won the game!');
+					utils.chSend(message, utils.makeTag(player) + ' has cracked the password of ' + utils.makeTag(opponent) + ' and won the game!\n');
+					utils.chSend(message, utils.makeTag(player) + '\'s password: ' + cattleManager.passwords[player]);
+					utils.chSend(message, utils.makeTag(opponent) + '\'s password: ' + cattleManager.passwords[opponent]);
 					clearCattle(player, opponent);
 					return;
 				}
-				utils.chSend(message, utils.makeTag(message.author.id) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows);
+				utils.chSend(message, utils.makeTag(player) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows);
 				utils.chSend(message, 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
 
 				//Switch turns
