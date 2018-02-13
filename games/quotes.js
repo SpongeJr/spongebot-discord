@@ -47,6 +47,10 @@ module.exports = {
 				do: function(message, parms) {
 					var who = utils.makeId(parms);
 					
+					if (!quotes.hasOwnProperty('guild')) {
+						quotes.guild = {};
+					}
+					
 					if (quotes.guild.hasOwnProperty(who)) {
 						var theStr = '';
 						var userQs = JSON.stringify(quotes.guild[who]);

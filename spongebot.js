@@ -3138,7 +3138,11 @@ BOT.on('ready', () => {
 //-----------------------------------------------------------------------------
 BOT.on('messageReactionAdd', (react, whoAdded) => {
 	if (react.emoji.name === cons.QUOTE_SAVE_EMO) {
-		quotes.q.addByReact(react, whoAdded, BOT);
+		if (!hasAccess(whoAdded.id)) {
+			utils.chSend(react.message, 'I\'m sorry, I\'m afraid I can\'t do that for you.');
+		} else {
+			quotes.q.addByReact(react, whoAdded, BOT);
+		}
 	}
 });
 
