@@ -142,7 +142,7 @@ module.exports = {
 				}
 				cattleManager.passwords[player] = password;
 				utils.saveObj(cattleManager, cons.CATTLE_FILE);
-				utils.chSend(message, utils.makeTag(player) + ', your password has been reset.');
+				utils.chSend(message, utils.makeTag(player) + ', your password is set.');
 			},
 		},
         vs: {
