@@ -204,6 +204,11 @@ module.exports = {
 					utils.chSend(message, utils.makeTag(player) + ', guesses must be exactly four characters long.');
 					return;
 				}
+				guess = guess.toLowerCase();
+				if(!(/^[a-z0-9\s]+$/i.test(guess))) {
+					utils.chSend(message, utils.makeTag(player) + ', your guess must be alphanumeric only (case insensitive)');
+					return;
+				}
 				var password = cattleManager.passwords[opponent];
 				var bulls = 0;
 				//We assemble these during the Bull pass. They consist of letters that were not counted as Bulls.
