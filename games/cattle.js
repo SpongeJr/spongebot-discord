@@ -20,7 +20,7 @@ module.exports = {
         password: function(message, args) {
             var player = message.author.id;
             if(this.games[player]) {
-                utils.chSend(message, utils.makeAuthorTag(player) + ', you can't change your password in the middle of a game!');
+                utils.chSend(message, utils.makeAuthorTag(player) + ', you can\'t change your password in the middle of a game!');
                 return;
             }
             args = args.split(' ');
