@@ -5,17 +5,9 @@
 
 // this var is local to the module
 var utils = require('../lib/utils.js');
-var cattleManager = {
-	passwords: {
-        playerID: 'password',
-    },
-    matches: {
-        playerID: 'opponentID',
-    },
-    turns: {
-        playerID: true,
-    },
-}
+var cons = require('../lib/constants.js');
+var cattleManager = require('../' + cons.DATA_DIR + cons.CATTLE_FILE);
+
 module.exports = {
     actions: {
         password: {
@@ -37,6 +29,7 @@ module.exports = {
 					return;
 				}
 				cattleManager.passwords[player] = password;
+				utils.saveObj(cattleManager, cons.CATTLE_FILE);
 				utils.chSend(message, utils.makeTag(player) + ', your password has been reset.');
 			},
 		},
@@ -77,6 +70,7 @@ module.exports = {
 
 				//Opponent plays first
 				cattleManager.turns[opponent] = true;
+				utils.saveObj(cattleManager, cons.CATTLE_FILE);
 				utils.chSend(message, 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
 			}
 		},
@@ -139,6 +133,7 @@ module.exports = {
 				//Switch turns
 				delete cattleManager.turns[player];
 				cattleManager.turns[opponent] = true;
+				utils.saveObj(cattleManager, cons.CATTLE_FILE);
 			}
 		}
 	},
