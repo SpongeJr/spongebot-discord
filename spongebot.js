@@ -469,8 +469,10 @@ spongeBot.backup = {
 //-----------------------------------------------------------------------------
 spongeBot.quote = {
 	help: 'Add something a user said to the quotes database, hear a random quote, and more!',
-	do: function(message, parms) {
-		quotes.q.do(message, parms);
+	longHelp: 'React with ' + cons.QUOTE_SAVE_EMO + ' to a message to add it the quotes databse!' +
+	  ' Or, type `!quote random <user>` to see a random quote from a user.',
+	do: function(message, parms) {		
+		quotes.q.do(message, parms, BOT);
 	}
 };
 spongeBot.z = {
@@ -3134,6 +3136,13 @@ BOT.on('ready', () => {
   if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
 });
 //-----------------------------------------------------------------------------
+BOT.on('messageReactionAdd', (react, whoAdded) => {
+	if (react.emoji.name === cons.QUOTE_SAVE_EMO) {
+		quotes.q.addByReact(react, whoAdded, BOT);
+	}
+});
+
+
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
 		var botCmd = message.content.slice(1); // retains the whole ! line, minus !
