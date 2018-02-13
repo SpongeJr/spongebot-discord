@@ -89,9 +89,10 @@ module.exports = {
 					return;
 				}
 				if(!cattleManager.turns[player]) {
-					utils.chSend(message, utils.makeTag(message.author.id) + ', you are not in a game right now.');
+					utils.chSend(message, utils.makeTag(message.author.id) + ', it is not your turn right now.');
 					return;
 				}
+				args = args.split(' ');
 				var guess = args[0] || '';
 				if(guess.length !== 4) {
 					utils.chSend(message, utils.makeTag(message.author.id) + ', guesses must be exactly four characters long.');
