@@ -32,7 +32,7 @@ module.exports = {
 					utils.chSend(message, utils.makeTag(player) + ', your password must be exactly four characters long.');
 					return;
 				}
-				if(!(/^[a-z0-9\s]+$/i.test(answer))) {
+				if(!(/^[a-z0-9\s]+$/i.test(password))) {
 					utils.chSend(message, utils.makeTag(player) + ', your password must be alphanumeric only (case insensitive)');
 					return;
 				}
