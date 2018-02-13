@@ -132,8 +132,8 @@ module.exports = {
 				args = args.split(' ');
 				var password = args[0] || '';
 				password = password.toLowerCase();
-				if(password.length !== 4) {
-					utils.chSend(message, utils.makeTag(player) + ', your password must be exactly four characters long.');
+				if(password.length === 0) {
+					utils.chSend(message, utils.makeTag(player) + ', your password must be longer than 0 characters.');
 					return;
 				}
 				if(!(/^[a-z0-9\s]+$/i.test(password))) {
@@ -180,6 +180,8 @@ module.exports = {
 				cattleManager.matches[opponent] = player;
 
 				utils.chSend(message, 'The elite hackers known as ' + utils.makeTag(player) + ' and ' + utils.makeTag(opponent) + ' are facing off in a password cracking duel!');
+				utils.chSend(message, utils.makeTag(player) + '\'s password length: ' + cattleManager.passwords[player].length);
+				utils.chSend(message, utils.makeTag(opponent) + '\'s password length: ' + cattleManager.passwords[opponent].length);
 
 				//Opponent plays first
 				cattleManager.turns[opponent] = true;
@@ -201,8 +203,9 @@ module.exports = {
 				}
 				args = args.split(' ');
 				var guess = args[0] || '';
-				if(guess.length !== 4) {
-					utils.chSend(message, utils.makeTag(player) + ', guesses must be exactly four characters long.');
+				var password = cattleManager.passwords[opponent];
+				if(guess.length !== password.length) {
+					utils.chSend(message, utils.makeTag(player) + ', your guess must be exactly ' +  + ' characters long.');
 					return;
 				}
 				guess = guess.toLowerCase();
@@ -210,7 +213,7 @@ module.exports = {
 					utils.chSend(message, utils.makeTag(player) + ', your guess must be alphanumeric only (case insensitive)');
 					return;
 				}
-				var password = cattleManager.passwords[opponent];
+				
 				var bulls = 0;
 				//We assemble these during the Bull pass. They consist of letters that were not counted as Bulls.
 				var cows_guess = '';
@@ -236,7 +239,7 @@ module.exports = {
 						cows_password = cows_password.replace(c, '');
 					}
 				}
-				if(bulls === 4) {
+				if(bulls === password.length) {
 					utils.chSend(message, utils.makeTag(player) + ' has cracked the password of ' + utils.makeTag(opponent) + ' and won the game!\n');
 					utils.chSend(message, utils.makeTag(player) + '\'s password: ' + cattleManager.passwords[player]);
 					utils.chSend(message, utils.makeTag(opponent) + '\'s password: ' + cattleManager.passwords[opponent]);
