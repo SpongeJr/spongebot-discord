@@ -134,7 +134,7 @@ module.exports = {
             this.turns[opponent] = true;
         }
     },
-    cattle: function(message, args, bankroll) {
+    do: function(message, args, bankroll) {
 		args = args.split(' ');
 		if (args[0] === '') {
 			utils.chSend(message, 'Try `!help cattle`');
