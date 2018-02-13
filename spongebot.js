@@ -61,6 +61,7 @@ var ebon = require('./lib/eboncmds.js');
 var quotes = require('./games/quotes.js');
 var adspam = require('./lib/adspam.js');
 var memory = require('./games/memory.js');
+var cattle = require('./games/cattle.js');
 //-----------------------------------------------------------------------------
 /* tree.config: {
 		treeVal: how many credits are awarded upon harvesting,
@@ -2397,6 +2398,15 @@ spongeBot.biglet = {
 		utils.chSend(message, utils.bigLet(txt));
 	},
 	help: '`!biglet <message>` says your message back in big letters'
+}
+//-----------------------------------------------------------------------------
+spongeBot.cattle = {
+	cmdGroup: 'Fun and Games',
+	do: function(message, args) {
+		cattle.do(message, args);
+	},
+	help: 'TODO',
+	longHelp: 'TODO'
 }
 //-----------------------------------------------------------------------------
 var duelManager = {
