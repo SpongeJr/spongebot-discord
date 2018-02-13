@@ -624,15 +624,17 @@ spongeBot.tree = {
 							totalRoleBonus += specialRoles[roleName];
 						}
 					}
-					roleBonusStr = roleBonusStr.slice(0, roleBonusStr.length - 2); // remove last comma
 					
-					roleBonusStr = 'Included these bonuses for having special roles: ' + roleBonusStr;
-					roleBonusStr += '\n   Total role bonus: ' + totalRoleBonus + '! ';
-					collectVal += totalRoleBonus;
+					if (totalRoleBonus !== 0) {
+						roleBonusStr = roleBonusStr.slice(0, roleBonusStr.length - 2); // remove last comma
+						roleBonusStr = 'Included these bonuses for having special roles: ' + roleBonusStr;
+						roleBonusStr += '\n   Total role bonus: ' + totalRoleBonus + '! ';
+						collectVal += totalRoleBonus;
+					}
 					
 					if (fruitBonus > 0) {
 						fruitBonusStr += '\n Also added ' + fruitBonus + ' for trying `!tree fruit` since' +
-						  'the last bot reset.';
+						  'the last bot reset. ';
 					}
 					
 					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
@@ -2349,20 +2351,20 @@ spongeBot.a = {
 //-----------------------------------------------------------------------------
 spongeBot.who = {
 	cmdGroud: 'Admin',
-	access: [],
+	access: false,
 	do: function(message, parms) {
-		console.log(parms);
 		var memb;
 		var outStr = '';
 		if (parms) {
 			memb = message.guild.members.find('id', parms);
 			if (memb) {
-				debugPrint(memb);
 				outStr =  'Looks like ' + memb.user.username + ' to me. ';
 				if (memb.nickname) {
 					outStr += ' Around these parts we call them ' + memb.nickname;
 				}
 				utils.chSend(message, outStr);
+			} else {
+				utils.chSend(message, 'Doesn\'t like like someone we know in these parts.');
 			}
 		}
 	}
