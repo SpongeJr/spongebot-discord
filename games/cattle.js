@@ -170,6 +170,7 @@ module.exports = {
 				}
 				if(cattleManager.matches[opponent]) {
 					utils.chSend(message, utils.makeTag(message.author.id) + ', ' + utils.makeTag(opponent) + ' is in the middle of a game.');
+					return;
 				}
 				if(!cattleManager.passwords[opponent]) {
 					utils.chSend(message, utils.makeTag(message.author.id) + ', ' + utils.makeTag(opponent) + ' needs to set a password before starting the game.');
