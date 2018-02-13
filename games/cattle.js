@@ -8,8 +8,118 @@ var utils = require('../lib/utils.js');
 var cons = require('../lib/constants.js');
 var cattleManager = require('../' + cons.DATA_DIR + cons.CATTLE_FILE);
 
+/*	//Old definition for reference
+var cattleManager = {
+ 	passwords: {
+         playerID: 'password',
+     },
+     matches: {
+         playerID: 'opponentID',
+     },
+     turns: {
+         playerID: true,
+     },
+ }
+*/
+var clearCattle = function(player, opponent) {
+	delete cattleManager.passwords[player];
+	delete cattleManager.passwords[opponent];
+	delete cattleManager.matches[player];
+	delete cattleManager.matches[opponent];
+	delete cattleManager.turns[player];
+	delete cattleManager.turns[opponent];
+}
 module.exports = {
-    actions: {
+	cmdGroup: 'Fun and Games',
+    do: function(message, args, gameStats, bankroll) {
+		args = args.split(' ');
+		if (args[0] === '') {
+			utils.chSend(message, 'Try `!help cattle`');
+			return;
+		}
+		
+		var action = args[0].toLowerCase(); // sub is the possible subcommand
+		args.shift(); // lop off the command that got us here
+    
+    
+		if (this.actions.hasOwnProperty(action)) {
+			//we've found a found sub-command, so do it...
+			// our default behavior: again, lop off the subcommand,
+			// then put the array back together and send up a String
+			// that has lopped off the command and subcommand,
+			// and otherwise left the user's input unharmed
+			args = args.join(' ');
+			utils.debugPrint('>> calling subcommand .' + action + '.do(' + args + ')');
+			this.actions[action].do(message, args, gameStats, bankroll);
+			return;
+		} else {
+			utils.chSend(message, utils.makeAuthorTag(message) + ', don\'t you dare use that language with me!');
+			return;
+		}
+    },
+	help: 'TODO',
+	longHelp:	'Cattle (a.k.a. "Bulls and Cows") is a simple logic game of code-breaking between two players. '
+			+	'Before the game starts, each player sets a secret four-character alphanumeric (case-insensitive) password. '
+			+	'During the game, each player attempts to guess the opponent\'s password and gets a number of "Bulls" and "Cows" based the accuracy of the guess. '
+			+	'Bulls indicate how many characters in the guess match characters in the password at their corresponding positions. '
+			+	'Cows indicate how many characters in the guess are present in the password, but at different positions (repeating characters are each counted separately). '
+			+	'First player to completely break the other\'s password wins. '
+			+	'`!cattle password` Sets your password for your next game of `!cattle`. Send this command through DM.' + '\n'
+			+	'`!cattle vs <opponent>` Starts a game of `!cattle` between you and the specified player. '
+			+	'Both players must not be in the middle of a game and must have a password set. '
+			+	'Passwords reset after every game.' + '\n'
+			+	'`!cattle guess <password>` .' + '\n',
+	actions: {
+		info: {
+			do: function(message, args, gameStats, bankroll) {
+				args = args.split(' ');
+				var subject = message.author.id;
+				if(args[0]) {
+					subject = utils.makeId(args[0]);
+					if(!bankroll[subject]) {
+						utils.chSend(message, utils.makeTag(message.author.id) + ', is that one of your imaginary friends?');
+						return;
+					}
+				}
+				utils.chSend(message, 'Cattle info for ' + utils.makeTag(subject));
+				var password = cattleManager.passwords[subject];
+				if(password) {
+					utils.chSend(message, '\nPassword length: ' + password.length);
+				} else {
+					utils.chSend(message, '\nNo password set.');
+				}
+				var match = cattleManager.matches[subject];
+				if(match) {
+					utils.chSend(message, '\nPlaying against ' + utils.makeTag(match) + '.');
+					
+					if(cattleManager.turns[subject]) {
+						utils.chSend(message, '\nIt is currently ' + utils.makeTag(subject) + '\'s turn.');
+					} else {
+						utils.chSend(message, '\nIt is currently ' + utils.makeTag(match) + '\'s turn.');
+					}
+				} else {
+					utils.chSend(message, '\nNot currently playing.');
+				}
+			}
+		},
+		quit: {
+			do: function(message, args, gameStats, bankroll) {
+				var player = message.author.id;
+				var opponent = cattleManager.matches[player];
+				if(opponent) {
+					if(cattleManager.turns[player]) {
+						//Flavor text here
+					}
+					else if(cattleManager.turns[opponent]) {
+						//Flavor text here
+					}
+					utils.chSend(message, utils.makeTag(player) + ', has forfeited to ' + utils.makeTag(opponent) + '!');
+					clearCattle(player, opponent);
+				} else {
+					utils.chSend(message, utils.makeTag(player) + ', who are you quitting against?');
+				}
+			}
+		},
         password: {
 			do: function(message, args, gameStats, bankroll) {
 				var player = message.author.id;
@@ -120,11 +230,7 @@ module.exports = {
 				}
 				if(bulls === 4) {
 					utils.chSend(message, utils.makeTag(message.author.id) + ' has cracked the password of ' + utils.makeTag(opponent) + ' and won the game!');
-					delete cattleManager.passwords[player];
-					delete cattleManager.passwords[opponent];
-					delete cattleManager.matches[player];
-					delete cattleManager.matches[opponent];
-					delete cattleManager.turns[player];
+					clearCattle(player, opponent);
 					return;
 				}
 				utils.chSend(message, utils.makeTag(message.author.id) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows);
@@ -137,30 +243,5 @@ module.exports = {
 			}
 		}
 	},
-    do: function(message, args, gameStats, bankroll) {
-		args = args.split(' ');
-		if (args[0] === '') {
-			utils.chSend(message, 'Try `!help cattle`');
-			return;
-		}
-		
-		var action = args[0].toLowerCase(); // sub is the possible subcommand
-		args.shift(); // lop off the command that got us here
-    
-    
-		if (this.actions.hasOwnProperty(action)) {
-			//we've found a found sub-command, so do it...
-			// our default behavior: again, lop off the subcommand,
-			// then put the array back together and send up a String
-			// that has lopped off the command and subcommand,
-			// and otherwise left the user's input unharmed
-			args = args.join(' ');
-			utils.debugPrint('>> calling subcommand .' + action + '.do(' + args + ')');
-			this.actions[action].do(message, args, gameStats, bankroll);
-			return;
-		} else {
-			utils.chSend(message, utils.makeAuthorTag(message) + ', don\'t you dare use that language with me!');
-			return;
-		}
-    }
+	
 };
