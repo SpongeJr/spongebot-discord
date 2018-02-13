@@ -2346,6 +2346,27 @@ spongeBot.a = {
 	  '`!acro`. For more info, see `!acro help` or watch an acro game in play.'
 };
 //-----------------------------------------------------------------------------
+spongeBot.who = {
+	cmdGroud: 'Admin',
+	access: [],
+	do: function(message, parms) {
+		console.log(parms);
+		var memb;
+		var outStr = '';
+		if (parms) {
+			memb = message.guild.members.find('id', parms);
+			if (memb) {
+				debugPrint(memb);
+				outStr =  'Looks like ' + memb.user.username + ' to me. ';
+				if (memb.nickname) {
+					outStr += ' Around these parts we call them ' + memb.nickname;
+				}
+				utils.chSend(message, outStr);
+			}
+		}
+	}
+}
+//-----------------------------------------------------------------------------
 spongeBot.arch = {
 	cmdGroup: 'Admin',
 	do: function(message, args) {
