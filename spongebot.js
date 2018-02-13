@@ -2403,7 +2403,7 @@ spongeBot.biglet = {
 spongeBot.cattle = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
-		cattle.do(message, args, gameStats, bankRoll);
+		cattle.do(message, args, gameStats, bankroll);
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
