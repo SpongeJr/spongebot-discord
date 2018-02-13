@@ -9,24 +9,76 @@ var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
 }
-//-----------------------------------------------------------------------------
-// this whole .z object, .zlcear object, and .zstoryup object are all going to
-// be accessible in the global context.
-//
-// You get to it via require, e.g.:
-// var ific = require('ific.js'); 
-// ific.js is this file
-// ific is a variable that now holds the whole module.exports object below
 
-// The actual organiation in one of these modules is up to you,
-// but there's are useful patterns we're working on coming up with.
-//
-// In this example, I'm keeping a story in an object v that is local
-// to this whole module, not accessible to the outside, but fully
-// visible to everything within. I do this so it can be accessed by
-// mutliple commands in this module.
-//
-// If I need a value back in the global scope, I should return it
+var Room = function(data) {
+	// data is an object. any necessary properties not given
+	// will receive default values
+	
+	this.data = data || {};
+	
+	this.data.exits = data.exits || {
+		"door": {
+			"goesTo": null,
+			"description": "A very plain, very default-looking door."
+		},
+	};
+	this.data.description = data.description || "An absurdly empty space.";
+	this.data.contents = data.contents || {};
+	this.data.title = data.title || "A new Room"
+}
+Room.prototype.describe = function(id) {
+	// builds a standard "room description string" and returns it
+	var outStr = '';
+	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
+	outStr += '\n' + rooms[id].data.description;
+	
+	// Build exits text
+	if (rooms[id].data.hasOwnProperty('exits')) {
+		outStr += '\n\nObvious exits: ';
+		for (var exName in rooms[id].data.exits) {
+			outStr += '`' + exName + '`   ';
+		}
+	} else {
+		ut.debugPrint('!explore: WARNING! Room ' + parms + ' missing exits!');
+	}
+	
+	// Build items text
+	if (rooms[id].data.hasOwnProperty('items')) {
+		outStr += '\n\nItems here: ';
+		for (var itemName in rooms[id].data.items) {
+			outStr += '`' + itemName + '`   ';
+		}
+	}
+	return outStr;
+}
+
+var rooms = {
+	"airport": new Room({
+		"title": "A weird virtual airport.",
+		"description": "A weird virtual airport in the middle of a weird " +
+		  "virtual world. How did you manage to wind up here, anyway?",
+		"items": {
+			"brochure": {
+				"description": "A small brochure but fancy brochure",
+			},
+			"wallet": {
+				"description": "Someone's wallet is on the ground here."
+			}
+		}
+	}),
+	"outside the airport": new Room({
+		"title": "Outside a weird virtual airport.",
+		"description": "On the outside of a weird virtual airport in the middle of " +
+		  "a weird virtual world. How did you manage to wind up here, anyway?"}),
+	"nowhere really": new Room({
+		"exits": {
+			"more nowhere": {
+				goesTo: null,
+				description: "This doesn't even make sense but I can go that way."
+			}
+		}
+	})
+}
 module.exports = {
 	z: {
 		do: function(message, parms) {
@@ -101,4 +153,21 @@ module.exports = {
 			}
 		}
 	},
+	explore: {
+		do: function(message, parms) {
+
+			if (rooms.hasOwnProperty(parms)) {
+				ut.chSend(message, rooms[parms].describe(parms));
+			} else {
+				ut.chSend(message, 'You want to explore ' + parms + ', eh?' +
+				  ' I don\'t really know that place.');
+			}
+			
+		}
+	},
+	go: {
+		do: function(message, parms) {
+			
+		}
+	}
 };

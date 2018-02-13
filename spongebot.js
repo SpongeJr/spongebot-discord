@@ -479,6 +479,12 @@ spongeBot.quote = {
 		quotes.q.do(message, parms, BOT);
 	}
 };
+spongeBot.explore = {
+	help: '!explore <place> to have a look around!',
+	do: function(message, parms) {
+		iFic.explore.do(message,parms)
+	}
+}
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
