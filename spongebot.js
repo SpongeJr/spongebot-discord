@@ -2407,8 +2407,8 @@ spongeBot.cattle = {
 	do: function(message, args) {
 		cattle.do(message, args, gameStats, bankroll);
 	},
-	help: 'TODO',
-	longHelp: 'TODO'
+	help: cattle.help,
+	longHelp: cattle.longHelp,
 }
 //-----------------------------------------------------------------------------
 var duelManager = {
