@@ -63,7 +63,7 @@ module.exports = {
 			+	'During the game, each player takes turns attempting to guess the opponent\'s password and gets a number of "Bulls" and "Cows" based the accuracy of the guess. '
 			+	'Bulls indicate how many characters in the guess match characters in the password at their corresponding positions. '
 			+	'Cows indicate how many characters in the guess are present in the password, but at different positions (repeating characters are each counted separately). '
-			+	'First player to completely break the other\'s password wins. '
+			+	'First player to completely break the other\'s password wins. ' + '\n'
 			+	'`!cattle info [<player>]` Shows information about the specified player' + '\n'
 			+	'`!cattle password <password>` Sets your password for your next game of `!cattle`. Send this command through DM.' + '\n'
 			+	'`!cattle vs <opponent>` Starts a game of `!cattle` between you and the specified player. '
