@@ -219,7 +219,7 @@ module.exports = {
 				var cows_guess = '';
 				var cows_password = '';
 				//Bull pass: Count the number of Bulls in the guess
-				for(var i = 0; i < 4; i++) {
+				for(var i = 0; i < password.length; i++) {
 					var c = guess.charAt(i);
 					var c2 = password.charAt(i);
 					if(c2 === c) {
