@@ -208,7 +208,7 @@ module.exports = {
 				var guess = args[0] || '';
 				var password = cattleManager.passwords[opponent];
 				if(guess.length !== password.length) {
-					utils.chSend(message, utils.makeTag(player) + ', your guess must be exactly ' +  + ' characters long.');
+					utils.chSend(message, utils.makeTag(player) + ', your guess must be exactly ' + password.length + ' characters long.');
 					return;
 				}
 				guess = guess.toLowerCase();
