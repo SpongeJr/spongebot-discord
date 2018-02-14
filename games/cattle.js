@@ -116,6 +116,8 @@ module.exports = {
 						//Flavor text here
 					}
 					utils.chSend(message, utils.makeTag(player) + ', has forfeited to ' + utils.makeTag(opponent) + '!');
+					utils.chSend(message, utils.makeTag(player) + '\'s password: ' + cattleManager.passwords[player]);
+					utils.chSend(message, utils.makeTag(opponent) + '\'s password: ' + cattleManager.passwords[opponent]);
 					clearCattle(player, opponent);
 				} else {
 					utils.chSend(message, utils.makeTag(player) + ', who are you quitting against?');
