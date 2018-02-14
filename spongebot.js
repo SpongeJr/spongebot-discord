@@ -479,110 +479,7 @@ spongeBot.quote = {
 		quotes.q.do(message, parms, BOT);
 	}
 };
-spongeBot.explore = {
-	access: [],
-	help: '!explore <place> to have a look around!',
-	do: function(message, parms) {
-		iFic.explore.do(message,parms);
-	}
-};
-spongeBot.look = {
-	help: '(SpongeMUD) Look at the room you are in.',
-	do: function(message, parms) {
-		iFic.look.do(message, parms);
-	}
-};
-spongeBot.joinmud = {
-	help: 'Join SpongeMUD (extremely early pre-alpha)',
-	do: function(message, parms) {
-		iFic.joinmud.do(message, parms);
-	}
-};
-spongeBot.exitmud = {
-	help: 'Join SpongeMUD (extremely early pre-alpha)',
-	do: function(message, parms) {
-		iFic.exitmud.do(message, parms);
-	}
-};
-spongeBot.get = {
-	help: '(SpongeMUD) !get <item> to pick up something in the room.',
-	do: function(message, parms) {
-		iFic.get.do(message, parms);
-	}
-};
-spongeBot.go = {
-	help: '(SpongeMUD) !get <where> to move to a different room.',
-	do: function(message, parms) {
-		iFic.go.do(message, parms, BOT);
-	}
-};
-spongeBot.inv = {
-	help: '(SpongeMUD) !get <where> to move to a different room.',
-	do: function(message, parms) {
-		iFic.inv.do(message, parms);
-	}
-};
-spongeBot.msay = {
-	help: '(SpongeMUD) !get <where> to move to a different room.',
-	do: function(message, parms) {
-		iFic.say.do(message, parms, BOT);
-	}
-};
-spongeBot.wizitem = {
-	access: false,
-	help: '(SpongeMUD) (wizards only) create an item',
-	do: function(message, parms) {
-		iFic.wizitem.do(message, parms);
-	}
-};
-spongeBot.killitem = {
-	access: [],
-	help: '(SpongeMUD) {seriously wizards only) perma delete an item with no undo.',
-	do: function(message, parms) {
-		iFic.killitem.do(message, parms);
-	}
-}
-spongeBot.edroom = {
-	access: false,
-	help: '(SpongeMUD) (wizards only) edit a room',
-	do: function(message, parms) {
-		iFic.edroom.do(message, parms);
-	}
-};
-spongeBot.wizroom = {
-	access: false,
-	help: '(SpongeMUD) (wizards only) create a room',
-	do: function(message, parms) {
-		iFic.wizroom.do(message, parms);
-	}
-};
-spongeBot.build = {
-	access: [],
-	help: '(SpongeMUD) Attempts to initialize SpongeMUD',
-	do: function(message, parms) {
-		iFic.build.do(message, parms);
-	}
-};
-spongeBot.drop = {
-	help: '(SpongeMUD) !get <item> to pick up something in the room.',
-	do: function(message, parms) {
-		iFic.drop.do(message, parms);
-	}
-};
-spongeBot.exam = {
-	help: '(SpongeMUD) !get <item> to pick up something in the room.',
-	do: function(message, parms) {
-		iFic.exam.do(message, parms);
-	}
-};
-spongeBot.examine = spongeBot.exam; // alias
-spongeBot.tele = {
-	access: [],
-	help: '(SpongeMUD) (wizards only) !tele <room> to teleport to <room>.',
-	do: function(message, parms) {
-		iFic.tele.do(message, parms);
-	}
-};
+
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
@@ -1062,6 +959,34 @@ spongeBot.loot = {
 		longHelp: 'Try `!loot unbox <name>`, `!loot boxes`, `loot box <name>`, etc.'
     }
 //-----------------------------------------------------------------------------
+spongeBot.pickfrom = {
+	cmdGroup: 'Fun and Games',
+	help: 'Pick a random item from a list.',
+	longHelp: 'Use `!pickfrom` <item1> [item2] [item3] [...] to pick a random item from your list '+
+	  'using a pRNG. Items must be separated by spaces.',
+	do: function(message, parms) {
+		if (!parms) {
+			utils.chSend(message, 'You need a list to `pickfrom`. Use `!help pickfrom` for more info.')
+			return;
+		}
+		
+		parms = parms.split(' ');
+		if (parms.length < 2) {
+			utils.chSend(message, 'You need at least two items on a list to `pickfrom`, separated' +
+			  ' by spaces. Use `!help pickfrom` for more info.');
+			return;
+		}
+		
+		if (parms.length > 255) {
+			utils.chSend(message, 'Maximum `!pickfrom` choices is 255 for arbitrary reasons. I suggest' +
+			  ' using an alternate method for making your decision, or whatever you\'re trying to do.');
+			return;
+		}
+		
+		utils.chSend(message, message.author + ', my selection from your list of ' + parms.length +
+		  ' choices is: ' + utils.listPick(parms));
+	}
+}
 spongeBot.roll = {
 	cmdGroup: 'Fun and Games',
 	do: function (message, parms){
@@ -1391,18 +1316,17 @@ spongeBot.giveaways = {
 	do: function(message, parms) {
 		
 		if (!parms) {
-			utils.chSend(message, ':fireworks: GIVEAWAYS! :fireworks:\n ' +
-			' **OFFICIAL GIVEAWAY NOTICE** The next (ok, also the first) giveaway will be on: ' +
-			' Friday Feb. 9 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +
-			' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
-			' There will be _two_ winners who can pick any one item from `!giveaways list`, and several ' +
-			' smaller prizes (probably credits and tickets for the next raffle).');
+			utils.chSend(message, ' **OFFICIAL GIVEAWAY NOTICE** The next giveaway will be on: ' +
+			  ' Friday Feb. 16 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +
+			  ' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
+			  ' There will be one winner who can pick any one item from `!giveaways list`, and several ' +
+			  ' smaller prizes (probably credits and tickets for the next raffle).');
 			utils.chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
-			' Items listed there will be options  you can pick if you win a weekly raffle. ' +
-			' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
-			' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
-			' :tickets: as you can get your hands on, to have the best chances! Type !stats to see how many you have.' +
-			'\n\n Also see `!help giveaways` for new options like `!giveaways addrole` and `!giveaways categories`.');
+			  ' Items listed there will be options  you can pick if you win a weekly raffle. ' +
+			  ' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
+			  ' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
+			  ' :tickets: as you can get your hands on, to have the best chances! Type !stats to see how many you have.' +
+			  '\n\n Also see `!help giveaways` for new options like `!giveaways addrole` and `!giveaways categories`.');
 			return;
 		}
 		
@@ -1428,7 +1352,6 @@ spongeBot.giveaways = {
 				}
 			}
 			str += '\n';
-			
 			
 			count = count || 'No';
 			str += count + ' item(s) found';

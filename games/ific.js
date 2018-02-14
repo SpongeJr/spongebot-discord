@@ -361,14 +361,14 @@ module.exports = {
 			parms = parms.split(' ');
 			var target = parms[0];
 			if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
-				ut.chSend(message, message.author + ' picked up ' + target + '.');
+				ut.chSend(message, players[who].charName + ' picked up ' + target + '.');
 				var theItem = rooms[pl.location].data.items[target];
 				pl.inventory[target] = theItem;
 				delete rooms[pl.location].data.items[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
 				ut.saveObj(players, cons.MUD.playerFile);
 			} else {
-				ut.chSend(message, message.author + ' tried to pick up ' + target +
+				ut.chSend(message, players[who].charName + ' tried to pick up ' + target +
 				  ' in "' + pl.location + '" but it\'s not there, silly!');
 			}
 		}
@@ -384,14 +384,14 @@ module.exports = {
 			parms = parms.split(' ');
 			var target = parms[0];
 			if (typeof pl.inventory[target] !== 'undefined') {
-				ut.chSend(message, message.author + ' dropped ' + target + '.');
+				ut.chSend(message, players[who].charName + ' dropped ' + target + '.');
 				var theItem = pl.inventory[target];
 				rooms[pl.location].data.items[target] = theItem;
 				delete pl.inventory[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
 				ut.saveObj(players, cons.MUD.playerFile);
 			} else {
-				ut.chSend(message, message.author + ' tried to drop ' + target +
+				ut.chSend(message, players[who].charName + ' tried to drop ' + target +
 				  ' in "' + pl.location + '" but they aren\'t even carrying it!');
 			}
 		}
