@@ -37,6 +37,19 @@ var defaultDescribe = function(id) {
 			outStr += '`' + itemName + '`   ';
 		}
 	}
+	
+	// See who else is here
+	var numHere = 0;
+	var playersHereStr = '';
+	for (var player in players) {
+		if (players[player].location === id) {
+			playersHereStr += '`' + players[player].charName + '` ';
+			numHere++;
+		}
+	}
+	if (numHere > 0) {
+		outStr += ' Other players here: ' + playersHereStr;
+	}
 	return outStr;
 }
 var Item = function(data) {
@@ -52,6 +65,7 @@ var Player = function(data) {
 			description: "You can keep some stuff in here safely."
 		})
 	},
+	this.charName = data.charName || 'Anonymous';
 	this.stats = data.stats || {
 		"shtyle": "mundane",
 		"speed": 120,
@@ -190,7 +204,7 @@ module.exports = {
 					var chanStr = message.author + ' moved to "' +
 					  newLoc + '" via exit: ' + where;
 					ut.saveObj(players, cons.MUD.playerFile);
-					ut.auSend(message, rooms[newLoc].describe(newLoc));
+					//ut.auSend(message, rooms[newLoc].describe(newLoc));
 				}
 			} else {
 				chanStr = message.author + ' tried to leave via ' + where +
@@ -201,13 +215,22 @@ module.exports = {
 	},
 	joinmud: {
 		do: function(message, parms) {
-			who = message.author.id;
+			var who = message.author.id;
+			parms = parms.split(' ');
+			var charName = parms[0];
+			if (charName.length < 3 || charName.length > 15) {
+				ut.chSend(message, message.author + ', use `joinmud <character name>`.' +
+				  ' Your character name must be a single word between 3 and 15 chars.');
+				return;
+			}
+			
 			if (typeof players[who] === 'undefined') {
-				players[who] = new Player({});
-				ut.chSend(message, ' Created new player: ' + message.author.id);
+				players[who] = new Player({"charName": charName});
 				ut.saveObj(players, cons.MUD.playerFile);
+				ut.chSend(message, ' Welcome to SpongeMUD, ' + charName +
+				  '! (' + message.author.id + ')');
 				var pLoc = players[who].location;
-				ut.auSend(message, rooms[pLoc].describe(pLoc));
+				//ut.auSend(message, rooms[pLoc].describe(pLoc));
 			} else {
 				ut.chSend(message, ' You\'re already a SpongeMUD player. Awesome!');
 			}
@@ -290,7 +313,7 @@ module.exports = {
 					outP += '`' + item + '`   ';
 				}
 			}
-			ut.chSend(message, message.author + '\'s inventory: ' + outP);
+			ut.chSend(message, pl.charName + '\'s inventory: ' + outP);
 		}
 	},
 	edroom: {
@@ -328,13 +351,14 @@ module.exports = {
 				}
 			} else if (prop === 'exits') {
 				parms = parms.split(' ');
-				var target = parms[0];
-				var exProp = parms[1];
+				var target = parms[0]; // which exit they're editing
+				var exProp = parms[1]; // what property of the exit they want to change
+				parms.shift(); 
 				parms.shift();
-				parms.shift();
-				val = parms.join(' ');
+				val = parms.join(' '); // anything left is the value they want to change to
 				
 				if (!target || !exProp) {
+					// command wasn't long enough, basically
 					ut.chSend(message, ' Use `edroom exits <exitId> <property> <value>`');
 					return;
 				}
@@ -350,6 +374,15 @@ module.exports = {
 					rooms[loc].data.exits[target][exProp] = val;
 					ut.chSend(message, 'Created exit "' + target + '", then set ' + exProp + ' = ' + val);
 					ut.saveObj(rooms, cons.MUD.roomFile);
+				}
+				
+				// exit exists for sure now, make sure a room exists IF they edited/created goesto
+				if (exProp.toLowerCase() === 'goesto') {
+					if (typeof rooms[val] === 'undefined') {
+						rooms[val] = new Room({"title": val});
+						ut.chSend(message, ' Since no room "' + val + '" existed, I made one. Make sure ' +
+						  'you do any necessary editing to it!');
+					}
 				}
 			} else {
 				ut.chSend(message, 'Can only edit `title`, `description` or `exits` properties. ' +
@@ -454,7 +487,7 @@ module.exports = {
 				players[who].location = target;
 				ut.saveObj(players, cons.MUD.playerFile);
 				ut.chSend(message, message.author + ' teleported to ' + target + '!');
-				ut.auSend(message, rooms[target].describe(target));
+				//ut.auSend(message, rooms[target].describe(target));
 			} else {
 				ut.chSend(message, target + ' is not a valid room to teleport to.');
 			}
