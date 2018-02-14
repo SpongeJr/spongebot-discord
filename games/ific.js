@@ -1,25 +1,47 @@
-// this var is local to the module
 var ut = require('../lib/utils.js');
 var cons = require('../lib/constants.js');
-// as is this "v" object, where I'm putting the other variables
-// that I want the function to use.
-// why inside another object? I can then save or move around
-// all the variables easily
+var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
+var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
+var dungeonBuilt = false;
+
 var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
 }
 
-var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var defaultLook = function(item) {
 	outP = '';
 	outP += item.description;
 	return outP;
 }
-
+var defaultDescribe = function(id) {
+	// builds a standard "room description string" and returns it
+	var outStr = '-=-=-=-\n';
+	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
+	outStr += '\n' + rooms[id].data.description;
+	
+	// Build exits text
+	if (rooms[id].data.hasOwnProperty('exits')) {
+		outStr += '\n\nObvious exits: ';
+		for (var exName in rooms[id].data.exits) {
+			outStr += '`' + exName + '`   ';
+		}
+	} else {
+		ut.debugPrint('!explore: WARNING! Room ' + parms + ' missing exits!');
+	}
+	
+	// Build items text
+	if (rooms[id].data.hasOwnProperty('items')) {
+		outStr += '\n\nItems here: ';
+		for (var itemName in rooms[id].data.items) {
+			outStr += '`' + itemName + '`   ';
+		}
+	}
+	return outStr;
+}
 var Item = function(data) {
 	this.data = data || {};
-	this.data.decription = data.description || "Some object you spotted.",
+	this.data.description = data.description || "Some object you spotted.",
 	this.data.hidden = false
 };
 Item.prototype.look = defaultLook(this);
@@ -44,85 +66,25 @@ var Room = function(data) {
 	
 	this.data.exits = data.exits || {
 		"door": {
-			"goesTo": null,
+			"goesto": null,
 			"description": "A very plain, very default-looking door."
 		},
 	};
 	this.data.description = data.description || "An absurdly empty space.";
 	this.data.contents = data.contents || {};
-	this.data.title = data.title || "A new Room"
+	this.data.title = data.title || "A new Room";
+	this.data.items = data.items || {}
 };
-Room.prototype.describe = function(id) {
-	// builds a standard "room description string" and returns it
-	var outStr = '';
-	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
-	outStr += '\n' + rooms[id].data.description;
-	
-	// Build exits text
-	if (rooms[id].data.hasOwnProperty('exits')) {
-		outStr += '\n\nObvious exits: ';
-		for (var exName in rooms[id].data.exits) {
-			outStr += '`' + exName + '`   ';
-		}
-	} else {
-		ut.debugPrint('!explore: WARNING! Room ' + parms + ' missing exits!');
+Room.prototype.describe = defaultDescribe;
+var buildDungeon = function() {
+	for (var room in rooms) {
+		var theRoom = new Room(rooms[room].data);
+		rooms[room] = theRoom;
 	}
-	
-	// Build items text
-	if (rooms[id].data.hasOwnProperty('items')) {
-		outStr += '\n\nItems here: ';
-		for (var itemName in rooms[id].data.items) {
-			outStr += '`' + itemName + '`   ';
-		}
-	}
-	return outStr;
-}
-
-var rooms = {
-	"airport": new Room({
-		"title": "A weird virtual airport.",
-		"description": "A weird virtual airport in the middle of a weird " +
-		  "virtual world. How did you manage to wind up here, anyway?",
-		"items": {
-			"brochure": {
-				"description": "A small brochure but fancy brochure",
-			},
-			"wallet": {
-				"description": "Someone's wallet is on the ground here."
-			}
-		},
-		"exits": {
-			"door": {
-				"goesTo": null,
-				"description": "A door against a wall."
-			},
-			"revolving": {
-				"goesTo": "outside the airport",
-				"description": "A revolving door that leads outside."
-			}
-		}
-	}),
-	"outside the airport": new Room({
-		"title": "Outside a weird virtual airport.",
-		"description": "On the outside of a weird virtual airport in the middle of " +
-		  "a weird virtual world. How did you manage to wind up here, anyway?",
-		"exits": {
-			"revolving": {
-				"goesTo": "airport",
-				"description": "A revolving door that leads into the airport."
-			}
-		}
-	}),
-	"nowhere really": new Room({
-		"exits": {
-			"more nowhere": {
-				goesTo: null,
-				description: "This doesn't even make sense but I can go that way."
-			}
-		}
-	})
+	ut.debugPrint('SpongeMUD dungeon built.');
 }
 module.exports = {
+	buildDungeon: buildDungeon,
 	z: {
 		do: function(message, parms) {
 			v.undoIndex = v.story.length;
@@ -215,24 +177,24 @@ module.exports = {
 			where = parms[0];
 			if (typeof players[who] === 'undefined') {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
-			} else {
-				var pLoc = players[who].location;	
-				if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
-					
-					if (!rooms[pLoc].data.exits[where].goesTo) {
-						chanStr = message.author + ' tried to leave via ' + where + 
-						' but was unable to get anywhere!';
-					} else {
-						newLoc = rooms[pLoc].data.exits[where].goesTo;
-						players[who].location = newLoc;
-						var chanStr = message.author + ' moved to "' +
-						  newLoc + '" via exit: ' + where;
-						ut.auSend(message, rooms[newLoc].describe(newLoc));
-					}
+				return;
+			} 
+			var pLoc = players[who].location;	
+			if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
+				if (!rooms[pLoc].data.exits[where].goesto) {
+					chanStr = message.author + ' tried to leave via ' + where + 
+					' but was unable to get anywhere!';
 				} else {
-					chanStr = message.author + ' tried to leave via ' + where +
-					  ' but that\'s not an exit!';
+					newLoc = rooms[pLoc].data.exits[where].goesto;
+					players[who].location = newLoc;
+					var chanStr = message.author + ' moved to "' +
+					  newLoc + '" via exit: ' + where;
+					ut.saveObj(players, cons.MUD.playerFile);
+					ut.auSend(message, rooms[newLoc].describe(newLoc));
 				}
+			} else {
+				chanStr = message.author + ' tried to leave via ' + where +
+				  ' but that\'s not an exit!';
 			}	
 			ut.chSend(message, chanStr);
 		}
@@ -256,9 +218,13 @@ module.exports = {
 			who = message.author.id;
 			if (typeof players[who] === 'undefined') {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
-			} else {
-				var pLoc = players[who].location;
+				return;
+			}
+			var pLoc = players[who].location;
+			if (parms === 'dm') {
 				ut.auSend(message, rooms[pLoc].describe(pLoc));
+			} else {
+				ut.chSend(message, rooms[pLoc].describe(pLoc));
 			}
 		}
 	},
@@ -267,16 +233,230 @@ module.exports = {
 			var who = message.author.id;
 			if (typeof players[who] === 'undefined') {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var pl = players[who];
+			parms = parms.split(' ');
+			var target = parms[0];
+			if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
+				ut.chSend(message, message.author + ' picked up ' + target + '.');
+				var theItem = rooms[pl.location].data.items[target];
+				pl.inventory[target] = theItem;
+				delete rooms[pl.location].data.items[target];
+				ut.saveObj(rooms, cons.MUD.roomFile);
+				ut.saveObj(players, cons.MUD.playerFile);
 			} else {
-				var pl = players[who];
+				ut.chSend(message, message.author + ' tried to pick up ' + target +
+				  ' in "' + pl.location + '" but it\'s not there, silly!');
+			}
+		}
+	},
+	drop: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var pl = players[who];
+			parms = parms.split(' ');
+			var target = parms[0];
+			if (typeof pl.inventory[target] !== 'undefined') {
+				ut.chSend(message, message.author + ' dropped ' + target + '.');
+				var theItem = pl.inventory[target];
+				rooms[pl.location].data.items[target] = theItem;
+				delete pl.inventory[target];
+				ut.saveObj(rooms, cons.MUD.roomFile);
+				ut.saveObj(players, cons.MUD.playerFile);
+			} else {
+				ut.chSend(message, message.author + ' tried to drop ' + target +
+				  ' in "' + pl.location + '" but they aren\'t even carrying it!');
+			}
+		}
+	},
+	inv: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var pl = players[who];
+			var outP = '';
+			if (pl.inventory === {}) {
+				outP = 'absolutely nothing!';
+			} else {
+				for (var item in pl.inventory) {
+					outP += '`' + item + '`   ';
+				}
+			}
+			ut.chSend(message, message.author + '\'s inventory: ' + outP);
+		}
+	},
+	edroom: {
+		do: function(message, parms) {
+			// title, description: String
+			// items: leave it out, can wizitem them
+			// exits: use wizex ?
+			
+			var who = message.author.id;
+			
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var loc = players[who].location
+			parms = parms.split(' ');
+			var prop = parms[0];
+			parms.shift();
+			parms = parms.join(' ');
+			var val = parms;
+			
+			if (prop === 'title' || prop === 'description') {
+				rooms[loc].data[prop] = val;
+				ut.chSend(message, prop + ' of ' + loc + ' now:\n ' + val);
+				ut.saveObj(rooms, cons.MUD.roomFile);
+			} else if (prop === 'delexit') {
 				parms = parms.split(' ');
 				var target = parms[0];
-				if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
-					ut.chSend(message, message.author + ' wants to pick up ' + target + '.');
+				if (typeof rooms[loc].data.exits[target] !== 'undefined') {
+					delete rooms[loc].data.exits[target];
+					ut.chSend(message, 'Exit "' + target + '" deleted! :open_mouth:');
 				} else {
-					ut.chSend(message, message.author + ' tried to pick up ' + target +
-					  ' in "' + pl.location + '" but it\'s not there, silly!');
+					ut.chSend(message, target + ' is not a valid exit, can\'t delete!');
+					return;
 				}
+			} else if (prop === 'exits') {
+				parms = parms.split(' ');
+				var target = parms[0];
+				var exProp = parms[1];
+				parms.shift();
+				parms.shift();
+				val = parms.join(' ');
+				
+				if (!target || !exProp) {
+					ut.chSend(message, ' Use `edroom exits <exitId> <property> <value>`');
+					return;
+				}
+				
+				if (typeof rooms[loc].data.exits[target] !== 'undefined') {
+					// exit exists. update whatever property
+					rooms[loc].data.exits[target][exProp] = val;
+					ut.chSend(message, 'Set exit "' + target + '".' + exProp + ' = ' + val);
+					ut.saveObj(rooms, cons.MUD.roomFile);
+				} else {
+					// exit didn't exist. create, and create property
+					rooms[loc].data.exits[target] = {};
+					rooms[loc].data.exits[target][exProp] = val;
+					ut.chSend(message, 'Created exit "' + target + '", then set ' + exProp + ' = ' + val);
+					ut.saveObj(rooms, cons.MUD.roomFile);
+				}
+			} else {
+				ut.chSend(message, 'Can only edit `title`, `description` or `exits` properties. ' +
+				  ' or use `delexit` to delete an exit.');
+			}
+		}
+	},
+	wizroom: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var who = message.author.id;
+			parms = parms.split(' ');
+			var roomId = parms[0];
+			parms.shift();
+			parms = parms.join(' ');
+			var title = parms;
+			
+			if (typeof rooms[roomId] !== 'undefined') {
+				ut.chSend(message, message.author + ', ' + roomId + ' is already a room!');
+				return;
+			}
+			
+			rooms[roomId] = new Room({"title": title});
+			ut.chSend(message, message.author + ', ' + roomId + ' created!');
+			ut.saveObj(rooms, cons.MUD.roomFile);
+		}
+	},
+	wizitem: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var who = message.author.id;
+			var pl = players[who];
+			parms = parms.split(' ');
+			var itemName = parms[0];
+			parms.shift();
+			var itemDesc = parms.join(' ');
+			
+			var theItem = new Item({
+				"description": itemDesc
+			});
+			pl.inventory[itemName] = theItem;
+			ut.chSend(message, ' Gave you a ' + itemName + ' with description: ' + itemDesc +
+			  ', ' + message.author);
+		}
+	},
+	build: {
+		do: function(message, parms) {
+			buildDungeon();
+			ut.chSend(message, 'SpongeMUD v0.foo: Dungeon may have been built.');
+		}
+	},
+	exam: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			var pl = players[who];
+			var loc = players[who].location;
+			parms = parms.split(' ');
+			var target = parms[0];
+			
+			/*
+			We'd like them to be able to:
+				exam <item in room>
+				exam <item in inv>
+				exam <exit>
+				exam <sceneryItem>?
+			*/
+			// for now, we'll just do <item in inv>
+			// and if not found, check room?
+			
+			var outP = '';
+			var found = 0;
+			if (typeof pl.inventory[target] !== 'undefined') {
+				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description + '\n';
+				found++;
+			}
+			if (typeof rooms[loc].data.items[target] !== 'undefined') {
+				outP += '(here) `' + target + '`: ' + rooms[loc].data.items[target].data.description + '\n';
+				found++;
+			}
+			
+			if (!found) {
+				outP += 'I see no ' + target + ' here.';
+			}
+			ut.chSend(message, outP);
+		}
+	},
+	tele: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			var pl = players[who];
+			var target = parms;
+			
+			if (typeof rooms[target] !== 'undefined') {
+				players[who].location = target;
+				ut.saveObj(players, cons.MUD.playerFile);
+				ut.chSend(message, message.author + ' teleported to ' + target + '!');
+				ut.auSend(message, rooms[target].describe(target));
+			} else {
+				ut.chSend(message, target + ' is not a valid room to teleport to.');
 			}
 		}
 	}

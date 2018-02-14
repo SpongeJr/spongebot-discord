@@ -510,6 +510,60 @@ spongeBot.go = {
 		iFic.go.do(message, parms);
 	}
 };
+spongeBot.inv = {
+	help: '(SpongeMUD) !get <where> to move to a different room.',
+	do: function(message, parms) {
+		iFic.inv.do(message, parms);
+	}
+};
+spongeBot.wizitem = {
+	access: [],
+	help: '(SpongeMUD) (wizards only) create an item',
+	do: function(message, parms) {
+		iFic.wizitem.do(message, parms);
+	}
+};
+spongeBot.edroom = {
+	access: [],
+	help: '(SpongeMUD) (wizards only) edit a room (unimplemented)',
+	do: function(message, parms) {
+		iFic.edroom.do(message, parms);
+	}
+};
+spongeBot.wizroom = {
+	access: [],
+	help: '(SpongeMUD) (wizards only) create a room (unimplemented)',
+	do: function(message, parms) {
+		iFic.wizroom.do(message, parms);
+	}
+};
+spongeBot.build = {
+	access: [],
+	help: '(SpongeMUD) Attempts to initialize SpongeMUD',
+	do: function(message, parms) {
+		iFic.build.do(message, parms);
+	}
+};
+spongeBot.drop = {
+	help: '(SpongeMUD) !get <item> to pick up something in the room.',
+	do: function(message, parms) {
+		iFic.drop.do(message, parms);
+	}
+};
+spongeBot.exam = {
+	help: '(SpongeMUD) !get <item> to pick up something in the room.',
+	do: function(message, parms) {
+		iFic.exam.do(message, parms);
+	}
+};
+spongeBot.examine = spongeBot.exam; // alias
+spongeBot.tele = {
+	access: [],
+	help: '(SpongeMUD) (wizards only) !tele <room> to teleport to <room>.',
+	do: function(message, parms) {
+		iFic.tele.do(message, parms);
+	}
+};
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
@@ -3228,9 +3282,10 @@ spongeBot.minesweeper = {
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-  debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
-  BOT.user.setGame("!help");
-  if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
+	iFic.buildDungeon(); // build SpongeMUD dungeon
+	debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
+	BOT.user.setGame("!help");
+	if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
 });
 //-----------------------------------------------------------------------------
 BOT.on('messageReactionAdd', (react, whoAdded) => {
@@ -3242,7 +3297,6 @@ BOT.on('messageReactionAdd', (react, whoAdded) => {
 		}
 	}
 });
-
 
 BOT.on('message', message => {
 	if (message.content.startsWith('!')) {
