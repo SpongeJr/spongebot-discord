@@ -135,7 +135,8 @@ module.exports = {
 				var password = args[0] || '';
 				password = password.toLowerCase();
 				if(password.length === 0) {
-					utils.chSend(message, utils.makeTag(player) + ', your password must be longer than 0 characters.');
+					utils.chSend(message, utils.makeTag(player) + ', your password has been reset.');
+					delete cattleManager.passwords[player];
 					return;
 				}
 				if(!(/^[a-z0-9\s]+$/i.test(password))) {
