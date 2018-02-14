@@ -498,6 +498,12 @@ spongeBot.joinmud = {
 		iFic.joinmud.do(message, parms);
 	}
 };
+spongeBot.exitmud = {
+	help: 'Join SpongeMUD (extremely early pre-alpha)',
+	do: function(message, parms) {
+		iFic.exitmud.do(message, parms);
+	}
+};
 spongeBot.get = {
 	help: '(SpongeMUD) !get <item> to pick up something in the room.',
 	do: function(message, parms) {
@@ -507,7 +513,7 @@ spongeBot.get = {
 spongeBot.go = {
 	help: '(SpongeMUD) !get <where> to move to a different room.',
 	do: function(message, parms) {
-		iFic.go.do(message, parms);
+		iFic.go.do(message, parms, BOT);
 	}
 };
 spongeBot.inv = {
@@ -516,23 +522,36 @@ spongeBot.inv = {
 		iFic.inv.do(message, parms);
 	}
 };
+spongeBot.msay = {
+	help: '(SpongeMUD) !get <where> to move to a different room.',
+	do: function(message, parms) {
+		iFic.say.do(message, parms, BOT);
+	}
+};
 spongeBot.wizitem = {
-	access: [],
+	access: false,
 	help: '(SpongeMUD) (wizards only) create an item',
 	do: function(message, parms) {
 		iFic.wizitem.do(message, parms);
 	}
 };
-spongeBot.edroom = {
+spongeBot.killitem = {
 	access: [],
-	help: '(SpongeMUD) (wizards only) edit a room (unimplemented)',
+	help: '(SpongeMUD) {seriously wizards only) perma delete an item with no undo.',
+	do: function(message, parms) {
+		iFic.killitem.do(message, parms);
+	}
+}
+spongeBot.edroom = {
+	access: false,
+	help: '(SpongeMUD) (wizards only) edit a room',
 	do: function(message, parms) {
 		iFic.edroom.do(message, parms);
 	}
 };
 spongeBot.wizroom = {
-	access: [],
-	help: '(SpongeMUD) (wizards only) create a room (unimplemented)',
+	access: false,
+	help: '(SpongeMUD) (wizards only) create a room',
 	do: function(message, parms) {
 		iFic.wizroom.do(message, parms);
 	}

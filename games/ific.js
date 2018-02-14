@@ -3,6 +3,7 @@ var cons = require('../lib/constants.js');
 var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
 var dungeonBuilt = false;
+var noWiz = true;
 
 var v = {
 	story: 'Once upon a time...',
@@ -22,17 +23,17 @@ var defaultDescribe = function(id) {
 	
 	// Build exits text
 	if (rooms[id].data.hasOwnProperty('exits')) {
-		outStr += '\n\nObvious exits: ';
+		outStr += '\n-=-=-=-\nObvious exits: ';
 		for (var exName in rooms[id].data.exits) {
 			outStr += '`' + exName + '`   ';
 		}
 	} else {
-		ut.debugPrint('!explore: WARNING! Room ' + parms + ' missing exits!');
+		ut.debugPrint('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
 	}
 	
 	// Build items text
 	if (rooms[id].data.hasOwnProperty('items')) {
-		outStr += '\n\nItems here: ';
+		outStr += '\n\nVisible items here: ';
 		for (var itemName in rooms[id].data.items) {
 			outStr += '`' + itemName + '`   ';
 		}
@@ -48,7 +49,7 @@ var defaultDescribe = function(id) {
 		}
 	}
 	if (numHere > 0) {
-		outStr += ' Other players here: ' + playersHereStr;
+		outStr += '\n\nWho is here: ' + playersHereStr;
 	}
 	return outStr;
 }
@@ -185,7 +186,7 @@ module.exports = {
 		}
 	},
 	go: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			who = message.author.id;
 			parms = parms.split(' ');
 			where = parms[0];
@@ -196,43 +197,141 @@ module.exports = {
 			var pLoc = players[who].location;	
 			if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
 				if (!rooms[pLoc].data.exits[where].goesto) {
-					chanStr = message.author + ' tried to leave via ' + where + 
+					chanStr = players[who].charName + ' tried to leave via ' + where + 
 					' but was unable to get anywhere!';
 				} else {
 					newLoc = rooms[pLoc].data.exits[where].goesto;
-					players[who].location = newLoc;
-					var chanStr = message.author + ' moved to "' +
+					var chanStr = players[who].charName + ' moved to "' +
 					  newLoc + '" via exit: ' + where;
+					  
+					// Figure out who to DM:
+					// find out who all is in the room and "logged in" to same server
+					var pLoc = players[who].location;
+					var dmList = []; // list of ids
+					for (var player in players) {
+						if (players[player].location === pLoc) {
+							//console.log(player + ' was in the room with ' + who);
+							if (players[player].server === players[who].server) {
+								//console.log(player + ' was also on same server ');
+								dmList.push(player);
+							} else {
+								/* console.log('Not same server though. ' + 
+								players[who].server + ' !== ' + players[player].server); */
+							}
+						}
+					}
+					console.log(' Found ' + dmList.length + ' players to DM.');
+					
+					for (var i = 0; i < dmList.length; i++) {
+						var server = client.guilds.get(players[who].server);
+						var user = server.members.get(dmList[i]);
+						// eventually, don't show ourselves in this list
+						// it's kind of useful right now though
+						user.send('[SpongeMUD] ' + players[who].charName + ' left via ' + where);
+					}					
+					players[who].location = newLoc; // now actually move them
 					ut.saveObj(players, cons.MUD.playerFile);
-					//ut.auSend(message, rooms[newLoc].describe(newLoc));
 				}
 			} else {
-				chanStr = message.author + ' tried to leave via ' + where +
+				chanStr = players[who].charName + ' tried to leave via ' + where +
 				  ' but that\'s not an exit!';
-			}	
+			}
 			ut.chSend(message, chanStr);
 		}
 	},
 	joinmud: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			parms = parms.split(' ');
-			var charName = parms[0];
-			if (charName.length < 3 || charName.length > 15) {
-				ut.chSend(message, message.author + ', use `joinmud <character name>`.' +
-				  ' Your character name must be a single word between 3 and 15 chars.');
-				return;
+			var server = message.guild;
+			
+			// temporary! need to come up with something for this situation (DM joinmud)
+			if (!server) {
+				server = {"name": 'The Planet', "id": cons.SERVER_ID};
 			}
 			
+			
 			if (typeof players[who] === 'undefined') {
+				parms = parms.split(' ');
+				var charName = parms[0];
+				if (charName.length < 3 || charName.length > 15) {
+					ut.chSend(message, message.author + ', use `joinmud <character name>`.' +
+					  ' Your character name must be a single word between 3 and 15 chars.');
+					return;
+				}
 				players[who] = new Player({"charName": charName});
 				ut.saveObj(players, cons.MUD.playerFile);
 				ut.chSend(message, ' Welcome to SpongeMUD, ' + charName +
-				  '! (' + message.author.id + ')');
-				var pLoc = players[who].location;
-				//ut.auSend(message, rooms[pLoc].describe(pLoc));
+				  '! (' + message.author.id + '). Try `look` to get started.');
+				ut.saveObj(players, cons.MUD.playerFile);
 			} else {
 				ut.chSend(message, ' You\'re already a SpongeMUD player. Awesome!');
+			}
+			if (typeof players[who].server === 'undefined') {
+				ut.chSend(message, ' You are now logged in via ' + server.name +
+				  ' (' + server.id + ')');
+				players[who].server = server.id;
+				ut.saveObj(players, cons.MUD.playerFile);
+			} else {
+				ut.chSend(message, ' You are now logged in via ' + server.name +
+				  ' (' + server.id + ') (last: ' + players[who].server + ')');
+				players[who].server = server.id;
+				ut.saveObj(players, cons.MUD.playerFile);
+			}
+		}
+	},
+	exitmud: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			var server = message.guild;
+			
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you don\'t have a SpongeMUD ' +
+				  ' character that you can logout! Use `joinmud` to join the fun!');
+			} else if (!players[who].server) {
+				ut.chSend(message, message.author + ', ' + players[who].charName +
+				  ' wasn\'t logged in. Use `joinmud` to login if you want though.');
+			} else {
+				ut.chSend(message, players[who].charName + ' is being logged out ' +
+				  ' from server id ' + players[who].server);
+				players[who].server = null;
+			}
+		}
+	},
+	say: {
+		do: function(message, parms, client) {
+			who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			if (!players[who].server) {
+				ut.chSend(message, players[who].charName + ' can\'t speak unless they' +
+				  ' first login to SpongeMUD via `joinmud`!');
+				return;
+			}
+			
+			// find out who all is in the room
+			var pLoc = players[who].location;
+			var dmList = []; // list of ids
+			for (var player in players) {
+				if (players[player].location === pLoc) {
+					console.log(player + ' was in the room with ' + who);
+					if (players[player].server === players[who].server) {
+						console.log(player + ' was also on same server ');
+						dmList.push(player);
+					} else {
+						console.log('Not same server though. ' + 
+						  players[who].server + ' !== ' + players[player].server);
+					}
+				}
+			}
+			console.log(' Found ' + dmList.length + ' players to DM.');
+			
+			for (var i = 0; i < dmList.length; i++) {
+				//var user = message.guild.members.get(dmList[i]);
+				var server = client.guilds.get(players[who].server);
+				var user = server.members.get(dmList[i]);
+				user.send('[SpongeMUD] ' + players[who].charName + ' says ' + parms);
 			}
 		}
 	},
@@ -421,6 +520,11 @@ module.exports = {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
+			
+			if (who !== cons.SPONGE_ID && noWiz) {
+				ut.chSend(' magicking up items is temporarily disabled, sorry. ');
+			}
+			
 			var who = message.author.id;
 			var pl = players[who];
 			parms = parms.split(' ');
@@ -436,6 +540,50 @@ module.exports = {
 			  ', ' + message.author);
 		}
 	},
+	killitem: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (typeof players[who] === 'undefined') {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			}
+			var who = message.author.id;
+			var pl = players[who];
+			var loc = pl.location;
+			parms = parms.split(' ');
+			var target = parms[0]; // what we're deleting
+			parms.shift();
+			parms = parms.join(' ');
+			
+			var outP = '';
+			var found = 0;
+			if (typeof pl.inventory[target] !== 'undefined') {
+				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description;
+				if (parms === 'inv') {
+					delete pl.inventory[target];
+					outP += ' was deleted!';
+				} else {
+					outP += ' was left alone.\n';
+				}
+				found++;
+			}
+			if (typeof rooms[loc].data.items[target] !== 'undefined') {
+				outP += '(here) `' + target + '`: ' + rooms[loc].data.items[target].data.description;
+				if (parms === 'here') {
+					delete rooms[loc].data.items[target];
+					outP += ' was deleted!\n';
+				} else {
+					outP += ' was left alone.\n';
+				}				
+				found++;
+			}
+			
+			if (!found) {
+				outP += 'I see no ' + target + ' here.';
+			}
+			ut.chSend(message, outP);
+		}
+	},	
 	build: {
 		do: function(message, parms) {
 			buildDungeon();
