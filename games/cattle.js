@@ -91,7 +91,7 @@ module.exports = {
 				
 				if(args.length === 0) {
 					var reply = '`!cattle configure` flags: `minLength`, `maxLength`, `fixedLength`';
-					reply += 'Configuration:';
+					reply += '\nConfiguration:';
 					for(var parameter in cattleManager.options) {
 						reply += '\n' + '`' + parameter + '=' + cattleManager.options[parameter] + '`';
 					}
