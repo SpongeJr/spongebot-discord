@@ -214,7 +214,7 @@ module.exports = {
 					return;
 				}
 				utils.chSend(message, utils.makeTag(player) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows
-				'\n' + 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
+					+ '\n' + 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
 
 				//Switch turns
 				delete cattleManager.turns[player];
