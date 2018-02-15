@@ -89,7 +89,6 @@ module.exports = {
 					return;
 				}
 				
-				args = args.split(' ');
 				if(args.length === 0) {
 					var reply = '`!cattle configure` flags: `minLength`, `maxLength`, `fixedLength`';
 					reply += 'Configuration:';
@@ -99,6 +98,9 @@ module.exports = {
 					utils.chSend(message, reply);
 					return;
 				}
+				
+				args = args.split(' ');
+				
 				for(var i = 0; i < args.length; i++) {
 					var flag = args[i].split(':');
 					var parameter = flag[0] || '';
@@ -115,7 +117,7 @@ module.exports = {
 					}
 					parameter = parameter.toLowerCase();
 					argument = argument.toLowerCase();
-					if(parameter === 'minLength') {
+					if(parameter === 'minLength'.toLowerCase()) {
 						argument = parseInt(argument);
 						if(argument === 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `minLength` unlocked');
@@ -126,7 +128,7 @@ module.exports = {
 							cattleManager.options.minLength = argument;
 							utils.chSend(message, utils.makeTag(player) + ', `minLength` set to ' + argument);
 						}
-					} else if(parameter === 'maxLength') {
+					} else if(parameter === 'maxLength'.toLowerCase()) {
 						argument = parseInt(argument);
 						if(argument === 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `maxLength` unlocked');
@@ -137,7 +139,7 @@ module.exports = {
 							cattleManager.options.maxLength = argument;
 							utils.chSend(message, utils.makeTag(player) + ', `maxLength` set to ' + argument);
 						}
-					} else if(parameter === 'fixedLength') {
+					} else if(parameter === 'fixedLength'.toLowerCase()) {
 						argument = parseInt(argument);
 						if(argument === 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `minLength` and `maxLength` unlocked');
@@ -148,6 +150,8 @@ module.exports = {
 							cattleManager.options.minLength = argument;
 							cattleManager.options.maxLength = argument;
 						}
+					} else {
+						utils.chSend(message, utils.makeTag(player) + ', unknown parameter');
 					}
 				}
 			}
