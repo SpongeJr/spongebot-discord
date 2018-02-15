@@ -4,6 +4,7 @@ var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
 var dungeonBuilt = false;
 var noWiz = true;
+var terseTravel = false;
 
 var v = {
 	story: 'Once upon a time...',
@@ -52,6 +53,43 @@ var defaultDescribe = function(id) {
 		outStr += '\n\nWho is here: ' + playersHereStr;
 	}
 	return outStr;
+};
+var defaultShortDesc = function(id) {
+	// builds a standard "short room description string" and returns it
+	var outStr = '-=-=-=-\n';
+	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
+	
+	// Build exits text
+	if (rooms[id].data.hasOwnProperty('exits')) {
+		outStr += '-=-=-=-\nExits: ';
+		for (var exName in rooms[id].data.exits) {
+			outStr += '`' + exName + '`   ';
+		}
+	} else {
+		ut.debugPrint('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
+	}
+	
+	// Build items text
+	if (rooms[id].data.hasOwnProperty('items')) {
+		outStr += '\nItems: ';
+		for (var itemName in rooms[id].data.items) {
+			outStr += '`' + itemName + '`   ';
+		}
+	}
+	
+	// See who else is here
+	var numHere = 0;
+	var playersHereStr = '';
+	for (var player in players) {
+		if (players[player].location === id) {
+			playersHereStr += '`' + players[player].charName + '` ';
+			numHere++;
+		}
+	}
+	if (numHere > 0) {
+		outStr += '\nWho is here: ' + playersHereStr;
+	}
+	return outStr;
 }
 var Item = function(data) {
 	this.data = data || {};
@@ -91,6 +129,8 @@ var Room = function(data) {
 	this.data.items = data.items || {}
 };
 Room.prototype.describe = defaultDescribe;
+Room.prototype.shortDesc = defaultShortDesc;
+
 var buildDungeon = function() {
 	for (var room in rooms) {
 		var theRoom = new Room(rooms[room].data);
@@ -173,13 +213,21 @@ module.exports = {
 			}
 		}
 	},
-	explore: {
+	
+	terse: {
+		do: function(message) {
+			var who = message.author.id;
+			players[who].terseTravel = !players[who].terseTravel;
+			ut.chSend(message, 'Short room descriptions when travelling is now: ' +
+			  players[who].terseTravel);
+		}
+	},
+	peek: {
 		do: function(message, parms) {
-
 			if (rooms.hasOwnProperty(parms)) {
 				ut.chSend(message, rooms[parms].describe(parms));
 			} else {
-				ut.chSend(message, 'You want to explore ' + parms + ', eh?' +
+				ut.chSend(message, 'You want to see ' + parms + ', eh?' +
 				  ' I don\'t really know that place.');
 			}
 			
@@ -197,12 +245,16 @@ module.exports = {
 			var pLoc = players[who].location;	
 			if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
 				if (!rooms[pLoc].data.exits[where].goesto) {
-					chanStr = players[who].charName + ' tried to leave via ' + where + 
-					' but was unable to get anywhere!';
+					ut.chSend(message, 'You tried to leave via ' + where + 
+					  ' but you were unable to get anywhere!');
+					return;
 				} else {
 					newLoc = rooms[pLoc].data.exits[where].goesto;
-					var chanStr = players[who].charName + ' moved to "' +
+					var chanStr = '';
+					
+					/*var chanStr = players[who].charName + ' moved to "' +
 					  newLoc + '" via exit: ' + where;
+					  */
 					  
 					// Figure out who to DM:
 					// find out who all is in the room and "logged in" to same server
@@ -231,6 +283,11 @@ module.exports = {
 					}					
 					players[who].location = newLoc; // now actually move them
 					ut.saveObj(players, cons.MUD.playerFile);
+					if (players[who].terseTravel) {
+						chanStr += rooms[newLoc].shortDesc(newLoc);
+					} else {
+						chanStr += rooms[newLoc].describe(newLoc);
+					}
 				}
 			} else {
 				chanStr = players[who].charName + ' tried to leave via ' + where +
@@ -331,7 +388,7 @@ module.exports = {
 				//var user = message.guild.members.get(dmList[i]);
 				var server = client.guilds.get(players[who].server);
 				var user = server.members.get(dmList[i]);
-				user.send('[SpongeMUD] ' + players[who].charName + ' says ' + parms);
+				user.send('[SpongeMUD] **' + players[who].charName + '** says, "' + parms + '"');
 			}
 		}
 	},
