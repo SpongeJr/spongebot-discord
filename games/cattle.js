@@ -349,6 +349,7 @@ module.exports = {
 						return;
 					}
 					clearCattle(target, cattleManager.matches[target]);
+				}
 			}
 		},
         vs: {
