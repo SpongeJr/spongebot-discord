@@ -11,6 +11,9 @@ var v = {
 	undoIndex: 0,
 }
 
+const isPlayer = function(who) {
+	return typeof players[who] !== 'undefined';
+};
 var defaultLook = function(item) {
 	outP = '';
 	outP += item.description;
@@ -238,7 +241,7 @@ module.exports = {
 			who = message.author.id;
 			parms = parms.split(' ');
 			where = parms[0];
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			} 
@@ -357,7 +360,7 @@ module.exports = {
 	say: {
 		do: function(message, parms, client) {
 			who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
@@ -395,10 +398,10 @@ module.exports = {
 	look: {
 		do: function(message, parms) {
 			who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			}
+			} 
 			var pLoc = players[who].location;
 			if (parms === 'dm') {
 				ut.auSend(message, rooms[pLoc].describe(pLoc));
@@ -410,10 +413,10 @@ module.exports = {
 	get: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			}
+			} 
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
@@ -433,10 +436,10 @@ module.exports = {
 	drop: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			}
+			} 
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
@@ -456,10 +459,10 @@ module.exports = {
 	inv: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			}
+			} 
 			var pl = players[who];
 			var outP = '';
 			if (pl.inventory === {}) {
@@ -480,7 +483,7 @@ module.exports = {
 			
 			var who = message.author.id;
 			
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
@@ -549,7 +552,7 @@ module.exports = {
 	wizroom: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
@@ -570,13 +573,22 @@ module.exports = {
 			ut.saveObj(rooms, cons.MUD.roomFile);
 		}
 	},
+	wizcopy: {
+		do: function(message, parms) {
+			var who = message.author.id;		
+			if (!isPlayer(who)) {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			} 			
+		}
+	},
 	wizitem: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			}
+			} 
 			
 			if (who !== cons.SPONGE_ID && noWiz) {
 				ut.chSend(' magicking up items is temporarily disabled, sorry. ');
@@ -600,7 +612,7 @@ module.exports = {
 	killitem: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (typeof players[who] === 'undefined') {
+			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
