@@ -209,8 +209,8 @@ module.exports = {
 					clearCattle(player, opponent);
 					return;
 				}
-				utils.chSend(message, utils.makeTag(player) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows);
-				utils.chSend(message, 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
+				utils.chSend(message, utils.makeTag(player) + ',\n' + 'Bulls: ' + bulls + '\n' + 'Cows: ' + cows
+				'\n' + 'It is now ' + utils.makeTag(opponent) + '\'s turn.');
 
 				//Switch turns
 				delete cattleManager.turns[player];
@@ -229,25 +229,26 @@ module.exports = {
 						return;
 					}
 				}
-				utils.chSend(message, 'Cattle info for ' + utils.makeTag(subject));
+				var reply = 'Cattle info for ' + utils.makeTag(subject);
 				var password = cattleManager.passwords[subject];
 				if(password) {
-					utils.chSend(message, '\nPassword length: ' + password.length);
+					reply += '\nPassword length: ' + password.length;
 				} else {
-					utils.chSend(message, '\nNo password set.');
+					reply += '\nNo password set.';
 				}
 				var match = cattleManager.matches[subject];
 				if(match) {
-					utils.chSend(message, '\nPlaying against ' + utils.makeTag(match) + '.');
+					reply += '\nPlaying against ' + utils.makeTag(match) + '.';
 					
 					if(cattleManager.turns[subject]) {
-						utils.chSend(message, '\nIt is currently ' + utils.makeTag(subject) + '\'s turn.');
+						reply += '\nIt is currently ' + utils.makeTag(subject) + '\'s turn.';
 					} else {
-						utils.chSend(message, '\nIt is currently ' + utils.makeTag(match) + '\'s turn.');
+						reply += '\nIt is currently ' + utils.makeTag(match) + '\'s turn.';
 					}
 				} else {
-					utils.chSend(message, '\nNot currently playing.');
+					reply += '\nNot currently playing.';
 				}
+				utils.chSend(message, reply);
 			}
 		},
         password: {
