@@ -44,6 +44,33 @@ module.exports = {
 		}
 	},
 	subCmd: {
+		stats: {
+			access: [],
+			do: function(message, parms, gameStats) {
+				var who = message.author.id;
+				var credsIn = utils.getStat(who, 'slots', 'credsIn', gameStats) || 0;
+				var credsOut = utils.getStat(who, 'slots', 'credsOut', gameStats) || 0;
+				var spins = utils.getStat(who, 'slots', 'spins', gameStats) || 0;
+				var ratio = ((credsOut / credsIn * 100) || 0).toFixed(2);
+				var outStr = '**SLOTS STATS** for ' + message.author + '\n';
+				outStr += '**Credits in**: ' + credsIn + '     **Credits won**: ' + credsOut;
+				outStr += '\n Payout ratio: ' + ratio + '% ';
+				outStr += '     # of spins: ' + spins + ' \n\n';
+				outStr += '_Statistics since last reset. You may reset your own stats' +
+				  ' with the `!slots reset` command if you wish._';
+				utils.chSend(message, outStr);
+			}
+		},
+		reset: {
+			access: [],
+			do: function(message, parms, gameStats) {
+				var who = message.author.id;
+				utils.setStat(who, 'slots', 'credsIn', 0, gameStats);
+				utils.setStat(who, 'slots', 'credsOut', 0, gameStats);
+				utils.setStat(who, 'slots', 'spins', 0, gameStats);
+				utils.chSend(message, ' I\'ve reset your slots stats for you, ' + message.author);
+			}
+		},
 		symbol: {
 			access: [],
 			do: function(message, parms, gameStats, bankroll, sl) {
@@ -102,24 +129,19 @@ module.exports = {
 				if (betAmt === 0) {
 					utils.chSend(message, message.author + ', you can\'t play if you don\'t pay.');
 					return;
-				}
-				
-				if (betAmt < 0) {
+				} else if (betAmt < 0) {
 					utils.chSend(message, message.author + ' thinks they\'re clever making a negative bet.');
 					return;
-				}
-				
-				if (betAmt > bankroll[who].credits) {
+				} else if (betAmt > bankroll[who].credits) {
 					utils.chSend(message, message.author + ', check your `!bank`. You don\'t have that much.');
 					return;
-				}
-				
-				if (betAmt === bankroll[who].credits) {
+				} else if (betAmt === bankroll[who].credits) {
 					utils.chSend(message, message.author + ' just bet the farm on `!slots`!');
 				}
 				
 				utils.addBank(who, -betAmt, bankroll);
-
+				utils.alterStat(who, 'slots', 'credsIn', betAmt, gameStats);
+				utils.alterStat(who, 'slots', 'spins', 1, gameStats)
 				var spinArr = [];
 				for (var reel = 0; reel < 3; reel++) {
 					
@@ -171,7 +193,8 @@ module.exports = {
 							  message.author + ' is a `!slots` winner!\n' + 
 							  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
 							  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt;
-							utils.addBank(who, winAmt, bankroll)
+							utils.addBank(who, winAmt, bankroll);
+							utils.alterStat(who, 'slots', 'credsOut', winAmt, gameStats);
 							won = true;					
 						}
 						reel++;

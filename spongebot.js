@@ -748,7 +748,7 @@ spongeBot.loot = {
 						
                         if (bankroll[who].credits >= price) {
 							
-							if (!utils.collectTimer(message, message.author.id, 'loot', spongebot.loot.timedCmd, gameStats)) {
+							if (!utils.collectTimer(message, message.author.id, 'loot', spongeBot.loot.timedCmd, gameStats)) {
 								return false; // can't unbox yet!
 							}	
 							
@@ -1652,6 +1652,11 @@ spongeBot.setstat = {
 	cmdGroup: 'Admin',
 	do: function(message, parms) {
 		parms = parms.split(' ');
+		if (!parms[0]) {
+			utils.chSend(message, 'Use: !setstat <user> <game> <stat> ' +
+			  ' <newValue> and be careful with it!');
+			return;
+		}
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  utils.setStat(utils.makeId(parms[0]), parms[1], parms[2], parms[3], gameStats));
@@ -1665,6 +1670,11 @@ spongeBot.setstat = {
 spongeBot.alterother = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
+		if (!parms[0]) {
+			utils.chSend(message, 'Use: !alterother <user> <game> <stat> ' +
+			  ' <adjustAmount> and be careful with it!');
+			return;
+		}
 		utils.chSend(message, 'In OTHER stats file, USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), otherStats, cons.DATA_DIR  + 'otherstats.json'));
@@ -1675,7 +1685,13 @@ spongeBot.alterother = {
 };
 spongeBot.alterstat = {
 	do: function(message, parms) {
-		parms = parms.split(' ');
+		parms = parms.split(' ');		
+		if (!parms[0]) {
+			utils.chSend(message, 'Use: !alterstat <user> <game> <stat> ' +
+			  ' <adjustAmount> and be careful with it!');
+			return;
+		}
+		
 		utils.chSend(message, 'USER: ' + parms[0] + '  GAME: ' + parms[1] +
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), gameStats));
@@ -1773,7 +1789,12 @@ spongeBot.slots = {
 	disabled: false,
  	do: function(message, parms) {
 		slots.do(message, parms, gameStats, bankroll);
-	}
+	},
+	help: '`!slots`: give the slot machine a spin!',
+	longHelp: ' Use `!slots spin <bet>` to put credits into the slot machine' +
+	  ' and give it a spin! You can also use `!slots paytable` to see the ' +
+	  ' current payout table, as well as `!slots stats` to see your stats. ' +
+	  ' You can use `!slots reset` if you want to reset your stats.'
 };
 //-----------------------------------------------------------------------------
 var buildHelp = function() {
@@ -2904,7 +2925,7 @@ BOT.on('message', message => {
 						utils.chSend(message, 'Your shtyle is too weak ' +
 						  'for that command, ' + message.author);
 					} else {
-						// missing spongebot.command.do
+						// missing spongeBot.command.do
 						if (!spongeBot[theCmd].hasOwnProperty('do')) {
 							debugPrint('!!! WARNING:  BOT.on(): missing .do() on ' + theCmd +
 							  ', ignoring limited-access command !' + theCmd);
