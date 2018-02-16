@@ -496,7 +496,7 @@ spongeBot.collect = {
 		  'loot to appear in your `!collect`ion bag. Yours will be ready in <<next>>'},
 	do: function(message) {
 		var who = message.author.id;	
-		if (!collectTimer(message, who, 'collect')) {
+		if (!collectTimer(message, who, 'collect', spongeBot.collect.timedCmd, gameStats)) {
 			// not time yet. since we used collectTimer();, the rejection message
 			// is automatic, and we can just return; here if we want
 			return;
@@ -538,7 +538,7 @@ spongeBot.tree = {
 				var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
 				now = now.valueOf();
 
-				if (utils.checkTimer(message, who, 'tree', spongeBot.tree, gameStats)) {
+				if (utils.checkTimer(message, who, 'tree', spongeBot.tree.timedCmd, gameStats)) {
 					utils.chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
 					  ' with `!tree harvest` and get your goodies!');
 				} else {
@@ -1415,7 +1415,7 @@ spongeBot.sammich = {
 	},
 	cmdGroup: 'Fun and Games',
 	do: function(message) {
-		if (!utils.collectTimer(message, message.author.id, 'sammich', spongeBot.sammich, gameStats)) {
+		if (!utils.collectTimer(message, message.author.id, 'sammich', spongeBot.sammich.timedCmd, gameStats)) {
 			return false; // can't use it yet!
 		}
 		utils.chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
@@ -1838,13 +1838,7 @@ spongeBot.topstats = {
 //-----------------------------------------------------------------------------
 spongeBot.slots = {
 	cmdGroup: 'Fun and Games',
-	disabled: true,
-	timedCmd: {
-		howOften: 950,
-		gracePeriod: 0,
-		failResponse: '  :warning:  Please pull slots no faster than about ' +
-		' once per second per user.  :warning:'
-	},
+	disabled: false,
  	do: function(message, parms) {
 		slots.do(message, parms, gameStats, bankroll);
 	}
@@ -2531,7 +2525,7 @@ spongeBot.sponge = {
 	do: function(message, args) {
 		var author = message.author.id;
 		var found = false;
-		if (!collectTimer(message, author, 'sponge', spongeBot.sponge, gameStats)) {
+		if (!collectTimer(message, author, 'sponge', spongeBot.sponge.timedCmd, gameStats)) {
 			return false; // can't use it yet!
 		}		
 		

@@ -3,7 +3,7 @@ var utils = require('../lib/utils.js');
 var slots = {
 	config: {
 		symbols: {
-			btcn: {emo: ':cupid:', rarity: 1},
+			rare: {emo: ':open_mouth:', rarity: 1},
 			peng: {emo: ':penguin:', rarity: 4},
 			dolr: {emo: ':dollar:', rarity: 5},
 			sevn: {emo: ':seven:', rarity: 6},
@@ -12,8 +12,8 @@ var slots = {
 			tato: {emo: ':tangerine:', rarity: 11},
 		},
 		payTable: [
-			{payout: 3200, pattern: ['btcn', 'btcn', 'btcn']},
-			{payout: 160, pattern: ['btcn', 'btcn', 'any']},
+			{payout: 3200, pattern: ['rare', 'rare', 'rare']},
+			{payout: 160, pattern: ['rare', 'rare', 'any']},
 			{payout: 128, pattern: ['peng', 'peng', 'peng']},
 			{payout: 32, pattern: ['peng', 'peng', 'any']},
 			{payout: 20, pattern: ['dolr', 'dolr', 'dolr']},
@@ -46,10 +46,10 @@ module.exports = {
 	subCmd: {
 		symbol: {
 			access: [],
-			do: function(message, parms, bankroll, sl) {
+			do: function(message, parms, gameStats, bankroll, sl) {
 				
 				// temporary access check, will use slots.subCmd.symbol.access[] later
-				if (!hasAccess(message.author.id)) {
+				if (!utils.hasAccess(message.author.id)) {
 					utils.chSend(message, 'Please step away from those machines!');
 					return;
 				}
@@ -76,11 +76,17 @@ module.exports = {
 		},
 		spin: {
 			access: false,
-			do: function(message, parms, bankroll) {
+			timedCmd: {
+				howOften: 900,
+				gracePeriod: 0,
+				failResponse: '  :warning:  Please pull slots no faster than about ' +
+				  ' once per second per user.  :warning:'
+			},
+			do: function(message, parms, gameStats, bankroll) {		
 				var payTab = slots.config.payTable;
 				var who = message.author.id;
 
-				if (!collectTimer(message, who, 'slots')) {
+				if (!utils.collectTimer(message, who, 'slots', this.timedCmd, gameStats)) {
 					return;
 				}
 
@@ -234,7 +240,7 @@ module.exports = {
 			parms.shift(); // lop off the command that got us here
 			parms = parms.join(' ');
 			//utils.debugPrint('>> calling subcommand .' + sub + '.do(' + parms + ')');
-			this.subCmd[sub].do(message, parms, bankroll, this);
+			this.subCmd[sub].do(message, parms, gameStats, bankroll, this);
 			return;
 		} else {
 			utils.chSend(message, 'What are you trying to do to that slot machine?!');
