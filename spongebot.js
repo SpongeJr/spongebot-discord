@@ -18,22 +18,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
 */
 const Discord = require('discord.js');
-
 const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
-
 const BOT = new Discord.Client();
 const SPONGEBOT_ID = 402122635552751616;
-
 const FS = require('fs');
 
 const FRUIT_VAL = 300; // temporary!
 
 var debugPrint =function(inpString){
-// throw away that old console.log and try our brand new debugPrint!
-// can add all sorts of goodies here, like sending output to a Discord chan or DN
-// for now, just checks if the global debugMode is true. If it isn't,
-// doesn't output, just returns
+// console.log optional replacement
+// does not output when debugMode global is false
 	if (utils.debugMode) {
 		console.log(inpString);
 		if (utils.enableDebugChan) {
@@ -48,7 +43,6 @@ var debugPrint =function(inpString){
 };
 //-----------------------------------------------------------------------------
 var spongeBot = {};
-var story = '';
 //-----------------------------------------------------------------------------
 //  MODULES
 //-----------------------------------------------------------------------------
@@ -363,8 +357,8 @@ spongeBot.backup = {
 	do: function(message) {
 		var now = new Date();
 		var t = timey.timeStr(['raw'], now);
-		utils.saveBanks(cons.BANK_BACKUP_FILENAME +  t + '.bak', bankroll);
-		utils.saveStats(cons.STATS_BACKUP_FILENAME +  t + '.bak', gameStats);
+		utils.saveBanks(cons.BANK_BACKUP_FILENAME + t + '.bak', bankroll);
+		utils.saveStats(cons.STATS_BACKUP_FILENAME + t + '.bak', gameStats);
 		utils.chSend(message, 'I ran the backups. Probably.');
 		debugPrint('!backup:  MANUALLY BACKED UP TO: ' + cons.BANK_BACKUP_FILENAME + 
 		  t + '.bak and ' + cons.STATS_BACKUP_FILENAME + t + '.bak');
@@ -379,7 +373,6 @@ spongeBot.quote = {
 		quotes.q.do(message, parms, BOT);
 	}
 };
-
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	do: function(message, parms) {
@@ -1064,6 +1057,33 @@ spongeBot.showCode = {
 	disabled: true
 }
 //-----------------------------------------------------------------------------
+spongeBot.ttc = {
+	cmdGroup: 'Miscellaneous',
+	do: function(message, parms) {
+		ebon.ttc(message, parms);
+	},
+	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
+	  + ' Use an exact item name, or you can search for partial matches.'
+};
+//-----------------------------------------------------------------------------
+spongeBot.sammich = {
+	timedCmd: {
+		howOften: 1000 * 60 * 3, 
+		gracePeriod: 10000,
+		failResponse: 'Hey! You can only have a <<cmd>> every <<howOften>> ! ' +
+		' And that\'s not for like, <<next>> yet, which would be at <<nextDate>>. ' +
+		' You last had me make you a `!sammich` at <<lastDate>>, which was <<last>> ago.'
+	},
+	cmdGroup: 'Fun and Games',
+	do: function(message) {
+		if (!utils.collectTimer(message, message.author.id, 'sammich', spongeBot.sammich.timedCmd, gameStats)) {
+			return false; // can't use it yet!
+		}
+		utils.chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
+	},
+	help: '`!sammich` whips you up a tasty random sandwich (65% chance) or smoothie (35% chance)'
+};
+//-----------------------------------------------------------------------------
 spongeBot.s = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
@@ -1212,18 +1232,25 @@ spongeBot.scram = {
 		}
 	},
     help: '`!scram` starts the scramble game or checks to see if it\'s ready',
+	cmdGroup: 'Fun and Games',
 	disabled: false
 };
 //-----------------------------------------------------------------------------
-spongeBot.ttc = {
-	cmdGroup: 'Miscellaneous',
+spongeBot.raffle = {
+	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		ebon.ttc(message, parms);
+		raffle.do(message, parms, gameStats, bankroll);
 	},
-	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
-	  + ' Use an exact item name, or you can search for partial matches.'
-};
-//-----------------------------------------------------------------------------
+	help: 'Commands for working with raffles'
+}
+spongeBot.ticket = {
+	do: function(message, parms) {
+		raffle.subCmd.ticket.do(message, parms, gameStats);
+	},
+	access: true,
+	disabled: false,
+	help: '`!ticket <who> <#>` Gives <#> tickets to <who>. With no #, gives one.'
+}
 spongeBot.giveaways = {
 	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
@@ -1246,7 +1273,8 @@ spongeBot.giveaways = {
 		parms = parms.split(' ');
 		
 		if (parms[0] === 'suggest') {
-			
+			utils.chSend(message, ' Talk to @sponge to suggest something for !giveaways.');
+			return;
 		}
 		
 		if (parms[0] === 'list') {
@@ -1289,14 +1317,13 @@ spongeBot.giveaways = {
 				  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
 			}
 		} else if (parms[0] === 'addrole') {
-			/*
-			if (!message.hasOwnProperty('guild')) {
-				utils.chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server not in DM, ' +
-				'because I don\'t know where to give you the giveaways role otherwise!');
+			
+			if (message.channel.type === 'dm') {
+				utils.chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server, ' +
+				'and not in DM, because I don\'t know where to give you the giveaways role otherwise!');
 				return;
 			}
-			*/
-			
+
 			var role = message.guild.roles.find('name', 'giveaways');
 			if (message.member.roles.has(role.id)) {
 				debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
@@ -1310,22 +1337,7 @@ spongeBot.giveaways = {
 				utils.chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
 				  utils.alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats) + ' raffle tickets!');
 			}
-		} else if (parms[0] === 'whohasrole') {
-			utils.chSend(message, 'Don\'t even.');
-			/*
-			var whoHas = message.guild.roles.get('408789879590354944').members;
-			utils.chSend(message, 'These are the ' + whoHas.size + ' members with the giveaways role: ');
-			
-			var whoStr = ''
-			for (var who of whoHas.keys()) {
-				whoStr += utils.makeTag(who) + '   ';
-				debugPrint(who);
-			}
-			utils.chSend(message, whoStr);
-			*/
-
 		} else if (parms[0] === 'categories') {
-
 			var cats = {};
 			var theStr = ' Raffle item categories: ';
 			for (var item in giveaways) {
@@ -1333,7 +1345,6 @@ spongeBot.giveaways = {
 					cats[giveaways[item].type] = true;
 				}
 			}
-			
 			for (var cat in cats) {
 				theStr += '`' + cat + '` ';
 			}
@@ -1348,26 +1359,8 @@ spongeBot.giveaways = {
 	  'when there\'s something interesting going on related to giveaways.'
 };
 //-----------------------------------------------------------------------------
-spongeBot.sammich = {
-	timedCmd: {
-		howOften: 1000 * 60 * 3, 
-		gracePeriod: 10000,
-		failResponse: 'Hey! You can only have a <<cmd>> every <<howOften>> ! ' +
-		' And that\'s not for like, <<next>> yet, which would be at <<nextDate>>. ' +
-		' You last had me make you a `!sammich` at <<lastDate>>, which was <<last>> ago.'
-	},
-	cmdGroup: 'Fun and Games',
-	do: function(message) {
-		if (!utils.collectTimer(message, message.author.id, 'sammich', spongeBot.sammich.timedCmd, gameStats)) {
-			return false; // can't use it yet!
-		}
-		utils.chSend(message, 'How about having a ' + sammichMaker() + ' for a snack?   :yum:');
-	},
-	help: '`!sammich` whips you up a tasty random sandwich (65% chance) or smoothie (35% chance)'
-};
-//-----------------------------------------------------------------------------
 spongeBot.give = {
-	cmdGroup: 'Bankroll',
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		
 		var giver = message.author.id;
@@ -1433,7 +1426,7 @@ spongeBot.give = {
 	disabled: false
 };
 spongeBot.gift = {
-	cmdGroup: 'Bankroll',
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		if (message.author.id === cons.SPONGE_ID) {
 			
@@ -1463,7 +1456,7 @@ spongeBot.gift = {
 	access: true
 };
 spongeBot.bank = {
-	cmdGroup: 'Bankroll',
+	cmdGroup: 'Fun and Games',
 	do: function(message, parms) {
 		var who;
 		parms = parms.split(' ');
@@ -1554,15 +1547,6 @@ spongeBot.savebanks = {
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true
 }
-spongeBot.loadbanks = {
-	do: function() {
-		//utils.loadBanks(botStorage, bankroll);
-		
-	},
-	help: '(( currently under development ))',
-	disabled: true
-};
-//-----------------------------------------------------------------------------
 spongeBot.loadstats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
@@ -1622,10 +1606,9 @@ spongeBot.delstat = {
 			}
 		}
 	},
-	help: 'sets a game stat. limited access.',
-	longHelp: 'Listen, be careful and look at ' + 
-	  ' the source for `setStat (who, game, stat, amt)` as well as ' +
-	  ' `spongeBot.alterStat()`!',
+	help: 'Deletes a game stat, or even an entire game from a user\'s stat.',
+	longHelp: 'Use: !delstat forreal <user> <game> [stat]. ' +
+	' Will delete a whole game if you don\'t specify stat! Be extra careful!',
 	access: true,
 	disabled: true
 };
@@ -1673,10 +1656,9 @@ spongeBot.setstat = {
 		  '  STAT: ' + parms[2] + ' is now ' +
 		  utils.setStat(utils.makeId(parms[0]), parms[1], parms[2], parms[3], gameStats));
 	},
-	help: 'sets a game stat. limited access.',
-	longHelp: 'Listen, be careful and look at ' + 
-	  ' the source for `setStat (who, game, stat, amt)` as well as ' +
-	  ' `spongeBot.alterStat()`!',
+	help: 'Sets a game stat. limited access.',
+	longHelp: 'Use !setstat <user> <game> <stat> <newValue>. Be careful! ' +
+	'Will create new user, game, or stat as needed!',
 	access: true,
 	disabled: true
 };
@@ -1688,7 +1670,7 @@ spongeBot.alterother = {
 		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), otherStats, cons.DATA_DIR  + 'otherstats.json'));
 	},
 	help: 'does an alterStat on the "alternate stat file". for toasting porpoises. limited access.',
-	longHelp: 'Be careful with it!',
+	longHelp: 'Be careful with it! Will create new stats, games, or even users!',
 	disabled: true
 };
 spongeBot.alterstat = {
@@ -1699,9 +1681,7 @@ spongeBot.alterstat = {
 		  utils.alterStat(utils.makeId(parms[0]), parms[1], parms[2], parseInt(parms[3]), gameStats));
 	},
 	help: 'changes a game stat. limited access.',
-	longHelp: 'Listen, be careful and look at ' + 
-	  ' the source for `alterStat (who, game, stat, amt)` as well as ' +
-	  ' `spongeBot.alterStat()`!',
+	longHelp: 'Be careful with this, it will create new stats, games or even users!',
 	access: true,
 	disabled: true
 };
@@ -1711,7 +1691,6 @@ spongeBot.stats = {
 		var who;
 		
 		if (!parms) {
-			//utils.chSend(message, message.author + ', specify a <user> for `!stats`.');
 			who = message.author.id;
 		} else {
 			who = utils.makeId(parms);
@@ -1800,49 +1779,38 @@ spongeBot.slots = {
 var buildHelp = function() {
 	
 	theHelp = {};
-	
 	for (var cmd in spongeBot) {
-		
-		var cGroup = '';
-		if (!spongeBot[cmd].cmdGroup) {
-			cGroup = 'Uncategorized';
-		} else {
-			cGroup = spongeBot[cmd].cmdGroup;
-		}
-		
-		if (!theHelp[cGroup]) {theHelp[cGroup] = '';}
 	
-		if (spongeBot[cmd].disabled !== true) {
-			if (spongeBot[cmd].access) {
-				//theHelp[cGroup] += '*'
+		// we now no longer show uncategorized commands
+		if (spongeBot[cmd].cmdGroup) {		
+			var cGroup = '';
+			cGroup = spongeBot[cmd].cmdGroup;
+			/*
+			if (!spongeBot[cmd].cmdGroup) {
+				cGroup = 'Uncategorized';
 			} else {
-				theHelp[cGroup] += '`!' + cmd + '`: ';
+				cGroup = spongeBot[cmd].cmdGroup;
+			}
+			*/
 			
-				if (spongeBot[cmd].help) {
-					theHelp[cGroup] += spongeBot[cmd].help;
+			if (!theHelp[cGroup]) {theHelp[cGroup] = '';}
+		
+			if (spongeBot[cmd].disabled !== true) {
+				if (spongeBot[cmd].access) {
+					//theHelp[cGroup] += '*'
+				} else {
+					theHelp[cGroup] += '`!' + cmd + '`: ';
+				
+					if (spongeBot[cmd].help) {
+						theHelp[cGroup] += spongeBot[cmd].help;
+					}
+					theHelp[cGroup]+= '\n';
 				}
-				theHelp[cGroup]+= '\n';
 			}
 		}
 	}
 	return theHelp;
 };
-//-----------------------------------------------------------------------------
-spongeBot.raffle = {
-	cmdGroup: 'Giveaways and Raffle',
-	do: function(message, parms) {
-		raffle.do(message, parms, gameStats, bankroll);
-	}
-}
-spongeBot.ticket = {
-	do: function(message, parms) {
-		raffle.subCmd.ticket.do(message, parms, gameStats);
-	},
-	access: true,
-	disabled: false,
-	help: '`!ticket <who> <#>` Gives <#> tickets to <who>. With no #, gives one.'
-}
-//-----------------------------------------------------------------------------
 spongeBot.help = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
@@ -1870,7 +1838,9 @@ spongeBot.help = {
 			// since help text is built, just regurgitate it
 			utils.chSend(message, message.author + ', incoming DM spam!');
 			for (var cat in botStorage.fullHelp) {
-				utils.auSend(message, '\n**' + cat +'**\n' + botStorage.fullHelp[cat]);
+				if (cat !== 'Admin') {
+					utils.auSend(message, '\n**' + cat +'**\n' + botStorage.fullHelp[cat]);
+				}
 			}
 			utils.auSend(message, ' Type `!help <command>` for more info on a specific command.');
 			}
@@ -2074,6 +2044,7 @@ spongeBot.who = {
 }
 //-----------------------------------------------------------------------------
 spongeBot.arch = {
+	access: [],
 	cmdGroup: 'Admin',
 	do: function(message, args) {
 		if(message.author.id === cons.ARCH_ID) {
@@ -2089,7 +2060,7 @@ spongeBot.arch = {
 }
 //-----------------------------------------------------------------------------
 spongeBot.biglet = {
-	cmdGroup: 'Miscellanous',
+	cmdGroup: 'Miscellaneous',
 	do: function(message, txt) {
 		if (txt === '') {
 			utils.chSend(message, message.author + ', I have nothing to supersize.');
@@ -2676,15 +2647,10 @@ spongeBot.hangman = {
 	longHelp: 'TODO',
 }
 //-----------------------------------------------------------------------------
-
 spongeBot.memory = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
-		
-		// use one of the following three:
-		memory.do(message, args, gameStats, bankroll); // if you don't need stats or bankroll
-		// memory.do(message, parms, gameStats); // if you need stats but no banks
-		// memory.do(message, parms, gameStats, bankroll) // if you need banks
+		memory.do(message, args, gameStats, bankroll);
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
@@ -2902,7 +2868,7 @@ spongeBot.minesweeper = {
 BOT.on('ready', () => {
 	debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
 	BOT.user.setGame("!help");
-	if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
+	if (Math.random() < 0.02) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
 });
 //-----------------------------------------------------------------------------
 BOT.on('messageReactionAdd', (react, whoAdded) => {
@@ -2947,8 +2913,7 @@ BOT.on('message', message => {
 							spongeBot[theCmd].do(message, parms);
 						}
 					}
-				} else {
-					
+				} else {					
 					if (message.author.bot) {
 						debugPrint('Blocked a bot-to-bot !command.');
 					} else {
@@ -2966,12 +2931,6 @@ BOT.on('message', message => {
 		} else {
 			// not a valid command
 		}
-	} else {
-		/*
-		if(sponge[message.author.id]) {
-			utils.chSend(message, utils.makeTag(message.author.id) + ', what are you doing? You are a sponge, and sponges can\'t talk!');
-		}
-		*/
 	}
 });
 //=============================================================================
