@@ -80,7 +80,7 @@ module.exports = {
 		configure: {
 			do: function(message, args, gameStats, bankroll) {
 				if(!cattleManager.options) {
-					cattleManager.options = { minLength:1, maxLength:10 };
+					cattleManager.options = { minLength:4, maxLength:8 };
 				}
 				
 				var player = message.author.id;
@@ -278,11 +278,13 @@ module.exports = {
 				
 				//We automatically skip this if we don't have minLength defined
 				if(password.length < cattleManager.options.minLength) {
-					return { allow:false, reply: 'password must be longer than ' + cattleManager.options.minLength + ' characters long' };
+					utils.chSend(message, utils.makeTag(player) + ', your password must be at least ' + cattleManager.options.minLength + ' characters long');
+					return;
 				}
 				//We automatically skip this if we don't have maxLength defined
 				if(password.length > cattleManager.options.maxLength) {
-					return { allow:false, reply: 'password must be longer than ' + cattleManager.options.minLength + ' characters long' };
+					utils.chSend(message, utils.makeTag(player) + ', your password must be at most ' + cattleManager.options.minLength + ' characters long');
+					return;
 				}
 				
 				cattleManager.passwords[player] = password;
