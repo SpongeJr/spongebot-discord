@@ -119,7 +119,7 @@ module.exports = {
 					argument = argument.toLowerCase();
 					if(parameter === 'minLength'.toLowerCase()) {
 						argument = parseInt(argument);
-						if(argument === 0) {
+						if(argument <= 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `minLength` unlocked');
 							delete cattleManager.options.minLength;
 						} else if(argument > cattleManager.options.maxLength) {
@@ -130,7 +130,7 @@ module.exports = {
 						}
 					} else if(parameter === 'maxLength'.toLowerCase()) {
 						argument = parseInt(argument);
-						if(argument === 0) {
+						if(argument <= 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `maxLength` unlocked');
 							delete cattleManager.options.maxLength;
 						} else if(argument < cattleManager.options.minLength) {
@@ -141,7 +141,7 @@ module.exports = {
 						}
 					} else if(parameter === 'fixedLength'.toLowerCase()) {
 						argument = parseInt(argument);
-						if(argument === 0) {
+						if(argument <= 0) {
 							utils.chSend(message, utils.makeTag(player) + ', `minLength` and `maxLength` unlocked');
 							delete cattleManager.options.minLength;
 							delete cattleManager.options.maxLength;
