@@ -336,75 +336,6 @@ var msToTime = function(inp) {
     }
 };
 //-----------------------------------------------------------------------------
-var checkTimer = function(message, who, command) {
-	// who: (String) an id, or a tag (will be sent through utils.makeId() )
-	// command: String that !!!should be a valid command!!!
-	// checks to see if this user can use this command yet, and if not, returns false.
-	// If check succeeds (user can !command), returns true, and DOES NOT ALTER lastUsed 
-	// If user has never collected (id.lastUsed.command does not exist)
-	// then a new id.lastUsed.command will be created and set to 0, and check
-	// succeeds.
-		
-	var now = new Date();
-	var timedCmd = spongeBot[command].timedCmd;
-	var lastCol = utils.alterStat(utils.makeId(who), 'lastUsed', command, 0, gameStats);
-	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
-	now = now.valueOf();
-	
-	if (now > nextCol) {
-		debugPrint(' BEFORE: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
-		debugPrint('checkTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		debugPrint(' AFTER: last: ' + gameStats[who].lastUsed[command] + '  next: ' + gameStats[who].lastUsed[command]);
-		return true;
-	} else {
-		return false;
-	}
-}
-var collectTimer = function(message, who, command) {
-	// who: (String) an id, or a tag (will be sent through utils.makeId() )
-	// command: String that !!!should be a valid command!!!
-	// checks to see if this user can use this command yet, and if not...
-	//   it sends them either .failResponse from command.timedCmd or a default response
-	//   failResponse can include these substitutions:
-	//   <<next>> <<last>> <<nextDate>> <<lastDate>> <<cmd>> <<howOften>>
-	//  and returns false;
-	// If check succeeds (user can !command),
-	//   returns true, and sets the lastUsed to now
-	// If user has never collected (id.lastUsed.command does not exist)
-	// then a new id.lastUsed.command will be created and set to now, and check
-	// succeeds.
-		
-	var now = new Date();
-	var timedCmd = spongeBot[command].timedCmd;
-	var lastCol = utils.alterStat(utils.makeId(who), 'lastUsed', command, 0, gameStats);
-	// the alterStat call above saves to disk unnecessarily. improve later.
-	var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
-	now = now.valueOf();
-	
-	if (now > nextCol) {
-		debugPrint('collectTimer: lastCol: ' + lastCol + '   nextCol: ' + nextCol + '   now: ' + now);
-		utils.setStat(utils.makeId(who), 'lastUsed', command, now, gameStats);
-		return true;
-	} else {
-		var failStr;
-		if (!timedCmd.hasOwnProperty('failResponse')) {
-			failStr = 'Ya can\'t do that yet. ' + utils.makeTag(message.author.id);
-			utils.chSend(message, failStr);
-			return false;
-		} else {
-			failStr = timedCmd.failResponse
-			  .replace('<<next>>', msToTime(nextCol - now))
-			  .replace('<<last>>', msToTime(now - lastCol))
-			  .replace('<<nextDate>>', new Date(nextCol).toString())
-			  .replace('<<lastDate>>', new Date(lastCol).toString())
-			  .replace('<<howOften>>', msToTime(timedCmd.howOften - timedCmd.gracePeriod))
-			  .replace('<<cmd>>', command);
-			  
-			utils.chSend(message, failStr);
-			return false;
-		}
-	}
-}
 spongeBot.blank = {
 	do: function(message) {
 		message.react('410754653249339403');
@@ -496,7 +427,7 @@ spongeBot.collect = {
 		  'loot to appear in your `!collect`ion bag. Yours will be ready in <<next>>'},
 	do: function(message) {
 		var who = message.author.id;	
-		if (!collectTimer(message, who, 'collect', spongeBot.collect.timedCmd, gameStats)) {
+		if (!utils.collectTimer(message, who, 'collect', spongeBot.collect.timedCmd, gameStats)) {
 			// not time yet. since we used collectTimer();, the rejection message
 			// is automatic, and we can just return; here if we want
 			return;
@@ -553,7 +484,7 @@ spongeBot.tree = {
 		harvest: {
 			do: function(message) {
 				var who = message.author.id;	
-				if (!collectTimer(message, who, 'tree')) {
+				if (!utils.collectTimer(message, who, 'tree-harvest', spongeBot.tree.timedCmd, gameStats)) {
 					// not time yet. since we used collectTimer();, the rejection message
 					// is automatic, and we can just return; here if we want
 					return;
@@ -810,7 +741,7 @@ spongeBot.loot = {
 				} else if (args[1] === 'the' && args[2] === 'pod' && args[3] === 'bay' && args[4] === 'doors') {
 					utils.chSend(message, 'I\'m sorry, ' + message.author + '. I\'m afraid I can\'t do that');
 					return;
-}               
+				}               
                 var found = false;
                 for (var box in loot.boxes) {
                     if (boxName === box) {
@@ -824,7 +755,7 @@ spongeBot.loot = {
 						
                         if (bankroll[who].credits >= price) {
 							
-							if (!collectTimer(message, message.author.id, 'loot')) {
+							if (!utils.collectTimer(message, message.author.id, 'loot', spongebot.loot.timedCmd, gameStats)) {
 								return false; // can't unbox yet!
 							}	
 							
@@ -1562,7 +1493,8 @@ spongeBot.bank = {
 			  
 		} else {
 			utils.chSend(message, utils.makeTag(who) + ' has ' + bankroll[who].credits + ' credits.');
-			utils.chSend(message, utils.makeTag(who) + ' has ' + utils.getStat(who, 'raffle', 'ticketCount', gameStats) + ' :tickets: s.');	
+			utils.chSend(message, utils.makeTag(who) +
+			' has ' + (utils.getStat(who, 'raffle', 'ticketCount', gameStats) || 'no ') + ' :tickets: s.');
 		}
 	},
 	help: '`!bank <user>` reveals how many credits <user> has. With no <user>, ' +
@@ -1692,16 +1624,23 @@ spongeBot.getstat = {
 	do: function(message, parms) {
 		
 		parms = parms.split(' ');
-		who = parms[0];
-		game = parms[1];
-		stat = parms[2];
-		
-		if (typeof parms[0] === 'undefined') {
-			utils.chSend(mesage, '!getstat: No user specified');
-			return
+		if (!parms[0]) {
+			console.log(parms[0]);
+			utils.chSend(message, '!getstat: No user specified');
+			return;
 		}
 		
-		var results = utils.setStat(who, game, stat);
+		var who = utils.makeId(parms[0]);
+		var game = parms[1];
+		var stat = parms[2];
+		
+		if (typeof gameStats[who] === 'undefined') {
+			console.log(who);
+			utils.chSend(message, '!getstat: No such user in stats database');
+			return;
+		}
+		
+		var results = utils.getStat(who, game, stat, gameStats);
 		
 		if (typeof results === 'object') {
 			utils.chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat +
@@ -1710,7 +1649,9 @@ spongeBot.getstat = {
 			utils.chSend(message, 'USER: ' + who + '   GAME: ' + game +  ' STAT: ' + stat + ' is:\n' + results);
 		}
 	},
-	help: 'gets a stat'
+	help: 'Returns the literal value of a stat or all stats of one game for a user',
+	longHelp: 'Use !getstat <user> <game> [stat] to return the literal value of a stat object ' +
+	  ' or game stat object. Limited access.'
 };
 spongeBot.setstat = {
 	cmdGroup: 'Admin',
@@ -2493,7 +2434,7 @@ spongeBot.sponge = {
 	do: function(message, args) {
 		var author = message.author.id;
 		var found = false;
-		if (!collectTimer(message, author, 'sponge', spongeBot.sponge.timedCmd, gameStats)) {
+		if (!utils.collectTimer(message, author, 'sponge', spongeBot.sponge.timedCmd, gameStats)) {
 			return false; // can't use it yet!
 		}		
 		
