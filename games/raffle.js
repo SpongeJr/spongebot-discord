@@ -9,6 +9,43 @@ module.exports = {
 	startNum: 1000,
 	v: {},
 	subCmd: {
+		ticket: {
+			do: function(message, parms, gameStats) {
+				// replace with access check someday
+				if (message.author.id === cons.SPONGE_ID) {
+					
+					if (!parms) {
+						utils.chSend(message, 'You forgot the target to for !ticket.');
+						return;
+					}
+					
+					parms = parms.split(' ');
+					var who = utils.makeId(parms[0]);
+
+					var amt;
+					if (message.mentions.users.has(who)) {
+						// there's an @ mention, and it matches the id sent up
+						// so we can pass a user up to alterStat for nick nicking
+						who = message.mentions.users.find('id', who);
+					}
+					
+					//var who = utils.makeId(parms[0]);
+					var str;
+					
+					if (parms[1] === '' || typeof parms[1] === 'undefined') {
+						amt = 1;
+					} else {
+						var amt = parseInt(parms[1]);	
+					}
+					
+					str = who + ' now has ';
+					str += utils.alterStat(who, 'raffle', 'ticketCount', amt, gameStats);
+					str += ' raffle tickets.';
+					
+					utils.chSend(message, str);
+				}
+			}
+		},
 		tix: {
 			do: function(message) {
 				utils.chSend(message, 'Too lazy to spell "tickets" out, or what?');
