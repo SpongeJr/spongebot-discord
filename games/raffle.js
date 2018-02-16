@@ -3,11 +3,110 @@
 
 var utils = require('../lib/utils.js');
 var cons = require('../lib/constants.js');
-
+var giveaways = require('../../data/giveaways.json');
 
 module.exports = {
 	startNum: 1000,
 	v: {},
+	giveaways: {
+		do: function(message, parms) {
+			if (!parms) {
+				utils.chSend(message, ' **OFFICIAL GIVEAWAY NOTICE** The next giveaway will be on: ' +
+				  ' Friday Feb. 16 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +
+				  ' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
+				  ' There will be one winner who can pick any one item from `!giveaways list`, and several ' +
+				  ' smaller prizes (probably credits and tickets for the next raffle).');
+				utils.chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
+				  ' Items listed there will be options  you can pick if you win a weekly raffle. ' +
+				  ' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
+				  ' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
+				  ' :tickets: as you can get your hands on, to have the best chances! Type !stats to see how many you have.' +
+				  '\n\n Also see `!help giveaways` for new options like `!giveaways addrole` and `!giveaways categories`.');
+				return;
+			}
+			
+			parms = parms.split(' ');
+			
+			if (parms[0] === 'suggest') {
+				utils.chSend(message, ' Talk to @sponge to suggest something for !giveaways.');
+				return;
+			}
+			
+			if (parms[0] === 'list') {
+				
+				parms.shift();
+				parms = parms.join(' ');
+				
+				var str = 'Use `!giveaways info <item>` for more info.\n';
+				var count = 0;
+				for (var item in giveaways) {
+					if ((giveaways[item].hasOwnProperty('type') && giveaways[item].type === parms) || parms === '') {
+						if ((giveaways[item].hasOwnProperty('disabled') && giveaways[item].disabled !== "true") || (!giveaways[item].hasOwnProperty('disabled'))) {
+							str += '`' + item + '`   ';
+							count++;
+						}
+					}
+				}
+				str += '\n';
+				
+				count = count || 'No';
+				str += count + ' item(s) found';
+				if (parms !== '') {
+					str += ' for category: **' + parms + ' **';
+				}
+				str += '\nList subject to change.';
+				utils.chSend(message, str);
+			}
+			
+			if (parms[0] === 'info') {
+				parms.shift();
+				parms = parms.join(' ');
+				if (giveaways.hasOwnProperty(parms)) {
+					var str = '`' + parms + '`: ';
+					str += giveaways[parms].info.description + '\n';
+					str += ' **Category**: ' + (giveaways[parms].type || '(none)');
+					str += '   **More info**: ' + giveaways[parms].info.infoUrl;
+					utils.chSend(message, str);
+				} else {
+					utils.chSend(message, 'Couldn\'t find any info for that giveaway, ' + message.author +
+					  '. Make sure you type (or copy/paste) the _exact_ title. Use `!giveaways list` for a list.');
+				}
+			} else if (parms[0] === 'addrole') {
+				
+				if (message.channel.type === 'dm') {
+					utils.chSend(message, 'Sorry, ' + message.author + ', you need to do this on the server, ' +
+					'and not in DM, because I don\'t know where to give you the giveaways role otherwise!');
+					return;
+				}
+
+				var role = message.guild.roles.find('name', 'giveaways');
+				if (message.member.roles.has(role.id)) {
+					utils.debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
+					utils.chSend(message, message.author + ' I think you already had that role.');
+				} else {
+					message.member.addRole(role);
+					utils.chSend(message, message.author + ', I\'ve given you the `giveaways` role. ' + 
+					' You might be pinged at any time of day for giveaways, raffles, and related announcements and info.' +
+					'\n If something went wrong, you don\'t have the role, or you didn\'t really want it, please ping ' +
+					' <@167711491078750208> to sort it out. And... good luck in the giveaways!');
+					utils.chSend(message, message.author + ', I\'m also giving you a free :tickets: with your new role! You now have ' +
+					  utils.alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats) + ' raffle tickets!');
+				}
+			} else if (parms[0] === 'categories') {
+				var cats = {};
+				var theStr = ' Raffle item categories: ';
+				for (var item in giveaways) {
+					if (giveaways[item].hasOwnProperty('type')) {
+						cats[giveaways[item].type] = true;
+					}
+				}
+				for (var cat in cats) {
+					theStr += '`' + cat + '` ';
+				}
+				utils.chSend(message, theStr);
+			}
+		}
+	},
 	subCmd: {
 		ticket: {
 			do: function(message, parms, gameStats) {
@@ -99,11 +198,11 @@ module.exports = {
 				for (var who in gameStats) {
 					if (gameStats[who].hasOwnProperty('raffle')) {
 						if (!gameStats[who].raffle.hasOwnProperty('ticketCount')) {
-							debugPrint('!raffle: ' + who + ' has .raffle but no .ticketCount');
+							utils.debugPrint('!raffle: ' + who + ' has .raffle but no .ticketCount');
 						} else {
 							var tCount = parseInt(gameStats[who].raffle.ticketCount);
 							if (isNaN(tCount)) {
-								debugPrint('WARNING: ' + who + '.raffle.ticketCount was NaN: ' + tCount);
+								utils.debugPrint('WARNING: ' + who + '.raffle.ticketCount was NaN: ' + tCount);
 							} else if (tCount >= 1) {
 								// only count users that have at least 1 ticket
 								numUsers++;
