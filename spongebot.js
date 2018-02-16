@@ -149,7 +149,7 @@ var tree = {
 var scram = {};
 var scramWordLists = {
 	"278588293321326594": cons.ESO_SCRAMWORDS,
-	"402126095056633859": cons.SCRAMWORDS
+	"402126095056633859": cons.PLANET_SCRAMWORDS
 };
 // these should be on the scram global object, but will need a refactor. tempoary spot is here in scramConfig
 // note: make sure wordDelay - wordDelayVariation > guessTime to prevent overlap!
@@ -1096,14 +1096,24 @@ spongeBot.s = {
 		}
 		
 		if (parms === scram[server.id].word) {
+			var who = message.author.id;
 			scram[server.id].runState = 'gameover';
 			utils.addBank(message.author.id, parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length), bankroll);
-			utils.chSend(message, message.author + ' just unscrambled ' +
-			  ' the word and wins ' + parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!');
-			utils.alterStat(message.author.id, 'scram', 'wins', 1, gameStats);
+			var outStr = message.author + ' just unscrambled the word in ';
+			var now = new Date();
+			var speed = now - scram[server.id].guessStartTime;
+			var fastest = utils.getStat(who, 'scram', 'fastest', gameStats) || 0;
+			outStr += (speed / 1000).toFixed(1) + ' seconds and wins ';
+			outStr += parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!'
+			if (fastest <= 0 || speed < fastest) {
+				outStr += '\n :zap: That\'s a new fastest time for them! :zap:';
+				utils.setStat(who, 'scram', 'fastest', speed, gameStats);
+			}
 			
-			utils.chSend(message, message.author + ' has now unscrambled ' +
-			  gameStats[message.author.id].scram.wins + ' words!');
+			utils.alterStat(message.author.id, 'scram', 'wins', 1, gameStats);
+			outStr += '\n' + message.author + ' has now unscrambled ' +
+			  gameStats[message.author.id].scram.wins + ' words!';
+			utils.chSend(message,  outStr);
 		} else {
 			//utils.chSend(message, 'Not the word.');
 		}
@@ -1144,7 +1154,7 @@ spongeBot.scram = {
 		
 		if (scram[server.id].runState === 'ready') {
 		
-			// does this server have a custome word list? use if so
+			// does this server have a custom word list? use if so
 			if (scramWordLists.hasOwnProperty(server.id)) {
 				wordList = scramWordLists[server.id];
 			} else {
@@ -1155,25 +1165,27 @@ spongeBot.scram = {
 			var theCat = keys[parseInt(Math.random() * keys.length)];
 			var catWords = wordList[theCat].split(',');
 			var theWord = utils.listPick(catWords)[0];
+			scram[server.id].word = theWord;
 			
-			scram[server.id].word = theWord;		
+			// find all the blanks and put their positions into an array
+			// do the scramble
+			// remove all the blanks again, and splice back into places
+			var spaceArr = [];
+			for (var i = 0; i < theWord.length; i++) {
+				if (theWord.charAt(i) === ' ') {spaceArr.push(i);}
+			}
 			var scramWord = scrambler(theWord);
-			debugPrint('!scram (on ' + server.id + '): Category "' + theCat + '" has ' + catWords.length + ' words');
-			/*
-			utils.chSend(message, 'Unscramble this: ' + utils.bigLet(scramWord) + 
-			  '   *Category*: ' + theCat);
-			*/
-			  
+			scramWord = scramWord.replace(/ /g, '');
+			spaceArr.forEach(function(spaceInd) {
+				scramWord = scramWord.slice(0, spaceInd) + ' ' + scramWord.slice(spaceInd);
+			});		  
 			utils.chSend(message, 'Unscramble this: ' + utils.bigLet(scramWord) + 
 			  '   *Category*: ' + theCat);
 			  
 			var theDelay = parseInt(scramConfig.wordDelay - (scramConfig.wordDelayVariation / 2) +
 			  Math.random() * scramConfig.wordDelayVariation);
 			var guessTime = scramConfig.guessTime + scramConfig.extraGuessTime * theWord.length;
-			  
-			var theMess = ''			
-			 
-			theMess += 'You have ' + parseInt(guessTime / 1000) + 
+			var theMess = 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
 			  parseInt(theDelay / 1000) + ' seconds.'
 			utils.chSend(message, theMess);
@@ -1187,7 +1199,7 @@ spongeBot.scram = {
 					}
 				}
 			}, theDelay);
-			
+			scram[server.id].guessStartTime = new Date();
 			scram[server.id].guessTimer = setTimeout(function() {
 				if (scram[server.id].runState === 'guessing') {
 					utils.chSend(message, 'The `!scram` word was not guessed' +
@@ -2888,7 +2900,6 @@ spongeBot.minesweeper = {
 }
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
-	iFic.buildDungeon(); // build SpongeMUD dungeon
 	debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
 	BOT.user.setGame("!help");
 	if (Math.random() < 0.1) {BOT.channels.get(cons.SPAMCHAN_ID).send('I live!');}
