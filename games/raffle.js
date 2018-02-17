@@ -6,10 +6,10 @@ var cons = require('../lib/constants.js');
 var giveaways = require('../../data/giveaways.json');
 
 module.exports = {
-	startNum: 1000,
+	startNum: 1,
 	v: {},
 	giveaways: {
-		do: function(message, parms) {
+		do: function(message, parms, gameStats) {
 			if (!parms) {
 				utils.chSend(message, ' **OFFICIAL GIVEAWAY NOTICE** The next giveaway will be on: ' +
 				  ' Friday Feb. 16 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +

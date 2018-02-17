@@ -11,6 +11,12 @@ var v = {
 	undoIndex: 0,
 }
 
+const postureStr = {
+	'standing': 'is standing',
+	'sitting': 'is sitting',
+	'resting': 'is resting',
+	'asleep': 'is sleeping'
+}
 const isPlayer = function(who) {
 	return typeof players[who] !== 'undefined';
 };
@@ -18,6 +24,52 @@ var defaultLook = function(item) {
 	outP = '';
 	outP += item.description;
 	return outP;
+};
+var eMaster = function(eventName, where, sender, data, client) {
+	
+	if (eMaster.listens[eventName]) {
+		// legit event type, so...
+		
+		if (eventName === 'roomSay') {
+			if (!eMaster.listens.roomSay[where]) {
+				// no listeners in this room.
+				return;
+			}
+			
+			for (var lisNum = 0; lisNum < eMaster.listens.roomSay[where].length; lisNum++) {
+				console.log(' Calling back listener #' + lisNum);
+				eMaster.listens.roomSay[where][lisNum].callback(sender, data, client);
+			}
+		}
+	}
+}
+eMaster.listens = {
+	'roomSay': {},
+	'roomDrop': {},
+	'roomEnter': {},
+	'roomExit': {},
+	'areaSay': [],
+};
+
+var defaultRoomEventHandler = function(eventName, callback) {
+	// 'roomSay', function() { chSend(message, 'ohai!') }
+	
+	// register "this" object for roomSay events
+	//eMaster("add", "roomSay", callback)
+	
+	// go tell eMaster that callback() is who to trigger
+	// whenever a 'roomSay' event happens
+
+	roomId = this.data.id;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		eMaster.listens[eventName][roomId] = [];
+	}
+	
+	eMaster.listens[eventName][roomId].push({
+		"callback": callback
+	});
+
 }
 var defaultDescribe = function(id) {
 	// builds a standard "room description string" and returns it
@@ -48,12 +100,15 @@ var defaultDescribe = function(id) {
 	var playersHereStr = '';
 	for (var player in players) {
 		if (players[player].location === id) {
-			playersHereStr += '`' + players[player].charName + '` ';
+			//playersHereStr += '`' + players[player].charName + '` ';
+			playersHereStr += '\n**' + players[player].charName +
+			  '** ' + (postureStr[players[player].posture] || 'is') + ' here.';
 			numHere++;
 		}
 	}
 	if (numHere > 0) {
-		outStr += '\n\nWho is here: ' + playersHereStr;
+		// outStr += '\n\nWho is here: ' + playersHereStr;
+		outStr += playersHereStr;
 	}
 	return outStr;
 };
@@ -113,6 +168,7 @@ var Player = function(data) {
 		"speed": 120,
 		"status": "normal"
 	}
+	this.posture = data.posture || "standing";
 }
 var Room = function(data) {
 	// data is an object. any necessary properties not given
@@ -133,6 +189,45 @@ var Room = function(data) {
 };
 Room.prototype.describe = defaultDescribe;
 Room.prototype.shortDesc = defaultShortDesc;
+Room.prototype.on = defaultRoomEventHandler;
+
+//------- hardcoded test room ---------
+var talkingRoom = new Room({title: "A talking room?!", id: "talking room"});
+talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
+	
+	// find out who all is in the room
+	var pLoc = players[who].location;
+	var dmList = []; // list of ids
+	
+	for (var player in players) {
+		if (players[player].location === pLoc) {
+			console.log(player + ' was in the room with ' + who);
+			if (players[player].server === players[who].server) {
+				console.log(player + ' was also on same server ');
+				dmList.push(player);
+			} else {
+				console.log('Not same server though. ' + 
+				  players[who].server + ' !== ' + players[player].server);
+			}
+		}
+	}
+	console.log(' Found ' + dmList.length + ' players to DM.');
+	
+	// DM all those that should know
+	for (var i = 0; i < dmList.length; i++) {
+		//var user = message.guild.members.get(dmList[i]);
+		var server = client.guilds.get(players[who].server);
+		var user = server.members.get(dmList[i]);
+		
+		if (whatSaid === 'shazam') {
+			user.send('[SpongeMUD] ' + players[whoSaid].charName + ' has uttered ' +
+			  'the secret password. The ground beneath you begins to shake. . .');
+		} else {
+			user.send('[SpongeMUD] **A voice from nowhere** says, ' +
+			  'That is very interesting, ' + players[whoSaid].charName + '!"');
+		}
+	}
+});
 
 var buildDungeon = function() {
 	for (var room in rooms) {
@@ -140,83 +235,21 @@ var buildDungeon = function() {
 		rooms[room] = theRoom;
 	}
 	ut.debugPrint('SpongeMUD dungeon built.');
+	
+	//----- temporary hardcoded exit to test room -----
+	rooms["talking room"].on = talkingRoom.on;
+	rooms["outside poriferan oasis"].data.exits.special = {
+		goesto: "talking room",
+		description: "a special exit"
+	}
+	ut.debugPrint('...added special room.');
+	
 }
 module.exports = {
-	buildDungeon: buildDungeon,
-	z: {
-		do: function(message, parms) {
-			v.undoIndex = v.story.length;
-			v.story += parms + ' ';
-			
-			if (!parms) {
-				ut.chSend(message, message.author + ', you added nothing.');
-			}
-			
-			if (v.story !== '') {
-				ut.chSend(message, '```' + v.story + '```');
-			} else {
-				ut.chSend(message, ':pencil2: start a new story with `!z` :pen_fountain:');
-			}
-		},
-	},
-	zundo: {
-		do: function(message, parms) {
-			v.story = v.story.slice(0, v.undoIndex);
-			v.undoIndex = v.story.length;
-			if (v.story !== '') {
-				ut.chSend(message, ':pencil: ```' + v.story + '```');
-			} else {
-				ut.chSend(message, ':pencil2: start a new story with `!z` :pen_fountain:');
-			}
-		}
-	},
-	zclear: {
-		do: function(message, parms) {
-			v.story = '';
-			ut.chSend(message, '`Story cleared.`');
-		}
-	},
-	zshow: {
-		do: function(message, parms) {
-			
-			if (v.story !== '') {
-				ut.chSend(message, '```' + v.story + '```');
-			} else {
-				ut.chSend(message, ':pencil2: start a new story with !z :pen_fountain:');	
-			}
-		}
-	},
-	zsave: {
-		do: function(message, parms, gameStats) {
-			ut.setStat(message.author.id, 'profile', 'story', v.story, gameStats);
-			ut.chSend(message, 'I saved the current story to your profile' +
-			  message.author + '! You can check it out with `!stats` for now.');
-		}
-	},
-	zload: {
-		do: function(message, parms, gameStats) {
-			var loadedStory = ut.getStat(message.author.id, 'profile', 'story', gameStats);
-			if (!loadedStory) {
-				ut.chSend(message, 'I see no story on your profile, so I\'ll keep the ' +
-				'current story as it is, ' + message.author + '.');
-			} else {
-				v.story = loadedStory;
-				ut.chSend(message, 'I\'ve loaded the story on your profile, ' + message.author);
-			}
-		}
-	},
-	zchars: {
-		do: function(message, parms) {
-			var ch = v.story.length;
-			if (!ch) {
-				ut.chSend(message, 'There is no story to speak of.\n' +
-				  'You can start one with `!z`.');
-			} else {
-				ut.chSend(message, '`Current story: ' + ch + ' characters.`');
-			}
-		}
-	},
 	
+	//     ALL THE ANNOYING Z-COMMANDS GO HERE
+	
+	buildDungeon: buildDungeon,
 	terse: {
 		do: function(message) {
 			var who = message.author.id;
@@ -228,7 +261,7 @@ module.exports = {
 	peek: {
 		do: function(message, parms) {
 			if (rooms.hasOwnProperty(parms)) {
-				ut.chSend(message, rooms[parms].describe(parms));
+				ut.longChSend(message, rooms[parms].describe(parms));
 			} else {
 				ut.chSend(message, 'You want to see ' + parms + ', eh?' +
 				  ' I don\'t really know that place.');
@@ -244,7 +277,7 @@ module.exports = {
 			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			} 
+			}
 			var pLoc = players[who].location;	
 			if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
 				if (!rooms[pLoc].data.exits[where].goesto) {
@@ -359,6 +392,9 @@ module.exports = {
 	},
 	say: {
 		do: function(message, parms, client) {
+			
+			var whatSaid = parms;
+			
 			who = message.author.id;
 			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
@@ -387,12 +423,26 @@ module.exports = {
 			}
 			console.log(' Found ' + dmList.length + ' players to DM.');
 			
+			// DM all those that should know
 			for (var i = 0; i < dmList.length; i++) {
 				//var user = message.guild.members.get(dmList[i]);
 				var server = client.guilds.get(players[who].server);
 				var user = server.members.get(dmList[i]);
-				user.send('[SpongeMUD] **' + players[who].charName + '** says, "' + parms + '"');
+				user.send('[SpongeMUD] **' + players[who].charName + 
+				  '** says, "' + whatSaid + '"');
 			}
+			
+			// Next, fire off some events -- notify eMaster
+			eMaster('roomSay', pLoc, who, whatSaid, client);
+			
+		}
+	},
+	listens: {
+		do: function(message) {
+			who = players[message.author.id];
+			ut.chSend(message, ' Dumping global events object to console.');
+			console.log(eMaster.listens);
+			ut.chSend(message, ' In this area (' + who.location + ') ');
 		}
 	},
 	look: {
@@ -406,7 +456,7 @@ module.exports = {
 			if (parms === 'dm') {
 				ut.auSend(message, rooms[pLoc].describe(pLoc));
 			} else {
-				ut.chSend(message, rooms[pLoc].describe(pLoc));
+				ut.longChSend(message, rooms[pLoc].describe(pLoc));
 			}
 		}
 	},
@@ -416,7 +466,7 @@ module.exports = {
 			if (!isPlayer(who)) {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
-			} 
+			}
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
@@ -538,7 +588,7 @@ module.exports = {
 				// exit exists for sure now, make sure a room exists IF they edited/created goesto
 				if (exProp.toLowerCase() === 'goesto') {
 					if (typeof rooms[val] === 'undefined') {
-						rooms[val] = new Room({"title": val});
+						rooms[val] = new Room({"title": val, "id": val});
 						ut.chSend(message, ' Since no room "' + val + '" existed, I made one. Make sure ' +
 						  'you do any necessary editing to it!');
 					}
@@ -568,7 +618,7 @@ module.exports = {
 				return;
 			}
 			
-			rooms[roomId] = new Room({"title": title});
+			rooms[roomId] = new Room({"title": title, "id": roomId});
 			ut.chSend(message, message.author + ', ' + roomId + ' created!');
 			ut.saveObj(rooms, cons.MUD.roomFile);
 		}
@@ -708,6 +758,38 @@ module.exports = {
 			} else {
 				ut.chSend(message, target + ' is not a valid room to teleport to.');
 			}
+		}
+	},
+	sit: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			var pl = players[who];
+			var outStr = '';
+			
+			if (pl.posture === 'sitting') {
+				pl.posture = 'standing'
+				outStr += 'You stand back up.';
+			} else {
+				pl.posture = 'sitting';
+				outStr += 'You sit down and make yourself comfortable.';
+			}
+			
+			ut.chSend(message, outStr);
+		}
+	},
+	stand: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			var pl = players[who];
+			var outStr = '';
+			
+			if (pl.posture === 'standing') {
+				outStr += 'You are alraedy standing up.';
+			} else {
+				pl.posture = 'standing';
+				outStr += 'You stand up.';
+			}	
+			ut.chSend(message, outStr);
 		}
 	}
 };

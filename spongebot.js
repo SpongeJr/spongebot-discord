@@ -375,37 +375,45 @@ spongeBot.quote = {
 };
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
+	disabled: true,
 	do: function(message, parms) {
 		iFic.z.do(message, parms);
 	}
 };
 spongeBot.zclear = {
+	disabled: true,
 	do: function(message, parms) {
 		iFic.zclear.do(message, parms);
 	}
 };
 spongeBot.zundo = {
+	disabled: true,
 	do: function(message, parms) {
 		iFic.zundo.do(message, parms);
 	}
 };
 spongeBot.zsave = {
+	disabled: true,
 	do: function(message, parms) {
 		iFic.zsave.do(message, parms, gameStats);
 	}
 };
 spongeBot.zchars = {
+	disabled: true,
 	do: function(message, parms) {
 		iFic.zchars.do(message, parms);
 	}
 };
 spongeBot.zload = {
+	disabled: true,
 	do: function(message, parms) {
 		iFic.zload.do(message, parms, gameStats);
 	}
 };
 spongeBot.zshow = {
+	disabled: true,
 	do: function(message, parms) {
+		disabled: true,
 		iFic.zshow.do(message, parms);
 	}
 };
@@ -1254,7 +1262,7 @@ spongeBot.ticket = {
 spongeBot.giveaways = {
 	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
-		raffle.giveaways.do(message, parms);
+		raffle.giveaways.do(message, parms, gameStats);
 	},
 	help: '`!giveaways` lists any currently running contests, giveaways, freebies, and other fun stuff.' +
 	  '\n`!giveaways list` shows all the current choices for raffle prizes.' +
