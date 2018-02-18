@@ -6,6 +6,14 @@ var dungeonBuilt = false;
 var noWiz = true;
 var terseTravel = false;
 
+var dreamStrings = {
+	'inv': 'You dream about the things you own...\n',
+	'go': 'You toss and turn in your sleep.\n',
+	'get': 'You dream of acquiring new things...\n',
+	'drop': 'Your hand twitches in your sleep.\n',
+	'say': 'You mumble incomprehensibly in your sleep.\n',
+}
+
 var v = {
 	story: 'Once upon a time...',
 	undoIndex: 0,
@@ -20,6 +28,18 @@ const postureStr = {
 const isPlayer = function(who) {
 	return typeof players[who] !== 'undefined';
 };
+
+const cantDo = function(who, action) {
+	if (!isPlayer(who)) {
+		return 'You need to `joinmud` first.';
+	}
+	if (players[who].posture === 'asleep') {
+		ut.debugPrint(action);
+		return (dreamStrings[action] || 'Visions of sugarplums dance through your head.') +
+		' (You are asleep. You need to `joinmud` to wake up first!)';
+	}
+};
+
 var defaultLook = function(item) {
 	outP = '';
 	outP += item.description;
@@ -29,48 +49,131 @@ var eMaster = function(eventName, where, sender, data, client) {
 	
 	if (eMaster.listens[eventName]) {
 		// legit event type, so...
-		
+		// (yeah, these are identical... refactor/fix soon)
 		if (eventName === 'roomSay') {
 			if (!eMaster.listens.roomSay[where]) {
 				// no listeners in this room.
+				ut.debugPrint('No listeners for a roomSay');
 				return;
 			}
-			
-			for (var lisNum = 0; lisNum < eMaster.listens.roomSay[where].length; lisNum++) {
-				console.log(' Calling back listener #' + lisNum);
-				eMaster.listens.roomSay[where][lisNum].callback(sender, data, client);
+			// hit up everyone listed for this event in this room...
+			for (var evId in eMaster.listens.roomSay[where]) {
+				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
+				eMaster.listens.roomSay[where][evId].callback(sender, data, client);
 			}
+
+		} else if (eventName === 'roomDrop') {
+			if (!eMaster.listens.roomDrop[where]) {
+				// no listeners in this room.
+				ut.debugPrint('No listeners for a roomDrop');
+				return;
+			}
+			for (var evId in eMaster.listens.roomDrop[where]) {
+				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
+				eMaster.listens.roomDrop[where][evId].callback(sender, data, client);
+			}
+		} else if (eventName === 'roomGet') {
+			if (!eMaster.listens.roomGet[where]) {
+				ut.debugPrint('No listeners for a roomGet');
+				return;
+			}
+			for (var evId in eMaster.listens.roomGet[where]) {
+				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
+				eMaster.listens.roomGet[where][evId].callback(sender, data, client);
+			}
+			
+		} else if (eventName === 'roomExit') {
+			if (!eMaster.listens.roomExit[where]) {
+				ut.debugPrint('No listeners for a roomEnter');
+				return;
+			}
+			for (var evId in eMaster.listens.roomExit[where]) {
+				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
+				eMaster.listens.roomExit[where][evId].callback(sender, data, client);
+			}
+			
+		} else if (eventName === 'roomEnter') {
+			if (!eMaster.listens.roomEnter[where]) {
+				ut.debugPrint('No listeners for a roomExit');
+				return;
+			}
+			for (var evId in eMaster.listens.roomEnter[where]) {
+				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
+				eMaster.listens.roomEnter[where][evId].callback(sender, data, client);
+			}			
 		}
 	}
 }
 eMaster.listens = {
 	'roomSay': {},
 	'roomDrop': {},
+	'roomGet': {},
 	'roomEnter': {},
 	'roomExit': {},
 	'areaSay': [],
 };
 
-var defaultRoomEventHandler = function(eventName, callback) {
-	// 'roomSay', function() { chSend(message, 'ohai!') }
-	
-	// register "this" object for roomSay events
-	//eMaster("add", "roomSay", callback)
-	
-	// go tell eMaster that callback() is who to trigger
-	// whenever a 'roomSay' event happens
+var defaultRoomEventKiller = function(eventName, id) {
 
 	roomId = this.data.id;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
-		eMaster.listens[eventName][roomId] = [];
+		ut.debugPrint('WARNING: Tried to kill a ' + eventName
+		  + ' in ' + roomId + ' that did not have those.');
+		return false;
 	}
 	
-	eMaster.listens[eventName][roomId].push({
-		"callback": callback
-	});
+	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
+		ut.debugPrint('WARNING: Tried to kill nonexistent ' + eventName +
+		'event with id ' + id + ' in ' + roomId);
+		return false;
+	}
+	delete(eMaster.listens[eventName][roomId][id]);
+};
+var defaultRoomEventHandler = function(eventName, callback, id) {
 
-}
+	roomId = this.data.id;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		eMaster.listens[eventName][roomId] = {};
+	}
+	
+	eMaster.listens[eventName][roomId][roomId] = {
+		"callback": callback
+	};
+};
+var defaultPlayerEventKiller = function(eventName, id) {
+	
+	pId = this.id;
+	roomId = this.location;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		ut.debugPrint('WARNING: Tried to kill a ' + eventName
+		  + ' in ' + roomId + ' that did not have those.');
+		return false;
+	}
+	
+	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
+		ut.debugPrint('WARNING: Tried to kill nonexistent ' + eventName +
+		'event with id ' + id + ' in ' + roomId);
+		return false;
+	}
+	delete(eMaster.listens[eventName][roomId][id]);
+};
+var defaultPlayerEventHandler = function(eventName, callback, id) {
+	
+	pId = this.id;
+	roomId = this.location;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		eMaster.listens[eventName][roomId] = {};
+	}
+	
+	eMaster.listens[eventName][roomId][pId] = {
+		"callback": callback
+	};
+};
+
 var defaultDescribe = function(id) {
 	// builds a standard "room description string" and returns it
 	var outStr = '-=-=-=-\n';
@@ -186,7 +289,8 @@ var Player = function(data) {
 		"speed": 120,
 		"status": "normal"
 	}
-	this.posture = data.posture || "standing";
+	this.posture = data.posture || "asleep";
+	this.id = data.id;
 }
 var Room = function(data) {
 	// data is an object. any necessary properties not given
@@ -208,7 +312,64 @@ var Room = function(data) {
 Room.prototype.describe = defaultDescribe;
 Room.prototype.shortDesc = defaultShortDesc;
 Room.prototype.on = defaultRoomEventHandler;
+Room.prototype.off = defaultRoomEventKiller;
 
+Player.prototype.on = defaultPlayerEventHandler;
+Player.prototype.off = defaultPlayerEventKiller;
+Player.prototype.registerForRoomEvents = function() {
+	var player = this;
+	this.on('roomSay', function(whoSaid, whatSaid, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		user.send('**' + whoStr + '**' +
+		  ' says, "' + whatSaid + '"');
+	}, this.id);
+	
+	this.on('roomGet', function(whoSaid, item, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		user.send('**' + whoStr + '**' + ' picked up ' + item + '.');
+	}, this.id);
+
+	this.on('roomDrop', function(whoSaid, item, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		user.send('**' + whoStr + '**' + ' dropped ' + item + '.');
+	}, this.id);
+	this.on('roomExit', function(whoSaid, newRoom, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		user.send('**' + whoStr + '**' + ' leaves towards ' + newRoom);
+	}, this.id);
+	this.on('roomEnter', function(whoSaid, lastRoom, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		user.send('**' + whoStr + '**' + ' arrives from ' + lastRoom);
+	}, this.id);
+};
+Player.prototype.unregisterForRoomEvents = function() {
+	var player = this;
+	this.off('roomSay', this.id);
+	this.off('roomDrop', this.id);
+	this.off('roomGet', this.id);
+	this.off('roomEnter', this.id);
+	this.off('roomExit', this.id);
+};
 //------- hardcoded test room ---------
 var talkingRoom = new Room({title: "A talking room?!", id: "talking room"});
 talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
@@ -219,17 +380,16 @@ talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 	
 	for (var player in players) {
 		if (players[player].location === pLoc) {
-			console.log(player + ' was in the room with ' + who);
+			ut.debugPrint(player + ' was in the room with ' + who);
 			if (players[player].server === players[who].server) {
-				console.log(player + ' was also on same server ');
+				ut.debugPrint(player + ' was also on same server ');
 				dmList.push(player);
 			} else {
-				console.log('Not same server though. ' + 
+				ut.debugPrint('Not same server though. ' + 
 				  players[who].server + ' !== ' + players[player].server);
 			}
 		}
 	}
-	console.log(' Found ' + dmList.length + ' players to DM.');
 	
 	// DM all those that should know
 	for (var i = 0; i < dmList.length; i++) {
@@ -245,14 +405,19 @@ talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 			  'That is very interesting, ' + players[whoSaid].charName + '!"');
 		}
 	}
-});
+}, this.id);
 
 var buildDungeon = function() {
+	// iterates over the players object, reads all the .data
+	// and puts it back using the Room constructor, so that
+	// the rooms are all Room objects, with the appropriate
+	// methods, etc.
+	
 	for (var room in rooms) {
 		var theRoom = new Room(rooms[room].data);
 		rooms[room] = theRoom;
 	}
-	ut.debugPrint('SpongeMUD dungeon built.');
+	console.log('Dungeon built.');
 	
 	//----- temporary hardcoded exit to test room -----
 	rooms["talking room"].on = talkingRoom.on;
@@ -260,14 +425,40 @@ var buildDungeon = function() {
 		goesto: "talking room",
 		description: "a special exit"
 	}
-	ut.debugPrint('...added special room.');
-	
 }
+
+var buildPlayers = function() {
+	// iterates over the players object, reads all the .data
+	// and puts it back using the Room constructor, so that
+	// the players are all Player objects, with the appropriate
+	// methods, etc.
+	for (var player in players) {
+		if (typeof players[player].id === 'undefined') {
+			players[player].id = player;
+		}
+		
+		// force everyone asleep for now
+		// they'll need to joinmud to "login" and see events
+		players[player].posture = 'asleep';
+		
+		var thePlayer = new Player(players[player]);
+		
+		// if they're missing the server property use The Planet for now
+		if (!thePlayer.server) {
+			thePlayer.server = cons.SERVER_ID;
+		}
+		
+		players[player] = thePlayer;
+	}
+	console.log('Players database built.');
+}
+
 module.exports = {
 	
 	//     ALL THE ANNOYING Z-COMMANDS GO HERE
 	
 	buildDungeon: buildDungeon,
+	buildPlayers: buildPlayers,
 	terse: {
 		do: function(message) {
 			var who = message.author.id;
@@ -292,51 +483,28 @@ module.exports = {
 			who = message.author.id;
 			parms = parms.split(' ');
 			where = parms[0];
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'go');
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
 			}
-			var pLoc = players[who].location;	
+			var player = players[who];
+			var pLoc = player.location;	
+			var chanStr = '';
 			if (typeof rooms[pLoc].data.exits[where] !== 'undefined') {
 				if (!rooms[pLoc].data.exits[where].goesto) {
 					ut.chSend(message, 'You tried to leave via ' + where + 
 					  ' but you were unable to get anywhere!');
 					return;
 				} else {
-					newLoc = rooms[pLoc].data.exits[where].goesto;
-					var chanStr = '';
-					
-					/*var chanStr = players[who].charName + ' moved to "' +
-					  newLoc + '" via exit: ' + where;
-					  */
-					  
-					// Figure out who to DM:
-					// find out who all is in the room and "logged in" to same server
-					var pLoc = players[who].location;
-					var dmList = []; // list of ids
-					for (var player in players) {
-						if (players[player].location === pLoc) {
-							//console.log(player + ' was in the room with ' + who);
-							if (players[player].server === players[who].server) {
-								//console.log(player + ' was also on same server ');
-								dmList.push(player);
-							} else {
-								/* console.log('Not same server though. ' + 
-								players[who].server + ' !== ' + players[player].server); */
-							}
-						}
-					}
-					console.log(' Found ' + dmList.length + ' players to DM.');
-					
-					for (var i = 0; i < dmList.length; i++) {
-						var server = client.guilds.get(players[who].server);
-						var user = server.members.get(dmList[i]);
-						// eventually, don't show ourselves in this list
-						// it's kind of useful right now though
-						user.send('[SpongeMUD] ' + players[who].charName + ' left via ' + where);
-					}					
-					players[who].location = newLoc; // now actually move them
-					ut.saveObj(players, cons.MUD.playerFile);
+					player.unregisterForRoomEvents(); // first, unregister for events in this room
+					newLoc = rooms[pLoc].data.exits[where].goesto; // find our target room
+					eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
+					var oldLoc = '' + pLoc; // hang onto old location
+					player.location = newLoc; // actually move us
+					player.registerForRoomEvents();// now register for room events in new room
+					eMaster('roomEnter', newLoc, who, oldLoc, client); // fire off roomEnter, notify everyone + us
+					ut.saveObj(players, cons.MUD.playerFile); // save to disk
 					if (players[who].terseTravel) {
 						chanStr += rooms[newLoc].shortDesc(newLoc);
 					} else {
@@ -344,8 +512,7 @@ module.exports = {
 					}
 				}
 			} else {
-				chanStr = players[who].charName + ' tried to leave via ' + where +
-				  ' but that\'s not an exit!';
+				chanStr = 'You tried to leave via ' + where + ' but that\'s not an exit!';
 			}
 			ut.chSend(message, chanStr);
 		}
@@ -354,13 +521,12 @@ module.exports = {
 		do: function(message, parms) {
 			var who = message.author.id;
 			var server = message.guild;
-			
+			var player = players[who];
 			// temporary! need to come up with something for this situation (DM joinmud)
 			if (!server) {
 				server = {"name": 'The Planet', "id": cons.SERVER_ID};
 			}
-			
-			
+
 			if (typeof players[who] === 'undefined') {
 				parms = parms.split(' ');
 				var charName = parms[0];
@@ -369,7 +535,8 @@ module.exports = {
 					  ' Your character name must be a single word between 3 and 15 chars.');
 					return;
 				}
-				players[who] = new Player({"charName": charName});
+				player = new Player({charName: charName, id: who, posture: "standing"});
+				//player = players[who];
 				ut.saveObj(players, cons.MUD.playerFile);
 				ut.chSend(message, ' Welcome to SpongeMUD, ' + charName +
 				  '! (' + message.author.id + '). Try `look` to get started.');
@@ -377,17 +544,22 @@ module.exports = {
 			} else {
 				ut.chSend(message, ' You\'re already a SpongeMUD player. Awesome!');
 			}
-			if (typeof players[who].server === 'undefined') {
+			if (typeof player.server === 'undefined') {
 				ut.chSend(message, ' You are now logged in via ' + server.name +
 				  ' (' + server.id + ')');
-				players[who].server = server.id;
+				player.server = server.id;
+				player.posture = 'standing';
 				ut.saveObj(players, cons.MUD.playerFile);
 			} else {
 				ut.chSend(message, ' You are now logged in via ' + server.name +
-				  ' (' + server.id + ') (last: ' + players[who].server + ')');
-				players[who].server = server.id;
+				  ' (' + server.id + ') (last: ' + player.server + ')');
+				player.server = server.id;
+				player.posture = 'standing';
 				ut.saveObj(players, cons.MUD.playerFile);
 			}
+			
+			player.registerForRoomEvents();
+			
 		}
 	},
 	exitmud: {
@@ -405,6 +577,8 @@ module.exports = {
 				ut.chSend(message, players[who].charName + ' is being logged out ' +
 				  ' from server id ' + players[who].server);
 				players[who].server = null;
+				players[who].unregisterForRoomEvents();
+				players[who].posture = 'asleep';
 			}
 		}
 	},
@@ -414,123 +588,101 @@ module.exports = {
 			var whatSaid = parms;
 			
 			who = message.author.id;
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'say');
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
 			}
-			if (!players[who].server) {
-				ut.chSend(message, players[who].charName + ' can\'t speak unless they' +
-				  ' first login to SpongeMUD via `joinmud`!');
-				return;
-			}
-			
-			// find out who all is in the room
 			var pLoc = players[who].location;
-			var dmList = []; // list of ids
-			for (var player in players) {
-				if (players[player].location === pLoc) {
-					console.log(player + ' was in the room with ' + who);
-					if (players[player].server === players[who].server) {
-						console.log(player + ' was also on same server ');
-						dmList.push(player);
-					} else {
-						console.log('Not same server though. ' + 
-						  players[who].server + ' !== ' + players[player].server);
-					}
-				}
-			}
-			console.log(' Found ' + dmList.length + ' players to DM.');
 			
-			// DM all those that should know
-			for (var i = 0; i < dmList.length; i++) {
-				//var user = message.guild.members.get(dmList[i]);
-				var server = client.guilds.get(players[who].server);
-				var user = server.members.get(dmList[i]);
-				user.send('[SpongeMUD] **' + players[who].charName + 
-				  '** says, "' + whatSaid + '"');
-			}
-			
-			// Next, fire off some events -- notify eMaster
+			// Fire off some events -- notify eMaster
 			eMaster('roomSay', pLoc, who, whatSaid, client);
-			
 		}
 	},
 	listens: {
 		do: function(message) {
 			who = players[message.author.id];
-			ut.chSend(message, ' Dumping global events object to console.');
-			console.log(eMaster.listens);
-			ut.chSend(message, ' In this area (' + who.location + ') ');
+			ut.chSend(message, ' Dumping global and local events object to console.');
+			ut.debugPrint(eMaster.listens);
+			ut.debugPrint(' roomSay In this area (' + who.location + '): ');
+			ut.debugPrint(eMaster.listens.roomSay[who.location]);
 		}
 	},
 	look: {
 		do: function(message, parms) {
 			who = message.author.id;
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'look');
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
-			} 
-			var pLoc = players[who].location;
-			if (parms === 'dm') {
-				ut.auSend(message, rooms[pLoc].describe(pLoc));
-			} else {
-				ut.longChSend(message, rooms[pLoc].describe(pLoc));
 			}
+
+			var player = players[who];
+			var pLoc = players[who].location;
+			
+			if (player.posture === 'asleep') {
+				ut.chSend(message, 'Visions of sugarplums dance through your head. ' +
+				'(You are asleep. You need to `!joinmud` to wake up and be able to see!');
+				return;
+			}
+			ut.longChSend(message, rooms[pLoc].describe(pLoc));
 		}
 	},
 	get: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			var who = message.author.id;
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'get');
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
 			}
+		
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
 			if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
-				ut.chSend(message, players[who].charName + ' picked up ' + target + '.');
 				var theItem = rooms[pl.location].data.items[target];
 				pl.inventory[target] = theItem;
 				delete rooms[pl.location].data.items[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
 				ut.saveObj(players, cons.MUD.playerFile);
+				eMaster('roomGet', pl.location, who, target, client);
 			} else {
-				ut.chSend(message, players[who].charName + ' tried to pick up ' + target +
-				  ' in "' + pl.location + '" but it\'s not there, silly!');
+				ut.chSend(message, 'I see no ' + target + ' here.');
 			}
 		}
 	},
 	drop: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			var who = message.author.id;
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'drop');
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
-			} 
+			}
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
 			if (typeof pl.inventory[target] !== 'undefined') {
-				ut.chSend(message, players[who].charName + ' dropped ' + target + '.');
 				var theItem = pl.inventory[target];
 				rooms[pl.location].data.items[target] = theItem;
 				delete pl.inventory[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
 				ut.saveObj(players, cons.MUD.playerFile);
+				eMaster('roomDrop', pl.location, who, target, client);
 			} else {
-				ut.chSend(message, players[who].charName + ' tried to drop ' + target +
-				  ' in "' + pl.location + '" but they aren\'t even carrying it!');
+				ut.chSend(message, 'You can\'t drop what you\'re not carrying.');
 			}
 		}
 	},
 	inv: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			if (!isPlayer(who)) {
-				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+			var fail = cantDo(who, 'inv'); 
+			if (fail) {
+				ut.chSend(message, fail);
 				return;
-			} 
+			}
 			var pl = players[who];
 			var outP = '';
 			if (pl.inventory === {}) {
@@ -724,12 +876,18 @@ module.exports = {
 	build: {
 		do: function(message, parms) {
 			buildDungeon();
+			buildPlayers();
 			ut.chSend(message, 'SpongeMUD v0.foo: Dungeon may have been built.');
 		}
 	},
 	exam: {
 		do: function(message, parms) {
 			var who = message.author.id;
+			var fail = cantDo(who, 'exam'); 
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
 			var pl = players[who];
 			var loc = players[who].location;
 			parms = parms.split(' ');
