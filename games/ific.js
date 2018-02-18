@@ -424,7 +424,7 @@ var buildPlayers = function() {
 		}
 	
 		var thePlayer = new Player(players[player]);
-		if (players[player].posture !== 'sleeping') {
+		if (players[player].posture !== 'asleep') {
 			thePlayer.registerForRoomEvents();
 		}
 		
