@@ -906,16 +906,32 @@ module.exports = {
 		}
 	},
 	tele: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			var who = message.author.id;
-			var pl = players[who];
+			var player = players[who];
 			var target = parms;
 			
+			var pLoc = player.location;
+			var chanStr = '';
 			if (typeof rooms[target] !== 'undefined') {
-				players[who].location = target;
 				ut.saveObj(players, cons.MUD.playerFile);
-				ut.chSend(message, message.author + ' teleported to ' + target + '!');
-				//ut.auSend(message, rooms[target].describe(target));
+				ut.chSend(message, ' You teleport!');
+				
+				player.unregisterForRoomEvents(); // first, unregister for events in this room
+				newLoc = target; // set our target room
+
+				eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
+				var oldLoc = '' + pLoc; // hang onto old location
+				player.location = newLoc; // actually move us
+				player.registerForRoomEvents();// now register for room events in new room
+				eMaster('roomEnter', newLoc, who, oldLoc, client); // fire off roomEnter, notify everyone + us
+				ut.saveObj(players, cons.MUD.playerFile); // save to disk
+				if (players[who].terseTravel) {
+					chanStr += rooms[newLoc].shortDesc(newLoc);
+				} else {
+					chanStr += rooms[newLoc].describe(newLoc);
+				}
+				
 			} else {
 				ut.chSend(message, target + ' is not a valid room to teleport to.');
 			}
