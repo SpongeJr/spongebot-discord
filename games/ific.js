@@ -313,34 +313,63 @@ module.exports = {
 					// Figure out who to DM:
 					// find out who all is in the room and "logged in" to same server
 					var pLoc = players[who].location;
-					var dmList = []; // list of ids
+					var watchers = []; // list of ids
 					for (var player in players) {
 						if (players[player].location === pLoc) {
 							//console.log(player + ' was in the room with ' + who);
 							if (players[player].server === players[who].server) {
 								//console.log(player + ' was also on same server ');
-								dmList.push(player);
+								
+								//Skip ourselves
+								if(player !== who) {
+									watchers.push(player);
+								}
 							} else {
 								/* console.log('Not same server though. ' + 
 								players[who].server + ' !== ' + players[player].server); */
 							}
 						}
 					}
-					console.log(' Found ' + dmList.length + ' players to DM.');
+					console.log(' Found ' + watchers.length + ' players to DM.');
 					
-					for (var i = 0; i < dmList.length; i++) {
+					for (var i = 0; i < watchers.length; i++) {
 						var server = client.guilds.get(players[who].server);
-						var user = server.members.get(dmList[i]);
-						// eventually, don't show ourselves in this list
-						// it's kind of useful right now though
-						user.send('[SpongeMUD] ' + players[who].charName + ' left via ' + where);
-					}					
+						var user = server.members.get(watchers[i]);
+						user.send('[SpongeMUD] ' + players[who].charName + ' left to ' + newLoc + ' via ' + where);
+					}
 					players[who].location = newLoc; // now actually move them
 					ut.saveObj(players, cons.MUD.playerFile);
+					chanStr += 'You left ' + pLoc + ' via ' + where + ' and arrived at ' + newLoc + '\n';
 					if (players[who].terseTravel) {
 						chanStr += rooms[newLoc].shortDesc(newLoc);
 					} else {
 						chanStr += rooms[newLoc].describe(newLoc);
+					}
+					
+					//Notify the players at the destination of arrival
+					watchers = []; // list of ids
+					for (var player in players) {
+						if (players[player].location === newLoc) {
+							//console.log(player + ' was in the room with ' + who);
+							if (players[player].server === players[who].server) {
+								//console.log(player + ' was also on same server ');
+								
+								//Skip ourselves
+								if(player !== who) {
+									watchers.push(player);
+								}
+							} else {
+								/* console.log('Not same server though. ' + 
+								players[who].server + ' !== ' + players[player].server); */
+							}
+						}
+					}
+					console.log(' Found ' + watchers.length + ' players to DM.');
+					
+					for (var i = 0; i < watchers.length; i++) {
+						var server = client.guilds.get(players[who].server);
+						var user = server.members.get(watchers[i]);
+						user.send('[SpongeMUD] ' + players[who].charName + ' arrived from ' + pLoc + ' via ' + where);
 					}
 				}
 			} else {
