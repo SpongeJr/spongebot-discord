@@ -499,7 +499,7 @@ module.exports = {
 			} else {
 				chanStr = 'You tried to leave via ' + where + ' but that\'s not an exit!';
 			}
-			ut.chSend(message, chanStr);
+			ut.longChSend(message, chanStr);
 		}
 	},
 	joinmud: {
@@ -521,7 +521,7 @@ module.exports = {
 					return;
 				}
 				player = new Player({charName: charName, id: who, posture: "standing"});
-				//player = players[who];
+				players[who] = player;
 				ut.saveObj(players, cons.MUD.playerFile);
 				ut.chSend(message, ' Welcome to SpongeMUD, ' + charName +
 				  '! (' + message.author.id + '). Try `look` to get started.');
