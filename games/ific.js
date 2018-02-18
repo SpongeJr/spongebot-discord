@@ -34,7 +34,6 @@ const cantDo = function(who, action) {
 		return 'You need to `joinmud` first.';
 	}
 	if (players[who].posture === 'asleep') {
-		ut.debugPrint(action);
 		return (dreamStrings[action] || 'Visions of sugarplums dance through your head.') +
 		' (You are asleep. You need to `joinmud` to wake up first!)';
 	}
@@ -53,52 +52,42 @@ var eMaster = function(eventName, where, sender, data, client) {
 		if (eventName === 'roomSay') {
 			if (!eMaster.listens.roomSay[where]) {
 				// no listeners in this room.
-				ut.debugPrint('No listeners for a roomSay');
 				return;
 			}
 			// hit up everyone listed for this event in this room...
 			for (var evId in eMaster.listens.roomSay[where]) {
-				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
 				eMaster.listens.roomSay[where][evId].callback(sender, data, client);
 			}
 
 		} else if (eventName === 'roomDrop') {
 			if (!eMaster.listens.roomDrop[where]) {
 				// no listeners in this room.
-				ut.debugPrint('No listeners for a roomDrop');
 				return;
 			}
 			for (var evId in eMaster.listens.roomDrop[where]) {
-				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
 				eMaster.listens.roomDrop[where][evId].callback(sender, data, client);
 			}
 		} else if (eventName === 'roomGet') {
 			if (!eMaster.listens.roomGet[where]) {
-				ut.debugPrint('No listeners for a roomGet');
 				return;
 			}
 			for (var evId in eMaster.listens.roomGet[where]) {
-				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
 				eMaster.listens.roomGet[where][evId].callback(sender, data, client);
 			}
 			
 		} else if (eventName === 'roomExit') {
 			if (!eMaster.listens.roomExit[where]) {
-				ut.debugPrint('No listeners for a roomEnter');
 				return;
 			}
 			for (var evId in eMaster.listens.roomExit[where]) {
-				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
 				eMaster.listens.roomExit[where][evId].callback(sender, data, client);
 			}
 			
 		} else if (eventName === 'roomEnter') {
 			if (!eMaster.listens.roomEnter[where]) {
-				ut.debugPrint('No listeners for a roomExit');
 				return;
 			}
 			for (var evId in eMaster.listens.roomEnter[where]) {
-				ut.debugPrint(eventName + ' for ' + evId + ' callback firing off...');
 				eMaster.listens.roomEnter[where][evId].callback(sender, data, client);
 			}			
 		}
@@ -118,13 +107,13 @@ var defaultRoomEventKiller = function(eventName, id) {
 	roomId = this.data.id;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
-		ut.debugPrint('WARNING: Tried to kill a ' + eventName
+		console.log('WARNING: Tried to kill a ' + eventName
 		  + ' in ' + roomId + ' that did not have those.');
 		return false;
 	}
 	
 	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
-		ut.debugPrint('WARNING: Tried to kill nonexistent ' + eventName +
+		console.log('WARNING: Tried to kill nonexistent ' + eventName +
 		'event with id ' + id + ' in ' + roomId);
 		return false;
 	}
@@ -148,13 +137,13 @@ var defaultPlayerEventKiller = function(eventName, id) {
 	roomId = this.location;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
-		ut.debugPrint('WARNING: Tried to kill a ' + eventName
+		console.log('WARNING: Tried to kill a ' + eventName
 		  + ' in ' + roomId + ' that did not have those.');
 		return false;
 	}
 	
 	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
-		ut.debugPrint('WARNING: Tried to kill nonexistent ' + eventName +
+		console.log('WARNING: Tried to kill nonexistent ' + eventName +
 		'event with id ' + id + ' in ' + roomId);
 		return false;
 	}
@@ -187,7 +176,7 @@ var defaultDescribe = function(id) {
 			outStr += '`' + exName + '`   ';
 		}
 	} else {
-		ut.debugPrint('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
+		console.log('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
 	}
 	
 	// Build items text
@@ -237,7 +226,7 @@ var defaultShortDesc = function(id) {
 			outStr += '`' + exName + '`   ';
 		}
 	} else {
-		ut.debugPrint('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
+		console.log('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
 	}
 	
 	// Build items text
@@ -380,13 +369,10 @@ talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 	
 	for (var player in players) {
 		if (players[player].location === pLoc) {
-			ut.debugPrint(player + ' was in the room with ' + who);
 			if (players[player].server === players[who].server) {
-				ut.debugPrint(player + ' was also on same server ');
 				dmList.push(player);
 			} else {
-				ut.debugPrint('Not same server though. ' + 
-				  players[who].server + ' !== ' + players[player].server);
+				// not same server
 			}
 		}
 	}
@@ -436,12 +422,11 @@ var buildPlayers = function() {
 		if (typeof players[player].id === 'undefined') {
 			players[player].id = player;
 		}
-		
-		// force everyone asleep for now
-		// they'll need to joinmud to "login" and see events
-		players[player].posture = 'asleep';
-		
+	
 		var thePlayer = new Player(players[player]);
+		if (players[player].posture !== 'sleeping') {
+			thePlayer.registerForRoomEvents();
+		}
 		
 		// if they're missing the server property use The Planet for now
 		if (!thePlayer.server) {
@@ -603,9 +588,9 @@ module.exports = {
 		do: function(message) {
 			who = players[message.author.id];
 			ut.chSend(message, ' Dumping global and local events object to console.');
-			ut.debugPrint(eMaster.listens);
-			ut.debugPrint(' roomSay In this area (' + who.location + '): ');
-			ut.debugPrint(eMaster.listens.roomSay[who.location]);
+			console.log(eMaster.listens);
+			console.log(' roomSay In this area (' + who.location + '): ');
+			console.log(eMaster.listens.roomSay[who.location]);
 		}
 	},
 	look: {
