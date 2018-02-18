@@ -89,9 +89,19 @@ var defaultDescribe = function(id) {
 	
 	// Build items text
 	if (rooms[id].data.hasOwnProperty('items')) {
-		outStr += '\n\nVisible items here: ';
+		
+		
+		var count = 0;
+		var itemStr = '';
 		for (var itemName in rooms[id].data.items) {
-			outStr += '`' + itemName + '`   ';
+			itemStr += '`' + itemName + '`   ';
+			count++;
+		}
+		
+		if (count === 0) {
+			outStr += '\n_No obvious items here_';
+		} else {
+			outStr += '\n_Obvious items here_: ' + itemStr;
 		}
 	}
 	
@@ -129,9 +139,17 @@ var defaultShortDesc = function(id) {
 	
 	// Build items text
 	if (rooms[id].data.hasOwnProperty('items')) {
-		outStr += '\nItems: ';
+		var count = 0;
+		var itemStr = '';
 		for (var itemName in rooms[id].data.items) {
-			outStr += '`' + itemName + '`   ';
+			itemStr += '`' + itemName + '`   ';
+			count++;
+		}
+		
+		if (count === 0) {
+			// add nothing to the output
+		} else {
+			outStr += '\nItems: ' + itemStr;
 		}
 	}
 	
