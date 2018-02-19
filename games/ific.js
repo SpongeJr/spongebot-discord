@@ -3,7 +3,7 @@ var cons = require('../lib/constants.js');
 var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
 var dungeonBuilt = false;
-var noWiz = true;
+var noWiz = false;
 var terseTravel = false;
 
 var dreamStrings = {
@@ -38,12 +38,18 @@ const cantDo = function(who, action) {
 		' (You are asleep. You need to `joinmud` to wake up first!)';
 	}
 };
-
 var defaultLook = function(item) {
-	outP = '';
+	var outP = '';
+	/*
+	if (!item.data.hidden) {
+		
+	}
+	*/
 	outP += item.description;
 	return outP;
 };
+var defaultGet = function() {};
+
 var eMaster = function(eventName, where, sender, data, client) {
 	
 	if (eMaster.listens[eventName]) {
@@ -182,12 +188,13 @@ var defaultDescribe = function(id) {
 	// Build items text
 	if (rooms[id].data.hasOwnProperty('items')) {
 		
-		
 		var count = 0;
 		var itemStr = '';
 		for (var itemName in rooms[id].data.items) {
-			itemStr += '`' + itemName + '`   ';
-			count++;
+			if (!rooms[id].data.items[itemName].data.hidden) {
+				itemStr += '`' + itemName + '`   ';
+				count++;
+			}
 		}
 		
 		if (count === 0) {
@@ -234,8 +241,10 @@ var defaultShortDesc = function(id) {
 		var count = 0;
 		var itemStr = '';
 		for (var itemName in rooms[id].data.items) {
-			itemStr += '`' + itemName + '`   ';
-			count++;
+			if (!rooms[id].data.items[itemName].data.hidden) {
+				itemStr += '`' + itemName + '`   ';
+				count++;
+			}
 		}
 		
 		if (count === 0) {
@@ -261,10 +270,21 @@ var defaultShortDesc = function(id) {
 }
 var Item = function(data) {
 	this.data = data || {};
-	this.data.description = data.description || "Some object you spotted.",
+	this.data.hidden = data.hidden || false;
+	this.data.description = data.description || "Some object you spotted.";
 	this.data.hidden = false
+	// thid.id = ???
 };
-Item.prototype.look = defaultLook(this);
+var SceneryItem = function(data) {
+	this.data = data || {};
+	this.data.description = data.description || "A part of the scenery.";
+	this.id = data.id;
+	this.data.hidden = true;
+};
+Item.prototype.look = defaultLook;
+Item.prototype.get = defaultGet;
+SceneryItem.prototype.look = defaultLook;
+
 var Player = function(data) {
 	this.location = data.location || "airport",
 	this.inventory = data.inventory || {
@@ -396,13 +416,26 @@ talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 }, this.id);
 
 var buildDungeon = function() {
-	// iterates over the players object, reads all the .data
+	// iterates over the rooms object, reads all the .data
 	// and puts it back using the Room constructor, so that
 	// the rooms are all Room objects, with the appropriate
 	// methods, etc.
 	
 	for (var room in rooms) {
 		var theRoom = new Room(rooms[room].data);
+		
+		// now, take all the items out, add their necessary methods and such,
+		// dust them off and put them back into the rooms
+		for (var item in theRoom.data.items) {
+			var theItem;
+			if (theRoom.data.items[item].data.hidden) {
+				// all the "hidden" items are the "scenery" items. for now.
+				theItem = new SceneryItem(theRoom.data.items[item].data);
+			} else {
+				theItem = new Item(theRoom.data.items[item].data);
+			}
+			theRoom.data.items[item] = theItem;
+		}
 		rooms[room] = theRoom;
 	}
 	console.log('Dungeon built.');
@@ -430,6 +463,19 @@ var buildPlayers = function() {
 			thePlayer.registerForRoomEvents();
 		}
 		
+		// now, take all the items out, add their necessary methods and such,
+		// dust them off and put them back into the rooms
+		for (var item in thePlayer.inventory) {
+			var theItem;
+			if (thePlayer.inventory[item].data.hidden) {
+				// all the "hidden" items are the "scenery" items. for now.
+				theItem = new SceneryItem(thePlayer.inventory[item].data);
+			} else {
+				theItem = new Item(thePlayer.inventory[item].data);
+			}
+			thePlayer.inventory[item] = theItem;
+		}
+		
 		// if they're missing the server property use The Planet for now
 		if (!thePlayer.server) {
 			thePlayer.server = cons.SERVER_ID;
@@ -438,12 +484,8 @@ var buildPlayers = function() {
 		players[player] = thePlayer;
 	}
 	console.log('Players database built.');
-}
-
+};
 module.exports = {
-	
-	//     ALL THE ANNOYING Z-COMMANDS GO HERE
-	
 	buildDungeon: buildDungeon,
 	buildPlayers: buildPlayers,
 	terse: {
@@ -621,14 +663,25 @@ module.exports = {
 			var fail = cantDo(who, 'get');
 			if (fail) {
 				ut.chSend(message, fail);
-				return;
+				return false;
 			}
 		
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
+			
+			
 			if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
+				// legit target, see if it has a .get() method, though
+				
 				var theItem = rooms[pl.location].data.items[target];
+				if (typeof theItem.get === 'undefined') {
+					ut.chSend(message, 'You can\'t pick **that** up!');
+					return false;
+				}
+				
+				// ok, we can let them pick it up
+				// later, this will probably call theItem.get()
 				pl.inventory[target] = theItem;
 				delete rooms[pl.location].data.items[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
@@ -656,7 +709,12 @@ module.exports = {
 				delete pl.inventory[target];
 				ut.saveObj(rooms, cons.MUD.roomFile);
 				ut.saveObj(players, cons.MUD.playerFile);
-				eMaster('roomDrop', pl.location, who, target, client);
+				
+				if (!theItem.data.hidden) {
+					// don't fire off event if item is hidden
+					eMaster('roomDrop', pl.location, who, target, client);	
+				}
+				
 			} else {
 				ut.chSend(message, 'You can\'t drop what you\'re not carrying.');
 			}
@@ -808,7 +866,7 @@ module.exports = {
 			parms.shift();
 			var itemDesc = parms.join(' ');
 			
-			var theItem = new Item({
+			var theItem = new SceneryItem({
 				"description": itemDesc
 			});
 			pl.inventory[itemName] = theItem;
@@ -916,12 +974,21 @@ module.exports = {
 			var outP = '';
 			var found = 0;
 			
+			// check inventory
 			if (typeof pl.inventory[target] !== 'undefined') {
 				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description + '\n';
 				found++;
 			}
+			
+			// check room
 			if (typeof rooms[loc].data.items[target] !== 'undefined') {
-				outP += '(here) `' + target + '`: ' + rooms[loc].data.items[target].data.description + '\n';
+				if (!rooms[loc].data.items[target].data.hidden) {
+					// not "hidden"
+					outP += '(here) `' + target + '`: ' + rooms[loc].data.items[target].data.description + '\n';
+				} else {
+					// is "hidden", only use .description by itself
+					outP += rooms[loc].data.items[target].data.description + '\n';
+				}
 				found++;
 			}
 			
