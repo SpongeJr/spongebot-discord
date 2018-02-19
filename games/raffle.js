@@ -12,7 +12,7 @@ module.exports = {
 		do: function(message, parms, gameStats) {
 			if (!parms) {
 				utils.chSend(message, ' **OFFICIAL GIVEAWAY NOTICE** The next giveaway will be on: ' +
-				  ' Friday Feb. 16 sometime between the hours of 0800 and 2200 EST. You do not have to be ' +
+				  ' Friday Feb. 23 sometime between the hours of 1200 and 2100 EST. You do not have to be ' +
 				  ' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
 				  ' There will be one winner who can pick any one item from `!giveaways list`, and several ' +
 				  ' smaller prizes (probably credits and tickets for the next raffle).');
