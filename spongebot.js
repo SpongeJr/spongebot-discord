@@ -22,7 +22,6 @@ const CONFIG = require('../config.json');
 const MYPALS = require('../mypals.json');
 const BOT = new Discord.Client();
 const SPONGEBOT_ID = 402122635552751616;
-const FS = require('fs');
 
 const FRUIT_VAL = 300; // temporary!
 
@@ -69,10 +68,10 @@ var Fruit = function(stats) {
 	this.stats = stats || {};
 	this.stats.ripeness = stats.ripeness || 0;
 	this.stats.name = stats.name || ':seedling: budding';
-	this.stats.valueMult = stats.valueMult || 0
+	this.stats.valueMult = stats.valueMult || 0;
 	this.stats.special = {},
-	this.stats.color = utils.listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled'])
-	  + ' ' + utils.listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
+	this.stats.color = utils.listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled']) +
+	  ' ' + utils.listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
 Fruit.prototype.pick = function(message) {
 	// returns some text about what happened
@@ -91,7 +90,7 @@ Fruit.prototype.pick = function(message) {
 	this.stats.valueMult = 0;
 	
 	return outP;
-},
+};
 Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
 	
@@ -102,10 +101,10 @@ Fruit.prototype.age = function() {
 		this.stats.valueMult = 0.8;
 		this.stats.name = ':eggplant: very ripe';
 	} else if (this.stats.ripeness > 0.8 && this.stats.ripeness <= 1.1) {
-		this.stats.name = ':eggplant: perfectly ripe'
+		this.stats.name = ':eggplant: perfectly ripe';
 		this.stats.valueMult = 1;
 	} else if (this.stats.ripeness > 0.4 && this.stats.ripeness <= 0.8) {
-		this.stats.name = ':pineapple: unripe'
+		this.stats.name = ':pineapple: unripe';
 		this.stats.valueMult = 0.1;
 	} else if (this.stats.ripeness <= 0.4) {
 		this.stats.name = ':herb: budding';
@@ -139,7 +138,7 @@ var tree = {
 			new Fruit({})
 		]
 	}
-}
+};
 var scram = {};
 var scramWordLists = {
 	"278588293321326594": cons.ESO_SCRAMWORDS,
@@ -156,7 +155,7 @@ var scramConfig = {
 	letterBounus: 100, 
 	guessTime: 29000,
 	extraGuessTime: 2500
-}
+};
 var botStorage = {};
 var bankroll = {};
 var gameStats = require('../data/gamestats.json');
@@ -285,10 +284,10 @@ var scrambler = function(inputWord) {
 //-----------------------------------------------------------------------------
 var sammichMaker = function() {
 
-	var ingredients = "banana,honey mustard,marmalade,flax seed,roast beef,potato chip,chocolate sauce,ketchup,relish,alfalfa,M&Ms,skittles,skittles (Tropical flavor),marshmallow,potato salad,egg salad,turnip,mango,spinach,kale,crushed doritos,pulled pork,porcupine,mango,artichoke,apple slice,pineapple,cabbage,rambutan,papaya,durian,bologna,kielbasa,peanut butter,canned fruit,vanilla bean,coffee bean,harvard beet,avocado,bacon,mashed potatoes,frozen peas,anchovy,lettuce,mushroom,guava,tomato,oatmeal,eggplant"
-ingredients = ingredients.split(",");
+	var ingredients = "banana,honey mustard,marmalade,flax seed,roast beef,potato chip,chocolate sauce,ketchup,relish,alfalfa,M&Ms,skittles,skittles (Tropical flavor),marshmallow,potato salad,egg salad,turnip,mango,spinach,kale,crushed doritos,pulled pork,porcupine,mango,artichoke,apple slice,pineapple,cabbage,rambutan,papaya,durian,bologna,kielbasa,peanut butter,canned fruit,vanilla bean,coffee bean,harvard beet,avocado,bacon,mashed potatoes,frozen peas,anchovy,lettuce,mushroom,guava,tomato,oatmeal,eggplant";
+	ingredients = ingredients.split(",");
 	var toppings = "bing cherries,whipped cream,chocolate syrup,mayonnaise,oregano,paprika,butter,cooking spray,marshmallow creme,green smoothie,salt and pepper,sea salt,MSG,melted cheese,pine needles,cough syrup,gravy,salsa,sauerkraut,sprinkles,turbinado sugar,maple syrup,apple butter,guacamole,Peet's coffee,applesauce,bacon bits,olive oil,shaved ice,powdered milk,molasses,tomato sauce,barbecue sauce,horseradish";
-toppings = toppings.split(",");
+	toppings = toppings.split(",");
 	var sammich = "";
 	var numIngredients = Math.random() * 3 + 1;
 
@@ -299,15 +298,15 @@ toppings = toppings.split(",");
 	sammich += "and " + utils.listPick(ingredients);
 
 	if (Math.random() < 0.65) {
-		sammich += " sandwich "
+		sammich += " sandwich ";
 	} else {
-		sammich += " smoothie "
+		sammich += " smoothie ";
 	}
 
 	sammich += "topped with " + utils.listPick(toppings);
 
 	return sammich;
-}
+};
 //-----------------------------------------------------------------------------
 var hasAccess = function(who, accessArr) {
 	return (who === cons.SPONGE_ID || who === cons.ARCH_ID);
@@ -334,7 +333,7 @@ spongeBot.blank = {
 	do: function(message) {
 		message.react('410754653249339403');
 	}
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.debug = {
 	do: function(message) {
@@ -413,7 +412,6 @@ spongeBot.zload = {
 spongeBot.zshow = {
 	disabled: true,
 	do: function(message, parms) {
-		disabled: true,
 		iFic.zshow.do(message, parms);
 	}
 };
@@ -458,7 +456,7 @@ spongeBot.collect = {
 			utils.chSend(message, messStr);
 		}
 	}
-}
+};
 spongeBot.tree = {
 	subCmd: {
 		check: {
@@ -468,6 +466,7 @@ spongeBot.tree = {
 				var timedCmd = spongeBot.tree.timedCmd;
 				var lastCol = utils.alterStat(who, 'lastUsed', 'tree', 0, gameStats);
 				var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
+				var percentGrown;
 				now = now.valueOf();
 
 				if (utils.checkTimer(message, who, 'tree', spongeBot.tree.timedCmd, gameStats)) {
@@ -606,11 +605,10 @@ spongeBot.tree = {
 				var who = message.author.id;
 				if (tree.trees.hasOwnProperty(who)) {
 					var fruit = tree.trees[who];
-					
 					// tend to each Fruit
 					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
 					for (var i = 0; i < fruit.length; i++) {
-						ageIt = (Math.random() < 0.67); // 67% per fruit chance of aging
+						var ageIt = (Math.random() < 0.67); // 67% per fruit chance of aging
 						if (ageIt) {
 							fruit[i].age();
 						}
@@ -677,7 +675,7 @@ spongeBot.tree = {
 			utils.chSend(message, 'What are you trying to do to that tree?!');
 		}
 	}
-}
+};
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -859,7 +857,7 @@ spongeBot.loot = {
         },
         help: '`!loot`: Buy a loot box and see what\'s inside!',
 		longHelp: 'Try `!loot unbox <name>`, `!loot boxes`, `loot box <name>`, etc.'
-    }
+    };
 //-----------------------------------------------------------------------------
 spongeBot.pickfrom = {
 	cmdGroup: 'Fun and Games',
@@ -868,7 +866,7 @@ spongeBot.pickfrom = {
 	  'using a pRNG. Items must be separated by spaces.',
 	do: function(message, parms) {
 		if (!parms) {
-			utils.chSend(message, 'You need a list to `pickfrom`. Use `!help pickfrom` for more info.')
+			utils.chSend(message, 'You need a list to `pickfrom`. Use `!help pickfrom` for more info.');
 			return;
 		}
 		
@@ -888,7 +886,7 @@ spongeBot.pickfrom = {
 		utils.chSend(message, message.author + ', my selection from your list of ' + parms.length +
 		  ' choices is: ' + utils.listPick(parms));
 	}
-}
+};
 spongeBot.roll = {
 	cmdGroup: 'Fun and Games',
 	do: function (message, parms){
@@ -952,7 +950,7 @@ spongeBot.roll = {
 	  ' individual die rolls, and show the total (which would be between 3 and 18\n' +
 	  ' inclusive in this example.)',
 	disabled: false
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.rot13 = {
 	cmdGroup: 'Miscellaneous',
@@ -968,13 +966,13 @@ spongeBot.rot13 = {
 		if (outp === '') {
 			utils.chSend(message, message.author + ' nothing to ROT-13!');
 			return false;
-		};
+		}
 		utils.chSend(message, message.author + ': `' + outp + '`');
     },
 	help: '`!rot13 <message>` spits back the ROT-13 ciphertext of your message.',
 	longHelp: '	You could use this in DM and then use the result in public chat if you were giving spoilers or something I guess.',
 	disabled: false
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.enable = {
 	do: function(message, parms) {
@@ -986,8 +984,8 @@ spongeBot.enable = {
 			utils.chSend(message, ':yodawg:');
 		}
 		spongeBot[parms].disabled = false;
-		utils.chSend(message, parms + '.disabled: '
-		  + spongeBot[parms].disabled);
+		utils.chSend(message, parms + '.disabled: ' +
+		  spongeBot[parms].disabled);
 	},
 	help: 'Enables a bot command. Restricted access.',
 	access: true
@@ -1005,8 +1003,8 @@ spongeBot.disable = {
 			return;
 		}
 		spongeBot[parms].disabled = true;
-		utils.chSend(message, parms + '.disabled: '
-		  + spongeBot[parms].disabled);
+		utils.chSend(message, parms + '.disabled: ' +
+		  spongeBot[parms].disabled);
 	},
 	help: 'Disables a bot command. Restricted access.',
 	access: true
@@ -1029,12 +1027,12 @@ spongeBot.restrict = {
 		} else {
 			spongeBot[parms].access = false;
 		}
-		utils.chSend(message, '`!' + parms + '` needs special access:  '
-		  + spongeBot[parms].access);
+		utils.chSend(message, '`!' + parms + '` needs special access:  ' +
+		  spongeBot[parms].access);
 	},
 	help: ':warning: Toggles whether commands require special access.'
 	
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.server = {
 	cmdGroup: 'Miscellaneous',
@@ -1052,7 +1050,7 @@ spongeBot.server = {
 		utils.chSend(message, str);
 	},
 	help: 'Gives info about the server on which you send me the command.'
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.showCode = {
 	do: function(message, parms) {
@@ -1063,15 +1061,15 @@ spongeBot.showCode = {
 	},
 	help: 'shows code.',
 	disabled: true
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.ttc = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message, parms) {
 		ebon.ttc(message, parms);
 	},
-	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.'
-	  + ' Use an exact item name, or you can search for partial matches.'
+	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.' +
+	  ' Use an exact item name, or you can search for partial matches.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.sammich = {
@@ -1132,7 +1130,7 @@ spongeBot.s = {
 			var speed = now - scram[server.id].guessStartTime;
 			var fastest = utils.getStat(who, 'scram', 'fastest', gameStats) || 0;
 			outStr += (speed / 1000).toFixed(1) + ' seconds and wins ';
-			outStr += parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!'
+			outStr += parseInt(scramConfig.baseAward + scramConfig.letterBounus * scram[server.id].word.length ) + ' credits!';
 			if (fastest <= 0 || speed < fastest) {
 				outStr += '\n :zap: That\'s a new fastest time for them! :zap:';
 				utils.setStat(who, 'scram', 'fastest', speed, gameStats);
@@ -1146,8 +1144,8 @@ spongeBot.s = {
 			//utils.chSend(message, 'Not the word.');
 		}
 	},
-	help: 'Use `!s <word>` to submit a guess in the `!scram` '
-	  + 'word scramble game.',
+	help: 'Use `!s <word>` to submit a guess in the `!scram` ' +
+	  'word scramble game.',
 	disabled: false
 };
 spongeBot.scram = {
@@ -1173,15 +1171,15 @@ spongeBot.scram = {
 		
 		if (!scram.hasOwnProperty(server.id)) {
 			// key doesn't exist for this server, so init
-			debugPrint('!scram: Adding instance for ' + server.id + ' ('
-			  + server.name + ')');
+			debugPrint('!scram: Adding instance for ' + server.id + ' (' +
+			  server.name + ')');
 			scram[server.id] = {};
 			scram[server.id].announce = true;
 			scram[server.id].runState = 'ready';
 		}
 		
 		if (scram[server.id].runState === 'ready') {
-		
+			var wordList;
 			// does this server have a custom word list? use if so
 			if (scramWordLists.hasOwnProperty(server.id)) {
 				wordList = scramWordLists[server.id];
@@ -1215,7 +1213,7 @@ spongeBot.scram = {
 			var guessTime = scramConfig.guessTime + scramConfig.extraGuessTime * theWord.length;
 			var theMess = 'You have ' + parseInt(guessTime / 1000) + 
 			  ' seconds to guess by typing `!s <guess>`. Next word available in ' + 
-			  parseInt(theDelay / 1000) + ' seconds.'
+			  parseInt(theDelay / 1000) + ' seconds.';
 			utils.chSend(message, theMess);
 			scram[server.id].runState = 'guessing';
 			
@@ -1250,7 +1248,7 @@ spongeBot.raffle = {
 		raffle.do(message, parms, gameStats, bankroll);
 	},
 	help: 'Commands for working with raffles'
-}
+};
 spongeBot.ticket = {
 	do: function(message, parms) {
 		raffle.subCmd.ticket.do(message, parms, gameStats);
@@ -1258,7 +1256,7 @@ spongeBot.ticket = {
 	access: true,
 	disabled: false,
 	help: '`!ticket <who> <#>` Gives <#> tickets to <who>. With no #, gives one.'
-}
+};
 spongeBot.giveaways = {
 	cmdGroup: 'Giveaways and Raffle',
 	do: function(message, parms) {
@@ -1459,7 +1457,7 @@ spongeBot.savebanks = {
 	},
 	help: 'Saves all bank data to disk. Should not be necessary to invoke manually.',
 	disabled: true
-}
+};
 spongeBot.loadstats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
@@ -1469,7 +1467,7 @@ spongeBot.loadstats = {
 	help: 'force a stat reload from persistent storage',
 	access: [],
 	disabled: true
-}
+};
 spongeBot.savestats = {
 	cmdGroup: 'Admin',
 	do: function(message) {
@@ -1479,7 +1477,7 @@ spongeBot.savestats = {
 	help: 'force a stat save to persistent storage',
 	access: [],
 	disabled: true	
-}
+};
 spongeBot.delstat = {
 	cmdGroup: 'Admin',
 	do: function(message, parms) {
@@ -1712,7 +1710,7 @@ spongeBot.slots = {
 //-----------------------------------------------------------------------------
 var buildHelp = function() {
 	
-	theHelp = {};
+	var theHelp = {};
 	for (var cmd in spongeBot) {
 	
 		// we now no longer show uncategorized commands
@@ -1801,7 +1799,7 @@ spongeBot.timer = {
 	},
 	help: '`!timer <sec>` sets a timer to go off in _<sec>_ seconds.'
 };
-timey = {
+var timey = {
 	timeStr: function(parms, when) {		
 		if (!parms[0]) {
 			return when.toTimeString();
@@ -1829,7 +1827,7 @@ timey = {
 			// <time> tells how long from now until <time + (1 day | 1 week)> or if it's already passed
 			var howMuch;
 			var when;
-			if (parms[0] === 'nextWeek') {howMuch = cons.ONE_WEEK;} else {howMuch = cons.ONE_DAY;};
+			if (parms[0] === 'nextWeek') {howMuch = cons.ONE_WEEK;} else {howMuch = cons.ONE_DAY;}
 			when = parseInt(parms[1]) + howMuch - when.valueOf();
 			if (when < 0) {
 				return 'That was ' + msToTime(Math.abs(when)) + ' ago';
@@ -1874,8 +1872,7 @@ spongeBot.say = {
 		}
 		BOT.channels.get(chan).send(parms);		
 	},
-	help: '`!say <stuff>` Make me speak. (limited access command)',
-	access: true
+	help: '`!say <stuff>` Make me speak. (limited access command)'
 };
 //-----------------------------------------------------------------------------
 spongeBot.avote = {
@@ -1897,7 +1894,7 @@ spongeBot.stopacro = {
 	},
 	help: '`!stopacro` stops the currently running `!acro` game.',
 	access: true
-}
+};
 spongeBot.acrocfg = {
 	do: function(message, parms) {
 		parms = parms.split(' ');
@@ -1910,8 +1907,8 @@ spongeBot.acrocfg = {
 			if (acro.config.hasOwnProperty([parms[0]])) {
 					
 				// handle Booleans
-				if (parms[1] === 'false') {parms[1] = false}
-				else if (parms[1] === 'true') {parms[1] = true}
+				if (parms[1] === 'false') {parms[1] = false;}
+				else if (parms[1] === 'true') {parms[1] = true;}
 				
 				acro.config[parms[0]] = parms[1];
 				utils.chSend(message, '`!acro`: set ' + parms[0] + ' to ' + parms[1] + '.');
@@ -1975,7 +1972,7 @@ spongeBot.who = {
 			}
 		}
 	}
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.arch = {
 	access: [],
@@ -1991,7 +1988,7 @@ spongeBot.arch = {
 			utils.chSend(message, utils.makeTag(cons.ARCH_ID) + ', we\'ve been spotted! Quick, hide before they get us!');
 		}
 	},
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.biglet = {
 	cmdGroup: 'Miscellaneous',
@@ -2008,7 +2005,7 @@ spongeBot.biglet = {
 		utils.chSend(message, utils.bigLet(txt));
 	},
 	help: '`!biglet <message>` says your message back in big letters'
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.cattle = {
 	cmdGroup: 'Fun and Games',
@@ -2017,7 +2014,7 @@ spongeBot.cattle = {
 	},
 	help: cattle.help,
 	longHelp: cattle.longHelp,
-}
+};
 //-----------------------------------------------------------------------------
 var duelManager = {
 	challengerID: {
@@ -2050,7 +2047,7 @@ spongeBot.duel = {
 					status: 'idle',
 					kills: 0,
 					deaths: 0
-				}
+				};
 			}
 			if (!args) {
 				utils.chSend(message, 'Who are you trying to duel, ' + utils.makeTag(challenger) + '? (`!help duel` for help)');
@@ -2081,7 +2078,7 @@ spongeBot.duel = {
 						status: 'idle',
 						kills: 0,
 						deaths: 0
-					}
+					};
 				}
 				var subjectEntry = duelManager[subject];
 				var status = subjectEntry.status;
@@ -2110,7 +2107,7 @@ spongeBot.duel = {
 					return;
 				}
 				var opponent = utils.makeId(args[1]);
-				NaN
+				
 				//If the opponent isn't in the bank record, we assume they don't exist
 				if(!(bankroll[opponent] >= 0)) {
 					utils.chSend(message, utils.makeTag(challenger) + ', is that one of your imaginary friends?' );
@@ -2139,7 +2136,7 @@ spongeBot.duel = {
 						status: 'idle',
 						kills: 0,
 						deaths: 0
-					}
+					};
 				}
 				//If the challenger is already dueling someone, then they can't challenge anyone else until they are done dueling.
 				if(challengerEntry.status === 'ready' || challengerEntry.status === 'dueling') {
@@ -2229,10 +2226,10 @@ spongeBot.duel = {
 				utils.chSend(message, utils.makeTag(challenger) + ', use `!help duel`');
 			}
 		},
-		help: '`!duel challenge <user>`: Challenge another user to a duel.\n'
-			+ '`!duel info <user>`: Shows duel info about user.',
-		longHelp: '`!duel challenge <user>`: Challenge another user to a duel. To play, the other user must challenge you back.'
-			+ '`!duel info <user>`: Shows duel info about user.'
+		help: '`!duel challenge <user>`: Challenge another user to a duel.\n' +
+		  '`!duel info <user>`: Shows duel info about user.',
+		longHelp: '`!duel challenge <user>`: Challenge another user to a duel. To play, the other user must challenge you back.' +
+		  '`!duel info <user>`: Shows duel info about user.'
 	};
 spongeBot.d = {
 		cmdGroup: 'Fun and Games',
@@ -2338,7 +2335,7 @@ spongeBot.d = {
 		},
 		help: '`!d <number>`: Fire at your duel opponent.',
 		longHelp: '`!d <number>`: TO DO: Help Text'
-}
+};
 //-----------------------------------------------------------------------------
 var sponge = {};
 spongeBot.sponge = {
@@ -2371,7 +2368,7 @@ spongeBot.sponge = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.v = {
 	cmdGroup: 'Miscellaneous',
@@ -2379,7 +2376,7 @@ spongeBot.v = {
 		utils.chSend(message, '`' + cons.VERSION_STRING + '`');
 	},
 	help: 'Outputs the current bot code cons.VERSION_STRING.'
-}
+};
 spongeBot.version = {
 	cmdGroup: 'Miscellaneous',
 	do: function(message) {
@@ -2387,7 +2384,7 @@ spongeBot.version = {
 		utils.chSend(message, cons.SPONGEBOT_INFO);
 	},
 	help: 'Outputs the current bot code version and other info.'
-}
+};
 spongeBot.bind = {
 	help: '`!bind <newCommand> <oldCommand>` to make an alias, but don\'t hose yourself. Limited access.',
 	access: [],
@@ -2423,7 +2420,7 @@ var hangman = {
 		}
 		return result;
 	}
-}
+};
 spongeBot.hangman = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
@@ -2579,7 +2576,7 @@ spongeBot.hangman = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO',
-}
+};
 //-----------------------------------------------------------------------------
 spongeBot.memory = {
 	cmdGroup: 'Fun and Games',
@@ -2588,7 +2585,7 @@ spongeBot.memory = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-}
+};
 //-----------------------------------------------------------------------------
 var minesweeper = {
 	grid: {},			//An object containing a field for each cell (boolean; true if mine, false if empty)
@@ -2635,14 +2632,14 @@ var minesweeper = {
 	},
 	countSurroundingMines: function(x, y) {
 		var grid = minesweeper.grid;
-		return	(grid[(x-1) + '_' + (y-1)] ? 1 : 0)
-			+ (grid[(x-1) + '_' + (y)] ? 1 : 0)
-			+ (grid[(x-1) + '_' + (y+1)] ? 1 : 0)
-			+ (grid[(x) + '_' + (y-1)] ? 1 : 0)
-			+ (grid[(x) + '_' + (y+1)] ? 1 : 0)
-			+ (grid[(x+1) + '_' + (y-1)] ? 1 : 0)
-			+ (grid[(x+1) + '_' + (y)] ? 1 : 0)
-			+ (grid[(x+1) + '_' + (y+1)] ? 1 : 0);
+		return	(grid[(x-1) + '_' + (y-1)] ? 1 : 0) +
+			(grid[(x-1) + '_' + (y)] ? 1 : 0) +
+			(grid[(x-1) + '_' + (y+1)] ? 1 : 0) +
+			(grid[(x) + '_' + (y-1)] ? 1 : 0) +
+			(grid[(x) + '_' + (y+1)] ? 1 : 0) +
+			(grid[(x+1) + '_' + (y-1)] ? 1 : 0) +
+			(grid[(x+1) + '_' + (y)] ? 1 : 0) +
+			(grid[(x+1) + '_' + (y+1)] ? 1 : 0);
 	},
 	getSurrounding: function(x, y) {
 		var result = [];
@@ -2670,7 +2667,7 @@ var minesweeper = {
 		}
 		
 	}
-}
+};
 spongeBot.minesweeper = {
 	cmdGroup: 'Fun and Games',
 	do: function(message, args) {
@@ -2797,7 +2794,7 @@ spongeBot.minesweeper = {
 	},
 	help: 'TODO',
 	longHelp: 'TODO'
-}
+};
 //-----------------------------------------------------------------------------
 BOT.on('ready', () => {
 	debugPrint('Spongebot version ' + cons.VERSION_STRING + ' READY!');
