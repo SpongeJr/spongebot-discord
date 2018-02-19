@@ -298,10 +298,12 @@ var Room = function(data) {
 	this.data.title = data.title || "A new Room";
 	this.data.items = data.items || {}
 };
-Room.prototype.describe = defaultDescribe;
-Room.prototype.shortDesc = defaultShortDesc;
 Room.prototype.on = defaultRoomEventHandler;
 Room.prototype.off = defaultRoomEventKiller;
+Room.prototype.describe = defaultDescribe;
+Room.prototype.shortDesc = defaultShortDesc;
+
+Player.prototype.describe = defaultDescribe;
 
 Player.prototype.on = defaultPlayerEventHandler;
 Player.prototype.off = defaultPlayerEventKiller;
@@ -880,16 +882,40 @@ module.exports = {
 			
 			/*
 			We'd like them to be able to:
-				exam <item in room>
-				exam <item in inv>
-				exam <exit>
-				exam <sceneryItem>?
+				exam <Item in Room>
+				exam <Item in Inv>
+				exam <Exit>
+				exam <Player>
+				exam <SceneryItem>
 			*/
 			// for now, we'll just do <item in inv>
 			// and if not found, check room?
 			
+			// 1. Figure out what the target is
+			// 2. Check for an .exam() method on it
+			// 3. If it exists, run it
+			
+			
+			// Item selector algorithm (for `exam`, use limited versions for other
+			// commands, e.g., `get` only iterates over Items, `attack` only over Mobs (and players for PvP), etc.)
+			// build up a list of valid targets:
+			//	iterate over all Items, SceneryItems, Exits, Mobs, and Players in current room
+			//	build a table of their shortname : Array [UNID, UNID, ...]
+			//		Some entities may have multiple shortnames, add to each Array as needed!
+			//	check player input vs shortnames   'bag'
+			//	if Array length > 1,
+			//		and they don't specify: tell them it's ambiguous and show a list
+			//		if they specify: (eg: 3.bag) use that one
+			//	For Array length = 1,
+			//		we've found the item, use it.
+			//
+			// Future: allow partial matches, but no ambiguity: "Does 'ba' mean 'bag' or 'basketball' or 'BaalzarTheKiller'?"
+			// (continue to allow picking within a list, e.g.,  2.basketball to get the second of "basketball" and "flat basketball" objects.
+			
+			
 			var outP = '';
 			var found = 0;
+			
 			if (typeof pl.inventory[target] !== 'undefined') {
 				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description + '\n';
 				found++;
