@@ -1,0 +1,15 @@
+{
+	"env" : {
+		"node" : true
+	},
+	"parserOptions": {
+		"ecmaVersion": 6,
+	},
+	"rules": {
+		"no-console": "off",
+		"no-mixed-spaces-and-tabs": 1,
+		"no-unused-vars": 1,
+		"no-redeclare": 1,
+		
+	}
+ }
