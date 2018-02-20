@@ -37,6 +37,12 @@ const cantDo = function(who, action) {
 		return (dreamStrings[action] || 'Visions of sugarplums dance through your head.') +
 		' (You are asleep. You need to `joinmud` to wake up first!)';
 	}
+	
+	if (action === 'go') {
+		if (players[who].posture === 'sitting') {
+			return ('You need to `stand` up before moving.');
+		}
+	}
 };
 var defaultLook = function(item) {
 	var outP = '';
@@ -96,6 +102,13 @@ var eMaster = function(eventName, where, sender, data, client) {
 			for (var evId in eMaster.listens.roomEnter[where]) {
 				eMaster.listens.roomEnter[where][evId].callback(sender, data, client);
 			}			
+		} else if (eventName === 'roomGeneric') {
+			if (!eMaster.listens.roomGeneric[where]) {
+				return;
+			}
+			for (var evId in eMaster.listens.roomGeneric[where]) {
+				eMaster.listens.roomGeneric[where][evId].callback(sender, data, client);
+			}			
 		}
 	}
 }
@@ -105,6 +118,7 @@ eMaster.listens = {
 	'roomGet': {},
 	'roomEnter': {},
 	'roomExit': {},
+	'roomGeneric': {},
 	'areaSay': [],
 };
 
@@ -209,9 +223,11 @@ var defaultDescribe = function(id) {
 	var playersHereStr = '';
 	for (var player in players) {
 		if (players[player].location === id) {
-			//playersHereStr += '`' + players[player].charName + '` ';
-			playersHereStr += '\n**' + players[player].charName +
-			  '** ' + (postureStr[players[player].posture] || 'is') + ' here.';
+			playersHereStr += '\n**' + players[player].charName;
+			if (players[player].title) {
+				playersHereStr += ' ' + players[player].title;
+			}
+			playersHereStr += '** ' + (postureStr[players[player].posture] || 'is') + ' here.';
 			numHere++;
 		}
 	}
@@ -300,6 +316,7 @@ var Player = function(data) {
 	}
 	this.posture = data.posture || "asleep";
 	this.id = data.id;
+	this.title = data.title;
 }
 var Room = function(data) {
 	// data is an object. any necessary properties not given
@@ -334,11 +351,13 @@ Player.prototype.registerForRoomEvents = function() {
 		var who = player.id;
 		var user = server.members.get(who);
 		var whoStr;
-		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
-		user.send('**' + whoStr + '**' +
-		  ' says, "' + whatSaid + '"');
+		if (whoSaid === who) {
+			whoStr = 'You say';
+		} else {
+			whoStr = '**' + players[whoSaid].charName + '** says';
+		}
+		user.send(whoStr + ', "' + whatSaid + '"');
 	}, this.id);
-	
 	this.on('roomGet', function(whoSaid, item, client) {
 		var server = client.guilds.get(players[whoSaid].server);
 		var who = player.id;
@@ -347,7 +366,6 @@ Player.prototype.registerForRoomEvents = function() {
 		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
 		user.send('**' + whoStr + '**' + ' picked up ' + item + '.');
 	}, this.id);
-
 	this.on('roomDrop', function(whoSaid, item, client) {
 		var server = client.guilds.get(players[whoSaid].server);
 		var who = player.id;
@@ -361,7 +379,7 @@ Player.prototype.registerForRoomEvents = function() {
 		var who = player.id;
 		var user = server.members.get(who);
 		var whoStr;
-		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+		whoStr = players[whoSaid].charName;
 		user.send('**' + whoStr + '**' + ' leaves towards ' + newRoom);
 	}, this.id);
 	this.on('roomEnter', function(whoSaid, lastRoom, client) {
@@ -369,8 +387,22 @@ Player.prototype.registerForRoomEvents = function() {
 		var who = player.id;
 		var user = server.members.get(who);
 		var whoStr;
-		whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
-		user.send('**' + whoStr + '**' + ' arrives from ' + lastRoom);
+		whoStr = (whoSaid === who) ? 'You arrive' : '**' + players[whoSaid].charName + '** arrives' 
+		user.send(whoStr + ' from ' + lastRoom);
+	}, this.id);
+	this.on('roomGeneric', function(whoSaid, whatSaid, client) {
+		var server = client.guilds.get(players[whoSaid].server);
+		var who = player.id;
+		var user = server.members.get(who);
+		var whoStr;
+	
+		if (typeof whatSaid === 'string') {		
+			whoStr = (whoSaid === who) ? 'You' : players[whoSaid].charName;
+			user.send('**' + whoStr + '**' + ' ' + whatSaid);
+		} else {
+			whoStr = (whoSaid === who) ? whatSaid.normal[0] : '**' + players[whoSaid].charName + '** ' + whatSaid.normal[1];
+			user.send(whoStr);
+		}
 	}, this.id);
 };
 Player.prototype.unregisterForRoomEvents = function() {
@@ -380,6 +412,7 @@ Player.prototype.unregisterForRoomEvents = function() {
 	this.off('roomGet', this.id);
 	this.off('roomEnter', this.id);
 	this.off('roomExit', this.id);
+	this.off('roomGeneric', this.id);
 };
 //------- hardcoded test room ---------
 var talkingRoom = new Room({title: "A talking room?!", id: "talking room"});
@@ -446,11 +479,10 @@ var buildDungeon = function() {
 		goesto: "talking room",
 		description: "a special exit"
 	}
-}
-
+};
 var buildPlayers = function() {
 	// iterates over the players object, reads all the .data
-	// and puts it back using the Room constructor, so that
+	// and puts it back using the Player constructor, so that
 	// the players are all Player objects, with the appropriate
 	// methods, etc.
 	for (var player in players) {
@@ -464,7 +496,7 @@ var buildPlayers = function() {
 		}
 		
 		// now, take all the items out, add their necessary methods and such,
-		// dust them off and put them back into the rooms
+		// dust them off and put them back into the player
 		for (var item in thePlayer.inventory) {
 			var theItem;
 			if (thePlayer.inventory[item].data.hidden) {
@@ -480,7 +512,6 @@ var buildPlayers = function() {
 		if (!thePlayer.server) {
 			thePlayer.server = cons.SERVER_ID;
 		}
-		
 		players[player] = thePlayer;
 	}
 	console.log('Players database built.');
@@ -615,6 +646,16 @@ module.exports = {
 		do: function(message, parms, client) {
 			
 			var whatSaid = parms;
+			
+			if (!whatSaid) {
+				ut.chSend(message, 'Cat got your tongue?');
+				return;
+			}
+			
+			if (!whatSaid.length > 511) {
+				ut.chSend('You may only say up to 511 characters.');
+				return;
+			} 
 			
 			who = message.author.id;
 			var fail = cantDo(who, 'say');
@@ -870,7 +911,7 @@ module.exports = {
 				"description": itemDesc
 			});
 			pl.inventory[itemName] = theItem;
-			ut.chSend(message, ' Gave you a ' + itemName + ' with description: ' + itemDesc +
+			ut.chSend(message, ' Gave you a prop "' + itemName + '" with description: ' + itemDesc +
 			  ', ' + message.author);
 		}
 	},
@@ -1031,35 +1072,97 @@ module.exports = {
 		}
 	},
 	sit: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			var who = message.author.id;
 			var pl = players[who];
-			var outStr = '';
+			var pLoc = pl.location;
 			
 			if (pl.posture === 'sitting') {
 				pl.posture = 'standing'
-				outStr += 'You stand back up.';
+				eMaster('roomGeneric', pLoc, who, {
+					normal: ['You stand up.','stands up.']
+				}, client);
+				
 			} else {
 				pl.posture = 'sitting';
-				outStr += 'You sit down and make yourself comfortable.';
+				eMaster('roomGeneric', pLoc, who, {
+					normal: ['You sit down and get comfortable.','sits down and gets comfortable.']
+				}, client);
 			}
-			
-			ut.chSend(message, outStr);
 		}
 	},
 	stand: {
-		do: function(message, parms) {
+		do: function(message, parms, client) {
 			var who = message.author.id;
 			var pl = players[who];
-			var outStr = '';
-			
+			var pLoc = pl.location;
+
 			if (pl.posture === 'standing') {
-				outStr += 'You are alraedy standing up.';
+				ut.chSend('You are already standing up.');
 			} else {
 				pl.posture = 'standing';
-				outStr += 'You stand up.';
-			}	
-			ut.chSend(message, outStr);
+				eMaster('roomGeneric', pLoc, who, {
+					normal: ['You stand up.','stands up.']
+				}, client);
+			}
+		}
+	},
+	me: {
+		do: function(message, parms, client) {
+			
+			var whatSaid = parms;
+			
+			if (!whatSaid) {
+				ut.chSend('It\'s always about you, isn\'t it?');
+				return;
+			}
+			
+			if (!whatSaid.length > 511) {
+				ut.chSend('You may only use actions up to 511 characters.');
+				return;
+			} 
+
+			who = message.author.id;
+			var fail = cantDo(who, 'me');
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
+			var pLoc = players[who].location;
+			
+			// Fire off some events -- notify eMaster
+			eMaster('roomGeneric', pLoc, who, whatSaid, client);
+		}
+	},
+	who: {
+		do: function(message, parms) {
+			// accepts either an id or a charName
+			var player;
+			var pFind = function() {
+				for (var pl in players) {
+					if (players[pl].charName === parms) {
+						return players[pl];
+					}
+				}
+			};
+			// dangerous:
+			if (players[parms]) {
+				player = players[parms];
+			} else {					
+				player = function() {
+					for (var pl in players) {
+						if (players[pl].charName === parms) {
+							return players[pl];
+						}
+					}
+				}();
+			}
+			
+			if (player) {
+				console.log(player);
+			} else {
+				ut.chSend(message, 'Sorry, I couldn\'t find ' + parms);
+			}
 		}
 	}
 };
