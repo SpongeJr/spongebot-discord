@@ -4,7 +4,6 @@ var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
 var dungeonBuilt = false;
 var noWiz = false;
-var terseTravel = false;
 
 var dreamStrings = {
 	'inv': 'You dream about the things you own...\n',
@@ -12,23 +11,17 @@ var dreamStrings = {
 	'get': 'You dream of acquiring new things...\n',
 	'drop': 'Your hand twitches in your sleep.\n',
 	'say': 'You mumble incomprehensibly in your sleep.\n',
-}
-
-var v = {
-	story: 'Once upon a time...',
-	undoIndex: 0,
-}
+};
 
 const postureStr = {
 	'standing': 'is standing',
 	'sitting': 'is sitting',
 	'resting': 'is resting',
 	'asleep': 'is sleeping'
-}
+};
 const isPlayer = function(who) {
 	return typeof players[who] !== 'undefined';
 };
-
 const cantDo = function(who, action) {
 	if (!isPlayer(who)) {
 		return 'You need to `joinmud` first.';
@@ -55,6 +48,9 @@ var defaultLook = function(item) {
 	return outP;
 };
 var defaultGet = function() {};
+var defaultDescribe = function() {
+	return this.description;
+};
 
 var eMaster = function(eventName, where, sender, data, client) {
 	
@@ -67,7 +63,7 @@ var eMaster = function(eventName, where, sender, data, client) {
 				return;
 			}
 			// hit up everyone listed for this event in this room...
-			for (var evId in eMaster.listens.roomSay[where]) {
+			for (let evId in eMaster.listens.roomSay[where]) {
 				eMaster.listens.roomSay[where][evId].callback(sender, data, client);
 			}
 
@@ -76,14 +72,14 @@ var eMaster = function(eventName, where, sender, data, client) {
 				// no listeners in this room.
 				return;
 			}
-			for (var evId in eMaster.listens.roomDrop[where]) {
+			for (let evId in eMaster.listens.roomDrop[where]) {
 				eMaster.listens.roomDrop[where][evId].callback(sender, data, client);
 			}
 		} else if (eventName === 'roomGet') {
 			if (!eMaster.listens.roomGet[where]) {
 				return;
 			}
-			for (var evId in eMaster.listens.roomGet[where]) {
+			for (let evId in eMaster.listens.roomGet[where]) {
 				eMaster.listens.roomGet[where][evId].callback(sender, data, client);
 			}
 			
@@ -91,7 +87,7 @@ var eMaster = function(eventName, where, sender, data, client) {
 			if (!eMaster.listens.roomExit[where]) {
 				return;
 			}
-			for (var evId in eMaster.listens.roomExit[where]) {
+			for (let evId in eMaster.listens.roomExit[where]) {
 				eMaster.listens.roomExit[where][evId].callback(sender, data, client);
 			}
 			
@@ -99,19 +95,19 @@ var eMaster = function(eventName, where, sender, data, client) {
 			if (!eMaster.listens.roomEnter[where]) {
 				return;
 			}
-			for (var evId in eMaster.listens.roomEnter[where]) {
+			for (let evId in eMaster.listens.roomEnter[where]) {
 				eMaster.listens.roomEnter[where][evId].callback(sender, data, client);
 			}			
 		} else if (eventName === 'roomGeneric') {
 			if (!eMaster.listens.roomGeneric[where]) {
 				return;
 			}
-			for (var evId in eMaster.listens.roomGeneric[where]) {
+			for (let evId in eMaster.listens.roomGeneric[where]) {
 				eMaster.listens.roomGeneric[where][evId].callback(sender, data, client);
 			}			
 		}
 	}
-}
+};
 eMaster.listens = {
 	'roomSay': {},
 	'roomDrop': {},
@@ -124,11 +120,11 @@ eMaster.listens = {
 
 var defaultRoomEventKiller = function(eventName, id) {
 
-	roomId = this.data.id;
+	let roomId = this.data.id;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
-		console.log('WARNING: Tried to kill a ' + eventName
-		  + ' in ' + roomId + ' that did not have those.');
+		console.log('WARNING: Tried to kill a ' + eventName +
+		  ' in ' + roomId + ' that did not have those.');
 		return false;
 	}
 	
@@ -141,7 +137,7 @@ var defaultRoomEventKiller = function(eventName, id) {
 };
 var defaultRoomEventHandler = function(eventName, callback, id) {
 
-	roomId = this.data.id;
+	let roomId = this.data.id;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
 		eMaster.listens[eventName][roomId] = {};
@@ -152,13 +148,12 @@ var defaultRoomEventHandler = function(eventName, callback, id) {
 	};
 };
 var defaultPlayerEventKiller = function(eventName, id) {
-	
-	pId = this.id;
-	roomId = this.location;
+
+	let roomId = this.location;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
-		console.log('WARNING: Tried to kill a ' + eventName
-		  + ' in ' + roomId + ' that did not have those.');
+		console.log('WARNING: Tried to kill a ' + eventName +
+		  ' in ' + roomId + ' that did not have those.');
 		return false;
 	}
 	
@@ -171,8 +166,8 @@ var defaultPlayerEventKiller = function(eventName, id) {
 };
 var defaultPlayerEventHandler = function(eventName, callback, id) {
 	
-	pId = this.id;
-	roomId = this.location;
+	let pId = this.id;
+	let roomId = this.location;
 	
 	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
 		eMaster.listens[eventName][roomId] = {};
@@ -182,8 +177,7 @@ var defaultPlayerEventHandler = function(eventName, callback, id) {
 		"callback": callback
 	};
 };
-
-var defaultDescribe = function(id) {
+var defaultRoomDescribe = function(id) {
 	// builds a standard "room description string" and returns it
 	var outStr = '-=-=-=-\n';
 	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
@@ -193,10 +187,12 @@ var defaultDescribe = function(id) {
 	if (rooms[id].data.hasOwnProperty('exits')) {
 		outStr += '\n-=-=-=-\nObvious exits: ';
 		for (var exName in rooms[id].data.exits) {
-			outStr += '`' + exName + '`   ';
+			if (!rooms[id].data.exits[exName].hidden) {
+				outStr += '`' + exName + '`   ';
+			}
 		}
 	} else {
-		console.log('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
+		console.log('SpongeMUD: WARNING! Room ' + id + ' missing exits!');
 	}
 	
 	// Build items text
@@ -218,7 +214,8 @@ var defaultDescribe = function(id) {
 		}
 	}
 	
-	// See who else is here
+	// See who else is here. Later, let's store this in Rooms also.
+	// This seems terribly expensive.
 	var numHere = 0;
 	var playersHereStr = '';
 	for (var player in players) {
@@ -237,19 +234,21 @@ var defaultDescribe = function(id) {
 	}
 	return outStr;
 };
-var defaultShortDesc = function(id) {
+var defaultRoomShortDesc = function(id) {
 	// builds a standard "short room description string" and returns it
-	var outStr = '-=-=-=-\n';
+	var outStr = '';
 	outStr += '**' + rooms[id].data.title + '**  ' + '"`' + id + '`"\n';
 	
 	// Build exits text
 	if (rooms[id].data.hasOwnProperty('exits')) {
-		outStr += '-=-=-=-\nExits: ';
+		outStr += 'Exits: ';
 		for (var exName in rooms[id].data.exits) {
-			outStr += '`' + exName + '`   ';
+			if (!rooms[id].data.exits.hidden) {
+				outStr += '`' + exName + '`  ';
+			}
 		}
 	} else {
-		console.log('SpongeMUD: WARNING! Room ' + parms + ' missing exits!');
+		console.log('SpongeMUD: WARNING! Room ' + id + ' missing exits!');
 	}
 	
 	// Build items text
@@ -283,12 +282,12 @@ var defaultShortDesc = function(id) {
 		outStr += '\nWho is here: ' + playersHereStr;
 	}
 	return outStr;
-}
+};
 var Item = function(data) {
 	this.data = data || {};
 	this.data.hidden = data.hidden || false;
 	this.data.description = data.description || "Some object you spotted.";
-	this.data.hidden = false
+	this.data.hidden = false;
 	// thid.id = ???
 };
 var SceneryItem = function(data) {
@@ -307,17 +306,33 @@ var Player = function(data) {
 		"backpack": new Item({
 			description: "You can keep some stuff in here safely."
 		})
-	},
+	};
 	this.charName = data.charName || 'Anonymous';
 	this.stats = data.stats || {
 		"shtyle": "mundane",
 		"speed": 120,
 		"status": "normal"
-	}
+	};
 	this.posture = data.posture || "asleep";
 	this.id = data.id;
 	this.title = data.title;
-}
+
+	// temporary: build a generic stat block thing
+	let outStr = '**` -=[ ' + this.charName;
+	outStr += ' ]=- `**\n```';
+	outStr += '-'.repeat(outStr.length) + '\n';
+	if (this.title) {
+		outStr += '(' + this.charName + ' ' + this.title + ')\n';
+	}
+	for (var stat in this.stats) {
+		let sLine = ' '.repeat(15) + stat;
+		sLine = sLine.substr(-15);
+		sLine += ' ... ' + this.stats[stat];
+		outStr += sLine + '\n';
+	}
+	outStr += '```';
+	this.description = outStr;
+};
 var Room = function(data) {
 	// data is an object. any necessary properties not given
 	// will receive default values
@@ -333,12 +348,12 @@ var Room = function(data) {
 	this.data.description = data.description || "An absurdly empty space.";
 	this.data.contents = data.contents || {};
 	this.data.title = data.title || "A new Room";
-	this.data.items = data.items || {}
+	this.data.items = data.items || {};
 };
 Room.prototype.on = defaultRoomEventHandler;
 Room.prototype.off = defaultRoomEventKiller;
-Room.prototype.describe = defaultDescribe;
-Room.prototype.shortDesc = defaultShortDesc;
+Room.prototype.describe = defaultRoomDescribe;
+Room.prototype.shortDesc = defaultRoomShortDesc;
 
 Player.prototype.describe = defaultDescribe;
 
@@ -387,7 +402,7 @@ Player.prototype.registerForRoomEvents = function() {
 		var who = player.id;
 		var user = server.members.get(who);
 		var whoStr;
-		whoStr = (whoSaid === who) ? 'You arrive' : '**' + players[whoSaid].charName + '** arrives' 
+		whoStr = (whoSaid === who) ? 'You arrive' : '**' + players[whoSaid].charName + '** arrives';
 		user.send(whoStr + ' from ' + lastRoom);
 	}, this.id);
 	this.on('roomGeneric', function(whoSaid, whatSaid, client) {
@@ -406,7 +421,6 @@ Player.prototype.registerForRoomEvents = function() {
 	}, this.id);
 };
 Player.prototype.unregisterForRoomEvents = function() {
-	var player = this;
 	this.off('roomSay', this.id);
 	this.off('roomDrop', this.id);
 	this.off('roomGet', this.id);
@@ -419,12 +433,12 @@ var talkingRoom = new Room({title: "A talking room?!", id: "talking room"});
 talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 	
 	// find out who all is in the room
-	var pLoc = players[who].location;
+	var pLoc = players[whoSaid].location;
 	var dmList = []; // list of ids
 	
 	for (var player in players) {
 		if (players[player].location === pLoc) {
-			if (players[player].server === players[who].server) {
+			if (players[player].server === players[whoSaid].server) {
 				dmList.push(player);
 			} else {
 				// not same server
@@ -435,7 +449,7 @@ talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
 	// DM all those that should know
 	for (var i = 0; i < dmList.length; i++) {
 		//var user = message.guild.members.get(dmList[i]);
-		var server = client.guilds.get(players[who].server);
+		var server = client.guilds.get(players[whoSaid].server);
 		var user = server.members.get(dmList[i]);
 		
 		if (whatSaid === 'shazam') {
@@ -478,7 +492,7 @@ var buildDungeon = function() {
 	rooms["outside poriferan oasis"].data.exits.special = {
 		goesto: "talking room",
 		description: "a special exit"
-	}
+	};
 };
 var buildPlayers = function() {
 	// iterates over the players object, reads all the .data
@@ -540,9 +554,9 @@ module.exports = {
 	},
 	go: {
 		do: function(message, parms, client) {
-			who = message.author.id;
+			var who = message.author.id;
 			parms = parms.split(' ');
-			where = parms[0];
+			var where = parms[0];
 			var fail = cantDo(who, 'go');
 			if (fail) {
 				ut.chSend(message, fail);
@@ -557,6 +571,7 @@ module.exports = {
 					  ' but you were unable to get anywhere!');
 					return;
 				} else {
+					let newLoc;
 					player.unregisterForRoomEvents(); // first, unregister for events in this room
 					newLoc = rooms[pLoc].data.exits[where].goesto; // find our target room
 					eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
@@ -625,7 +640,6 @@ module.exports = {
 	exitmud: {
 		do: function(message, parms) {
 			var who = message.author.id;
-			var server = message.guild;
 			
 			if (typeof players[who] === 'undefined') {
 				ut.chSend(message, message.author + ', you don\'t have a SpongeMUD ' +
@@ -652,12 +666,12 @@ module.exports = {
 				return;
 			}
 			
-			if (!whatSaid.length > 511) {
-				ut.chSend('You may only say up to 511 characters.');
+			if (whatSaid.length > 511) {
+				ut.chSend(message, 'You may only say up to 511 characters.');
 				return;
 			} 
 			
-			who = message.author.id;
+			var who = message.author.id;
 			var fail = cantDo(who, 'say');
 			if (fail) {
 				ut.chSend(message, fail);
@@ -671,7 +685,7 @@ module.exports = {
 	},
 	listens: {
 		do: function(message) {
-			who = players[message.author.id];
+			var who = players[message.author.id];
 			ut.chSend(message, ' Dumping global and local events object to console.');
 			console.log(eMaster.listens);
 			console.log(' roomSay In this area (' + who.location + '): ');
@@ -680,7 +694,13 @@ module.exports = {
 	},
 	look: {
 		do: function(message, parms) {
-			who = message.author.id;
+			
+			if (parms) {
+				module.exports.exam.do(message, parms);
+				return;
+			}
+			
+			var who = message.author.id;
 			var fail = cantDo(who, 'look');
 			if (fail) {
 				ut.chSend(message, fail);
@@ -793,20 +813,20 @@ module.exports = {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
-			var loc = players[who].location
+			var loc = players[who].location;
 			parms = parms.split(' ');
 			var prop = parms[0];
 			parms.shift();
 			parms = parms.join(' ');
 			var val = parms;
-			
+			var target;
 			if (prop === 'title' || prop === 'description') {
 				rooms[loc].data[prop] = val;
 				ut.chSend(message, prop + ' of ' + loc + ' now:\n ' + val);
 				ut.saveObj(rooms, cons.MUD.roomFile);
 			} else if (prop === 'delexit') {
 				parms = parms.split(' ');
-				var target = parms[0];
+				target = parms[0];
 				if (typeof rooms[loc].data.exits[target] !== 'undefined') {
 					delete rooms[loc].data.exits[target];
 					ut.chSend(message, 'Exit "' + target + '" deleted! :open_mouth:');
@@ -816,28 +836,45 @@ module.exports = {
 				}
 			} else if (prop === 'exits') {
 				parms = parms.split(' ');
-				var target = parms[0]; // which exit they're editing
+				target = parms[0]; // which exit they're editing
 				var exProp = parms[1]; // what property of the exit they want to change
 				parms.shift(); 
 				parms.shift();
 				val = parms.join(' '); // anything left is the value they want to change to
 				
 				if (!target || !exProp) {
-					// command wasn't long enough, basically
+					// command wasn't long enough
 					ut.chSend(message, ' Use `edroom exits <exitId> <property> <value>`');
 					return;
 				}
 				
 				if (typeof rooms[loc].data.exits[target] !== 'undefined') {
-					// exit exists. update whatever property
-					rooms[loc].data.exits[target][exProp] = val;
-					ut.chSend(message, 'Set exit "' + target + '".' + exProp + ' = ' + val);
-					ut.saveObj(rooms, cons.MUD.roomFile);
+					// exit exists. update whatever property.
+					
+					// if they left it blank, delete the old property if possible
+					if (val === '') {
+						if (typeof rooms[loc].data.exits[target][exProp] === 'undefined') {
+							ut.chSend(message, 'Property .' + exProp + ' does not exist on exit "' + target +
+							  '". No value specified. Nothing has been added, removed, or altered.');
+						} else {
+							delete 
+							ut.chSend(message, 'Deleting property .' + exProp + ' from "' + target + '". ' +
+							  'Previously, it had value: ' + rooms[loc].data.exits[target][exProp]);
+							delete rooms[loc].data.exits[target][exProp];
+							ut.saveObj(rooms, cons.MUD.roomFile);
+						}
+					} else {
+						if (val === 'TRUE') {val = true;}
+						if (val === 'FALSE') {val = false;}
+						rooms[loc].data.exits[target][exProp] = val;
+						ut.chSend(message, 'Set exit "' + target + '".' + exProp + ' = ' + val);
+						ut.saveObj(rooms, cons.MUD.roomFile);
+					}
 				} else {
 					// exit didn't exist. create, and create property
 					rooms[loc].data.exits[target] = {};
 					rooms[loc].data.exits[target][exProp] = val;
-					ut.chSend(message, 'Created exit "' + target + '", then set ' + exProp + ' = ' + val);
+					ut.chSend(message, 'Created exit "' + target + '", then set .' + exProp + ' = ' + val);
 					ut.saveObj(rooms, cons.MUD.roomFile);
 				}
 				
@@ -847,6 +884,7 @@ module.exports = {
 						rooms[val] = new Room({"title": val, "id": val});
 						ut.chSend(message, ' Since no room "' + val + '" existed, I made one. Make sure ' +
 						  'you do any necessary editing to it!');
+						ut.saveObj(rooms, cons.MUD.roomFile);
 					}
 				}
 			} else {
@@ -862,7 +900,7 @@ module.exports = {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
-			var who = message.author.id;
+			who = message.author.id;
 			parms = parms.split(' ');
 			var roomId = parms[0];
 			parms.shift();
@@ -897,22 +935,29 @@ module.exports = {
 			} 
 			
 			if (who !== cons.SPONGE_ID && noWiz) {
-				ut.chSend(' magicking up items is temporarily disabled, sorry. ');
+				ut.chSend(message, ' magicking up items is temporarily disabled, sorry. ');
 			}
 			
-			var who = message.author.id;
+			who = message.author.id;
 			var pl = players[who];
 			parms = parms.split(' ');
 			var itemName = parms[0];
+			
+			if (itemName.length < 2 || itemName.length > 31) {
+				ut.chSend(message, ' Invalid prop name. It needs to be between 2 and 31 chars.');
+				return;
+			}
+			
 			parms.shift();
 			var itemDesc = parms.join(' ');
-			
 			var theItem = new SceneryItem({
 				"description": itemDesc
 			});
 			pl.inventory[itemName] = theItem;
-			ut.chSend(message, ' Gave you a prop "' + itemName + '" with description: ' + itemDesc +
-			  ', ' + message.author);
+			ut.chSend(message, ' Gave you a prop "' + itemName + '".\n :warning:' +
+			  ' When you drop it, you won\'t be able to pick it back up, so make sure ' +
+			  'you drop it in the room where you want to make it part of the scenery!');
+			ut.saveObj(rooms, cons.MUD.roomFile);
 		}
 	},
 	killitem: {
@@ -922,7 +967,7 @@ module.exports = {
 				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
 				return;
 			}
-			var who = message.author.id;
+			who = message.author.id;
 			var pl = players[who];
 			var loc = pl.location;
 			parms = parms.split(' ');
@@ -936,7 +981,7 @@ module.exports = {
 				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description;
 				if (parms === 'inv') {
 					delete pl.inventory[target];
-					outP += ' was deleted!';
+					outP += ' was deleted! :open_mouth: \n';
 				} else {
 					outP += ' was left alone.\n';
 				}
@@ -1033,9 +1078,35 @@ module.exports = {
 				found++;
 			}
 			
+			// check exits
+			if (typeof rooms[loc].data.exits[target] !== 'undefined') {
+				outP += '(exit) `' + target + '`: ';
+				if (rooms[loc].data.exits[target].description) {
+					outP += rooms[loc].data.exits[target].description;
+				} else {
+					outP += ' -> ' + rooms[loc].data.exits[target].goesto;
+				}
+				found++;
+			}
+
+			// check players (this sucks, will have to store in room data later)
+			// horrifying.
+			for (let plId in players) {
+				if (players[plId].charName === target) {
+					if (players[plId].location === loc) {
+						outP += '\n' + players[plId].description;
+						found++;
+					}
+					break;
+				}
+			}		
+			
 			if (!found) {
 				outP += 'I see no ' + target + ' here.';
 			}
+			
+			if (found > 1) {outP += '\n_(' + found + ' matches shown)_';}
+			
 			ut.chSend(message, outP);
 		}
 	},
@@ -1052,7 +1123,7 @@ module.exports = {
 				ut.chSend(message, ' You teleport!');
 				
 				player.unregisterForRoomEvents(); // first, unregister for events in this room
-				newLoc = target; // set our target room
+				let newLoc = target; // set our target room
 
 				eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
 				var oldLoc = '' + pLoc; // hang onto old location
@@ -1078,7 +1149,7 @@ module.exports = {
 			var pLoc = pl.location;
 			
 			if (pl.posture === 'sitting') {
-				pl.posture = 'standing'
+				pl.posture = 'standing';
 				eMaster('roomGeneric', pLoc, who, {
 					normal: ['You stand up.','stands up.']
 				}, client);
@@ -1098,7 +1169,7 @@ module.exports = {
 			var pLoc = pl.location;
 
 			if (pl.posture === 'standing') {
-				ut.chSend('You are already standing up.');
+				ut.chSend(message, 'You are already standing up.');
 			} else {
 				pl.posture = 'standing';
 				eMaster('roomGeneric', pLoc, who, {
@@ -1113,16 +1184,16 @@ module.exports = {
 			var whatSaid = parms;
 			
 			if (!whatSaid) {
-				ut.chSend('It\'s always about you, isn\'t it?');
+				ut.chSend(message, 'It\'s always about you, isn\'t it?');
 				return;
 			}
 			
-			if (!whatSaid.length > 511) {
-				ut.chSend('You may only use actions up to 511 characters.');
+			if (whatSaid.length > 511) {
+				ut.chSend(message, 'You may only use actions up to 511 characters.');
 				return;
 			} 
 
-			who = message.author.id;
+			var who = message.author.id;
 			var fail = cantDo(who, 'me');
 			if (fail) {
 				ut.chSend(message, fail);
@@ -1131,7 +1202,12 @@ module.exports = {
 			var pLoc = players[who].location;
 			
 			// Fire off some events -- notify eMaster
-			eMaster('roomGeneric', pLoc, who, whatSaid, client);
+			eMaster('roomGeneric', pLoc, who, {
+				normal: [
+					'_' + players[who].charName + ' ' + whatSaid + '_',
+					' _' + whatSaid + '_'
+				]
+			}, client);
 		}
 	},
 	who: {
