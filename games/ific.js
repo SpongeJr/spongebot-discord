@@ -391,7 +391,7 @@ var Item = function(data) {
 	this.data.hidden = false;
 	// thid.id = ???
 };
-var SceneryItem = function(data) {
+var Prop = function(data) {
 	this.data = data || {};
 	this.data.description = data.description || "A part of the scenery.";
 	this.id = data.id;
@@ -399,7 +399,7 @@ var SceneryItem = function(data) {
 };
 Item.prototype.look = defaultLook;
 Item.prototype.get = defaultGet;
-SceneryItem.prototype.look = defaultLook;
+Prop.prototype.look = defaultLook;
 
 var Player = function(data) {
 	this.location = data.location || "airport",
@@ -573,7 +573,7 @@ var buildDungeon = function() {
 			var theItem;
 			if (theRoom.data.items[item].data.hidden) {
 				// all the "hidden" items are the "scenery" items. for now.
-				theItem = new SceneryItem(theRoom.data.items[item].data);
+				theItem = new Prop(theRoom.data.items[item].data);
 			} else {
 				theItem = new Item(theRoom.data.items[item].data);
 			}
@@ -611,7 +611,7 @@ var buildPlayers = function() {
 			var theItem;
 			if (thePlayer.inventory[item].data.hidden) {
 				// all the "hidden" items are the "scenery" items. for now.
-				theItem = new SceneryItem(thePlayer.inventory[item].data);
+				theItem = new Prop(thePlayer.inventory[item].data);
 			} else {
 				theItem = new Item(thePlayer.inventory[item].data);
 			}
@@ -1087,7 +1087,41 @@ module.exports = {
 			
 			parms.shift();
 			var itemDesc = parms.join(' ');
-			var theItem = new SceneryItem({
+			var theItem = new Item({
+				"description": itemDesc
+			});
+			pl.inventory[itemName] = theItem;
+			ut.chSend(message, ' Gave you a prop "' + itemName + '".\n :warning:' +
+			  ' When you drop it, you won\'t be able to pick it back up, so make sure ' +
+			  'you drop it in the room where you want to make it part of the scenery!');
+			ut.saveObj(rooms, cons.MUD.roomFile);
+		}
+	},
+	wizprop: {
+		do: function(message, parms) {
+			var who = message.author.id;
+			if (!isPlayer(who)) {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			} 
+			
+			if (who !== cons.SPONGE_ID && noWiz) {
+				ut.chSend(message, ' magicking up items is temporarily disabled, sorry. ');
+			}
+			
+			who = message.author.id;
+			var pl = players[who];
+			parms = parms.split(' ');
+			var itemName = parms[0];
+			
+			if (itemName.length < 2 || itemName.length > 31) {
+				ut.chSend(message, ' Invalid prop name. It needs to be between 2 and 31 chars.');
+				return;
+			}
+			
+			parms.shift();
+			var itemDesc = parms.join(' ');
+			var theItem = new Prop({
 				"description": itemDesc
 			});
 			pl.inventory[itemName] = theItem;
@@ -1167,7 +1201,7 @@ module.exports = {
 				exam <Item in Inv>
 				exam <Exit>
 				exam <Player>
-				exam <SceneryItem>
+				exam <Prop>
 			*/
 			// for now, we'll just do <item in inv>
 			// and if not found, check room?
@@ -1180,7 +1214,7 @@ module.exports = {
 			// Item selector algorithm (for `exam`, use limited versions for other
 			// commands, e.g., `get` only iterates over Items, `attack` only over Mobs (and players for PvP), etc.)
 			// build up a list of valid targets:
-			//	iterate over all Items, SceneryItems, Exits, Mobs, and Players in current room
+			//	iterate over all Items, Props, Exits, Mobs, and Players in current room
 			//	build a table of their shortname : Array [UNID, UNID, ...]
 			//		Some entities may have multiple shortnames, add to each Array as needed!
 			//	check player input vs shortnames   'bag'
