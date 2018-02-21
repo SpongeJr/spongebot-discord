@@ -55,6 +55,7 @@ var adspam = require('./lib/adspam.js');
 var memory = require('./games/memory.js');
 var cattle = require('./games/cattle.js');
 
+const saved = require(cons.OBJECTS_FILENAME);
 var scram = {};
 var scramWordLists = {
 	"278588293321326594": cons.ESO_SCRAMWORDS,
@@ -78,7 +79,6 @@ var gameStats = require('../data/gamestats.json');
 var otherStats = {};
 var bankroll = require('../data/banks.json');
 if (utils.debugMode) {console.log(bankroll);}
-
 
 var loot = {
 		discountPercent: 40,

@@ -1,4 +1,6 @@
-var utils = require('../lib/utils.js');
+const utils = require('../lib/utils.js');
+const cons = require('../lib/constants.js');
+var saved = require('../' + cons.OBJECTS_FILENAME);
 //-----------------------------------------------------------------------------
 var slots = {
 	config: {
@@ -35,7 +37,7 @@ module.exports = {
 		// called to build slots array for first time !slots is run
 		// then also called after changing a symbol
 		slots.config.symArr = [];
-		for (var sym in slots.config.symbols) {
+		for (let sym in slots.config.symbols) {
 			slots.config.symArr.push({
 				sym: sym,
 				emo: slots.config.symbols[sym].emo,
@@ -44,15 +46,32 @@ module.exports = {
 		}
 	},
 	subCmd: {
+		audit: {
+			do: function(message, parms) {
+				let sData = saved.slots;
+				let credsIn = sData.credsIn;
+				let credsOut = sData.credsOut;
+				let diff = Math.abs(credsIn - credsOut);
+				let perc = diff / credsIn * 100;
+				let outStr = 'IN: ' + credsIn + '\nOUT: ' + credsOut + '\nHOUSE: ';
+				outStr += (credsIn > credsOut) ? 'GAIN of ' : 'LOSS of ';
+				outStr += diff + ' (' + perc.toFixed(3) + '%)\n';
+				outStr += 'NUMBER OF SPINS: ' + sData.spins;
+				outStr += '\n\n Data collected since: ' + new Date(sData.dataStartDate);
+				
+				utils.chSend(message, '```Official Slot Machine Audit\n' + new Date() +
+				  '\n' + outStr + '```');
+			}
+		},
 		stats: {
 			access: [],
 			do: function(message, parms, gameStats) {
-				var who = message.author.id;
-				var credsIn = utils.getStat(who, 'slots', 'credsIn', gameStats) || 0;
-				var credsOut = utils.getStat(who, 'slots', 'credsOut', gameStats) || 0;
-				var spins = utils.getStat(who, 'slots', 'spins', gameStats) || 0;
-				var ratio = ((credsOut / credsIn * 100) || 0).toFixed(2);
-				var outStr = '**SLOTS STATS** for ' + message.author + '\n';
+				let who = message.author.id;
+				let credsIn = utils.getStat(who, 'slots', 'credsIn', gameStats) || 0;
+				let credsOut = utils.getStat(who, 'slots', 'credsOut', gameStats) || 0;
+				let spins = utils.getStat(who, 'slots', 'spins', gameStats) || 0;
+				let ratio = ((credsOut / credsIn * 100) || 0).toFixed(2);
+				let outStr = '**SLOTS STATS** for ' + message.author + '\n';
 				outStr += '**Credits in**: ' + credsIn + '     **Credits won**: ' + credsOut;
 				outStr += '\n Payout ratio: ' + ratio + '% ';
 				outStr += '     # of spins: ' + spins + ' \n\n';
@@ -64,7 +83,7 @@ module.exports = {
 		reset: {
 			access: [],
 			do: function(message, parms, gameStats) {
-				var who = message.author.id;
+				let who = message.author.id;
 				utils.setStat(who, 'slots', 'credsIn', 0, gameStats);
 				utils.setStat(who, 'slots', 'credsOut', 0, gameStats);
 				utils.setStat(who, 'slots', 'spins', 0, gameStats);
@@ -81,8 +100,8 @@ module.exports = {
 					return;
 				}
 				parms = parms.split(' ');
-				oldSym = parms[0];
-				newSym = parms[1];
+				let oldSym = parms[0];
+				let newSym = parms[1];
 				if (!oldSym || !newSym) {
 					utils.chSend(message, ' Try again.');
 				} else {
@@ -140,26 +159,25 @@ module.exports = {
 				}
 				
 				utils.addBank(who, -betAmt, bankroll);
-				utils.alterStat(who, 'slots', 'credsIn', betAmt, gameStats);
-				utils.alterStat(who, 'slots', 'spins', 1, gameStats)
+				utils.alterStat(who, 'slots', 'credsIn', betAmt, gameStats, 'nosave'); // get it on the next one
+				utils.alterStat(who, 'slots', 'spins', 1, gameStats);
+				saved.slots.credsIn += betAmt;
+				saved.slots.spins++;
 				var spinArr = [];
-				for (var reel = 0; reel < 3; reel++) {
+				for (let reel = 0; reel < 3; reel++) {
 					
-					var bucket = [];
-					var highest = 0;
-					var buckNum = 0;
-					
+					let bucket = [];
+					let highest = 0;
+					let buckNum = 0;					
 					for (var sym in slots.config.symbols) {
 						bucket[buckNum] = highest + slots.config.symbols[sym].rarity;
 						buckNum++;
 						highest += slots.config.symbols[sym].rarity;
-					};
+					}
 					
-					var theSpin = Math.random() * highest;
-					
-					var foundBuck = false;
-					var bNum = 0;
-					
+					let theSpin = Math.random() * highest;
+					let foundBuck = false;
+					let bNum = 0;
 					while ((bNum < bucket.length) && (!foundBuck)) {
 						if (theSpin < bucket[bNum]) {
 							foundBuck = true;
@@ -168,19 +186,19 @@ module.exports = {
 					spinArr.push(slots.config.symArr[bNum].sym);
 				}
 				
-				spinString = '';
-				for (var i = 0; i < 3; i++) {
+				let spinString = '';
+				for (let i = 0; i < 3; i++) {
 					spinString += slots.config.symbols[spinArr[i]].emo;
 				}
 				spinString += ' (spun by ' + message.author + ')';
 				
-				for (var pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
+				for (let pNum = 0, won = false; ((pNum < payTab.length) && (!won)); pNum++) {
 					
-					var matched = true;
-					var reel = 0;
+					let matched = true;
+					let reel = 0;
 					while (matched && reel < payTab[pNum].pattern.length) {
-						if ((spinArr[reel] === payTab[pNum].pattern[reel])
-						  || (payTab[pNum].pattern[reel] == 'any')) {
+						if ((spinArr[reel] === payTab[pNum].pattern[reel]) ||
+						  (payTab[pNum].pattern[reel] == 'any')) {
 							
 						} else {
 							matched = false;
@@ -188,26 +206,29 @@ module.exports = {
 						
 						if ((reel === payTab[pNum].pattern.length - 1) && (matched)) {
 							// winner winner chicken dinner
-							var winAmt = betAmt * payTab[pNum].payout;
+							let winAmt = betAmt * payTab[pNum].payout;
 							spinString += '\n :slot_machine: ' +
 							  message.author + ' is a `!slots` winner!\n' + 
 							  ' PAYING OUT: ' + payTab[pNum].payout + ':1' +
 							  ' on a ' + betAmt + ' bet.   Payout =  ' + winAmt;
 							utils.addBank(who, winAmt, bankroll);
 							utils.alterStat(who, 'slots', 'credsOut', winAmt, gameStats);
+							saved.slots.credsOut += winAmt;
 							won = true;					
 						}
 						reel++;
 					}
 				}
+				utils.saveObj(saved, cons.OBJECTS_FILENAME);
 				utils.chSend(message, spinString);
 			}
 		},
 		paytable: {
 			access: false,
 			do: function(message, parms) {
-				var payTab = slots.config.payTable;
-				var rarityTot = 0;
+				let payTab = slots.config.payTable;
+				let rarityTot = 0;
+				let ptabString;
 				for (var sym in slots.config.symbols) {
 					rarityTot += slots.config.symbols[sym].rarity;
 				}
@@ -216,17 +237,17 @@ module.exports = {
 				ptabString += '!SLOTS PAYOUT TABLE\n`[PAYOUT]    | [PATTERN]   | [ODDS AGAINST]`\n';
 				
 				for (var i = 0; i < payTab.length; i++) {
-					var lineChance = 1;	
+					let lineChance = 1;	
 					ptabString += '`' + payTab[i].payout + ' : 1';
 					
-					var tempstr = payTab[i].payout.toString() + ' : 1';
-					var stlen = tempstr.length;
-					for (var j = 0; j < 12 - stlen; j++) {
+					let tempstr = payTab[i].payout.toString() + ' : 1';
+					let stlen = tempstr.length;
+					for (let j = 0; j < 12 - stlen; j++) {
 						ptabString += ' ';
 					}
 					ptabString += '|` ';
 					
-					for (var j = 0; j < payTab[i].pattern.length; j++) {
+					for (let j = 0; j < payTab[i].pattern.length; j++) {
 						if (payTab[i].pattern[j] === 'any') {
 							ptabString += ':grey_question: ';
 						} else {
@@ -248,7 +269,7 @@ module.exports = {
 			// must be first time around, we need to build the symbol array
 			this.buildArray();
 			utils.debugPrint('.slots: First run, built symbol array.');
-		};
+		}
 		
 		// --- default command handler ---
 		parms = parms.split(' ');

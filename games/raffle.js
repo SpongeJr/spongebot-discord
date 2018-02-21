@@ -1,8 +1,8 @@
 // raffle.js Raffle module for SpongeBot
 // By SpongeJr
 
-var utils = require('../lib/utils.js');
-var cons = require('../lib/constants.js');
+const utils = require('../lib/utils.js');
+const cons = require('../lib/constants.js');
 var giveaways = require('../../data/giveaways.json');
 
 module.exports = {
