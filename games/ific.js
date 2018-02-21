@@ -11,8 +11,24 @@ var dreamStrings = {
 	'get': 'You dream of acquiring new things...\n',
 	'drop': 'Your hand twitches in your sleep.\n',
 	'say': 'You mumble incomprehensibly in your sleep.\n',
+	'attack': 'You dream of glorious battle!'
 };
-
+const findChar = function(nick, room) {
+	// returns the id that matches with a nick, if it is in the room provided
+	// leave room null to allow it to pass anywhere
+	
+	// check players (this sucks, will have to store in room data later)
+	// horrifying.
+	for (let plId in players) {
+		if (players[plId].charName === nick) {
+			if (players[plId].location === room || !room) {
+				return plId;
+			}
+			break;
+		}
+	}
+	return false;
+}
 const postureStr = {
 	'standing': 'is standing',
 	'sitting': 'is sitting',
@@ -33,7 +49,19 @@ const cantDo = function(who, action) {
 	
 	if (action === 'go') {
 		if (players[who].posture === 'sitting') {
-			return ('You need to `stand` up before moving.');
+			return 'You need to `stand` up before moving.';
+		}
+	}
+	
+	if (action === 'attack') {
+		if (players[who].posture === 'sitting') {
+			return 'You can\'t attack from a sitting position!';
+		}
+	}
+	
+	if (action === 'tele') {
+		if (players[who].posture === 'asleep') {
+			return 'You can\'t tele while asleep, mainly because the code doesn\'t expect it.'
 		}
 	}
 };
@@ -49,8 +77,81 @@ var defaultLook = function(item) {
 };
 var defaultGet = function() {};
 var defaultDescribe = function() {
-	return this.description;
+	// temporary: build a generic stat block thing
+	let outStr = '**` -=[ ' + this.charName;
+	outStr += ' ]=- `**\n```';
+	outStr += '-'.repeat(outStr.length) + '\n';
+	if (this.title) {
+		outStr += '(' + this.charName + ' ' + this.title + ')\n';
+	}
+	for (var stat in this.stats) {
+		let sLine = ' '.repeat(15) + stat;
+		sLine = sLine.substr(-15);
+		sLine += ' ... ' + this.stats[stat];
+		outStr += sLine + '\n';
+	}
+	outStr += '```';
+		
+	return outStr;
 };
+var defaultAttack = function(target) {
+	let hitChance = 0.4;
+	let maxDmg = 3;
+	let damage; 
+	let outStr = '';
+	let result; 
+	
+	// todo: allow no target -- use last target by default
+
+	if (!target) {
+		return {fail: true, outStr: 'You need to specify a target to attack!'}
+	}
+	
+	targetId = findChar(target, this.location);
+	if (!targetId) {
+		return {fail: true, outStr: 'That\'s not a target I can see!'}
+	}
+	
+	if (players[targetId].posture === 'asleep') {
+		return {fail: true, outStr: target + ' is asleep and may not be attacked.'}
+	}
+	
+	var now = new Date().valueOf();
+	if (now < this.timers.nextAttack) {
+		
+		if (this.stats.attackSpamWarns > 2) {
+			this.stats.attackSpamWarns = 2; // reset them... partially
+			this.timers.nextAttack += this.stats.attackDelay * 1.5;
+			return {fail: true, outStr: ' ** SLOW DOWN, YOU THREW YOUR RHYTHM OFF! ** ' +
+			  ' You\'re off balance and will now have to wait an extra ' +
+			  parseFloat(this.stats.attackDelay * 1.5 / 1000, 2) + ' sec. ' +
+			' before attacking again!'};
+		}
+		this.stats.attackSpamWarns++;
+		return {fail: true, outStr: ' ** SLOW DOWN! ** You\'re attacking too fast! You\'ll' +
+		' throw your rhythm off and wind up off-balance!'};
+	}
+	
+	this.timers.nextAttack = now + this.stats.attackDelay;
+	this.stats.attackSpamWarns--;
+	if (this.stats.attackSpamWarns < 0) {this.stats.attackSpamWarns = 0;}
+	
+	if (Math.random() < hitChance) {
+		damage = Math.floor(Math.random() * maxDmg) + 1;
+		outStr += this.charName + ' hits ' + target + ' for ' + damage + ' damage !';
+		players[targetId].stats.hp += -damage;
+	} else {
+		outStr += this.charName + ' swings at ' + target + ' and misses!';
+	}
+	
+	if (!this.stats.timesAttacked) {
+		this.stats.timesAttacked = 1;
+	} else {
+		this.stats.timesAttacked++;
+	}
+	ut.saveObj(players, cons.MUD.playerFile); // save to disk
+	return {fail: false, outStr};
+}
 
 var eMaster = function(eventName, where, sender, data, client) {
 	
@@ -130,7 +231,7 @@ var defaultRoomEventKiller = function(eventName, id) {
 	
 	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
 		console.log('WARNING: Tried to kill nonexistent ' + eventName +
-		'event with id ' + id + ' in ' + roomId);
+		' event with id ' + id + ' in ' + roomId);
 		return false;
 	}
 	delete(eMaster.listens[eventName][roomId][id]);
@@ -311,27 +412,21 @@ var Player = function(data) {
 	this.stats = data.stats || {
 		"shtyle": "mundane",
 		"speed": 120,
-		"status": "normal"
+		"status": "normal",
+		"hp": 40,
 	};
+	this.stats.attackDelay = 2400;
+	this.stats.attackSpamWarns = this.stats.attackSpamWarns || 0;
 	this.posture = data.posture || "asleep";
 	this.id = data.id;
 	this.title = data.title;
 
-	// temporary: build a generic stat block thing
-	let outStr = '**` -=[ ' + this.charName;
-	outStr += ' ]=- `**\n```';
-	outStr += '-'.repeat(outStr.length) + '\n';
-	if (this.title) {
-		outStr += '(' + this.charName + ' ' + this.title + ')\n';
+	this.description = data.description || "a brave MUD tester";
+	
+	this.timers = {
+		"nextAttack": 0,
+		"nextMove": 0
 	}
-	for (var stat in this.stats) {
-		let sLine = ' '.repeat(15) + stat;
-		sLine = sLine.substr(-15);
-		sLine += ' ... ' + this.stats[stat];
-		outStr += sLine + '\n';
-	}
-	outStr += '```';
-	this.description = outStr;
 };
 var Room = function(data) {
 	// data is an object. any necessary properties not given
@@ -356,6 +451,7 @@ Room.prototype.describe = defaultRoomDescribe;
 Room.prototype.shortDesc = defaultRoomShortDesc;
 
 Player.prototype.describe = defaultDescribe;
+Player.prototype.attack = defaultAttack;
 
 Player.prototype.on = defaultPlayerEventHandler;
 Player.prototype.off = defaultPlayerEventKiller;
@@ -690,6 +786,47 @@ module.exports = {
 			console.log(eMaster.listens);
 			console.log(' roomSay In this area (' + who.location + '): ');
 			console.log(eMaster.listens.roomSay[who.location]);
+		}
+	},
+	getid: {
+		do: function(message, parms) {
+			// getid <nick> to search globally
+			// getid <roomId> to search a particular room
+			// getid <here> to search current location
+			
+			parms = parms.split(' ');
+			nick = parms[0];
+			let match;
+			
+			if (parms[1] === 'here') {
+				match = findChar(nick, players[message.author.id].location);
+			} else if (parms[1]) {
+				match = findChar(nick, parms[1]);
+			} else {
+				match = findChar(nick);
+			}
+			console.log(players[message.author.id].location);
+			
+			if (match) {
+				ut.chSend(message, '```' + match + ' : ' + nick + '```');
+			} else {
+				ut.chSend(message, nick + ' couldn\'t be found.');
+			}
+		}
+	},
+	attack: {
+		do: function(message, parms) {
+			
+			parms = parms.split(' ');
+			target = parms[0];
+
+			let result = players[message.author.id].attack(target);
+			
+			if (result.fail) {
+				ut.chSend(message, result.outStr);
+			} else {
+				ut.chSend(message, result.outStr);
+			}
 		}
 	},
 	look: {
@@ -1094,7 +1231,7 @@ module.exports = {
 			for (let plId in players) {
 				if (players[plId].charName === target) {
 					if (players[plId].location === loc) {
-						outP += '\n' + players[plId].description;
+						outP += '\n' + players[plId].describe();
 						found++;
 					}
 					break;
@@ -1112,12 +1249,16 @@ module.exports = {
 	},
 	tele: {
 		do: function(message, parms, client) {
-			var who = message.author.id;
-			var player = players[who];
-			var target = parms;
-			
-			var pLoc = player.location;
-			var chanStr = '';
+			let who = message.author.id;
+			let player = players[who];
+			let target = parms;
+			let fail = cantDo(who, 'exam'); 
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
+			let pLoc = player.location;
+			let chanStr = '';
 			if (typeof rooms[target] !== 'undefined') {
 				ut.saveObj(players, cons.MUD.playerFile);
 				ut.chSend(message, ' You teleport!');
@@ -1126,7 +1267,7 @@ module.exports = {
 				let newLoc = target; // set our target room
 
 				eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
-				var oldLoc = '' + pLoc; // hang onto old location
+				let oldLoc = '' + pLoc; // hang onto old location
 				player.location = newLoc; // actually move us
 				player.registerForRoomEvents();// now register for room events in new room
 				eMaster('roomEnter', newLoc, who, oldLoc, client); // fire off roomEnter, notify everyone + us
@@ -1136,7 +1277,6 @@ module.exports = {
 				} else {
 					chanStr += rooms[newLoc].describe(newLoc);
 				}
-				
 			} else {
 				ut.chSend(message, target + ' is not a valid room to teleport to.');
 			}
