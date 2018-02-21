@@ -23,8 +23,6 @@ const MYPALS = require('../mypals.json');
 const BOT = new Discord.Client();
 const SPONGEBOT_ID = 402122635552751616;
 
-const FRUIT_VAL = 300; // temporary!
-
 var debugPrint =function(inpString){
 // console.log optional replacement
 // does not output when debugMode global is false
@@ -47,98 +45,16 @@ var spongeBot = {};
 //-----------------------------------------------------------------------------
 const cons = require('./lib/constants.js');
 var utils = require('./lib/utils.js');
-var iFic = require('./games/ific.js');
+//var iFic = require('./games/ific.js');
 var acro = require('./games/acro.js');
 var slots = require('./games/slots.js');
+var tree = require('./games/loottree.js');
 var raffle = require('./games/raffle');
-var ebon = require('./lib/eboncmds.js');
 var quotes = require('./games/quotes.js');
 var adspam = require('./lib/adspam.js');
 var memory = require('./games/memory.js');
 var cattle = require('./games/cattle.js');
-//-----------------------------------------------------------------------------
-/* tree.config: {
-		treeVal: how many credits are awarded upon harvesting,
-		ticketRarity: how rare (really) tickets are, as in 1 in this value chance
-		magicSeedRarity: how rare seeds are, as above (1000 means 1/1000 chance)
-		harvestMessages: [] Array of strings of things that might be said during harvesting
-*/
-//-----------------------------------------------------------------------------
-var Fruit = function(stats) {
-	this.stats = stats || {};
-	this.stats.ripeness = stats.ripeness || 0;
-	this.stats.name = stats.name || ':seedling: budding';
-	this.stats.valueMult = stats.valueMult || 0;
-	this.stats.special = {},
-	this.stats.color = utils.listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled']) +
-	  ' ' + utils.listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
-};
-Fruit.prototype.pick = function(message) {
-	// returns some text about what happened
-	var outP = '';
-	
-	if (Math.random() < 0.08) {
-		outP += this.stats.name + ' loot fruit got squished! ';
-		this.stats.name = ':grapes: a squished';
-		this.stats.valueMult = 0;
-	}	
-	outP += this.stats.name + ' loot fruit was picked for ' + FRUIT_VAL +
-	  ' x ' + (this.stats.valueMult * 100) + '% = ' + FRUIT_VAL * this.stats.valueMult;
-		
-	this.stats.ripeness = Math.random() * 0.04;
-	this.stats.name = ':seedling: budding';
-	this.stats.valueMult = 0;
-	
-	return outP;
-};
-Fruit.prototype.age = function() {
-	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
-	
-	 if (this.stats.ripeness > 1.3) {
-		this.stats.name = ':nauseated_face: rotten';
-		this.stats.valueMult = 0;
-	} else if (this.stats.ripeness > 1.1 && this.stats.ripeness <= 1.3) {
-		this.stats.valueMult = 0.8;
-		this.stats.name = ':eggplant: very ripe';
-	} else if (this.stats.ripeness > 0.8 && this.stats.ripeness <= 1.1) {
-		this.stats.name = ':eggplant: perfectly ripe';
-		this.stats.valueMult = 1;
-	} else if (this.stats.ripeness > 0.4 && this.stats.ripeness <= 0.8) {
-		this.stats.name = ':pineapple: unripe';
-		this.stats.valueMult = 0.1;
-	} else if (this.stats.ripeness <= 0.4) {
-		this.stats.name = ':herb: budding';
-		this.stats.valueMult = 0;
-	}
-};
-var tree = {
-	config: {
-		treeVal: 3500,
-		ticketRarity: 12,
-		magicSeedRarity: 8,
-		harvestMessages: ['','','','Wow, can I get a loan?','You might need some help carrying all that!','Nice haul!','Enjoy your goodies!',
-		  'Cha-CHING!','Woot! Loot!','Looks like about tree fiddy to me.','Don\'t you wish loot trees were real?',
-		  'Thanks for participating on the server!','Don\'t spend it all on the `!slots`!',':treasure:',':coin: :coin: :coin:',
-		  ':money_mouth:', 'That\'s some good loot!','If you have certain roles, you get more on your harvest!','','','','','']
-	},
-	trees: {
-		"134800705230733312": [
-			new Fruit({}),
-			new Fruit({"health": 1}),
-			new Fruit({})
-		],
-		"306645821426761729": [
-			new Fruit({}),
-			new Fruit({"health": 1}),
-			new Fruit({})
-		],
-		"104219409991626752": [
-			new Fruit({}),
-			new Fruit({"health": 1}),
-			new Fruit({})
-		]
-	}
-};
+
 var scram = {};
 var scramWordLists = {
 	"278588293321326594": cons.ESO_SCRAMWORDS,
@@ -418,264 +334,20 @@ spongeBot.zshow = {
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
-	timedCmd: {
-		howOften: cons.ONE_WEEK,
-		gracePeriod: cons.ONE_HOUR,
-		failResponse: 'You open up your loot bag to `!collect`, but it\'s ' +
-		  'completely empty. :slight_frown: . It takes <<howOften>> for new ' +
-		  'loot to appear in your `!collect`ion bag. Yours will be ready in <<next>>'},
-	do: function(message) {
-		var who = message.author.id;	
-		if (!utils.collectTimer(message, who, 'collect', spongeBot.collect.timedCmd, gameStats)) {
-			// not time yet. since we used collectTimer();, the rejection message
-			// is automatic, and we can just return; here if we want
-			return;
-		} else {
-			// if we're here, it's time to collect, and collectTime has been updated to now
-			var messStr =  ':moneybag: Loot bag `!collect`ed!  :moneybag:\n\n';
-			var collectVal = 12500;
-			var fruitBonus = 0;
-			
-			// small extra fruit bonus for now (750 / fr.)
-			if (tree.trees.hasOwnProperty(who)) {
-				fruitBonus += 750 * tree.trees[who].length;
-				collectVal += fruitBonus;
-				messStr += ' :money_mouth: Bonus of ' + fruitBonus + ' for trying ' +
-				' the `!tree fruit` alpha-testing feature since last bot restart!\n';
-			}
-			
-			var numTix = 1;
-			messStr += utils.makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
-			  'and ' + numTix + 'x :tickets: (raffle tickets) to your bank. \n';
-			 messStr += utils.makeTag(who) + ', you now have ' + utils.alterStat(who, 'raffle', 'ticketCount', numTix, gameStats) +
-			   ' :tickets: s and ' + utils.addBank(who, collectVal, bankroll) + ' credits! ';
-			//random saying extra bit on end (using tree sayings for now)
-			var sayings = JSON.stringify(tree.config.harvestMessages);
-			sayings = JSON.parse(sayings);
-			messStr += utils.listPick(sayings);
-			utils.chSend(message, messStr);
-		}
+	do: function(message, parms) {
+		tree.collectbag.do(message, parms, gameStats, bankroll);
 	}
 };
 spongeBot.tree = {
-	subCmd: {
-		check: {
-			do: function(message) {
-				var who = message.author.id;
-				var now = new Date();
-				var timedCmd = spongeBot.tree.timedCmd;
-				var lastCol = utils.alterStat(who, 'lastUsed', 'tree', 0, gameStats);
-				var nextCol = lastCol + timedCmd.howOften - timedCmd.gracePeriod;
-				var percentGrown;
-				now = now.valueOf();
-
-				if (utils.checkTimer(message, who, 'tree', spongeBot.tree.timedCmd, gameStats)) {
-					utils.chSend(message, 'Your loot tree is fully grown, and you should harvest it '+
-					  ' with `!tree harvest` and get your goodies!');
-				} else {
-					percentGrown = 100 * (1 - ((nextCol - now) / (timedCmd.howOften - timedCmd.gracePeriod)));
-					utils.chSend(message, ' Your loot tree is healthy, and looks to be about ' +
-					'about ' + percentGrown.toFixed(1) + '% grown. It ought to be fully grown' +
-					' in about ' + msToTime(nextCol - now));
-				}
-
-			},
-		},
-		harvest: {
-			do: function(message) {
-				var who = message.author.id;	
-				if (!utils.collectTimer(message, who, 'tree-harvest', spongeBot.tree.timedCmd, gameStats)) {
-					// not time yet. since we used collectTimer();, the rejection message
-					// is automatic, and we can just return; here if we want
-					return;
-				} else {
-					// if we're here, it's time to collect, and collectTime has been updated to now
-					var messStr = '';
-					var collectVal = 0;
-					var fruitBonus = 0;
-					var fruitBonusStr = '';
-					
-					//fruit bonus
-					if (tree.trees.hasOwnProperty(who)) {
-						/*
-						for (var i = 0; i < tree.trees[who].length; i++) {
-							
-						}
-						*/
-						fruitBonus += 50 * tree.trees[who].length;
-					}
-					collectVal = tree.config.treeVal + fruitBonus;
-					
-					var specialRoles = {
-						"Admin": 50,
-						"Dev": 75,
-						"Emoji manager": 2000,
-						"Tester": 800,
-						"Musician": 750,
-						"Artist": 750,
-						"Writer": 750,
-						"giveaways": 300,
-					};
-					var role;
-					var roleBonusStr = '';
-					var totalRoleBonus = 0;
-					for (var roleName in specialRoles) {
-						role = message.guild.roles.find('name', roleName);
-						if (message.member.roles.has(role.id)) {
-							roleBonusStr += roleName + '(' + specialRoles[roleName] + '), ';
-							totalRoleBonus += specialRoles[roleName];
-						}
-					}
-					
-					if (totalRoleBonus !== 0) {
-						roleBonusStr = roleBonusStr.slice(0, roleBonusStr.length - 2); // remove last comma
-						roleBonusStr = 'Included these bonuses for having special roles: ' + roleBonusStr;
-						roleBonusStr += '\n   Total role bonus: ' + totalRoleBonus + '! ';
-						collectVal += totalRoleBonus;
-					}
-					
-					if (fruitBonus > 0) {
-						fruitBonusStr += '\n Also added ' + fruitBonus + ' for trying `!tree fruit` since' +
-						  'the last bot reset. ';
-					}
-					
-					messStr +=  ':deciduous_tree: Loot tree harvested!  :moneybag:\n ' +
-					  utils.makeTag(who) +  ' walks away ' + collectVal + ' credits richer! ' +
-					  '\n' + roleBonusStr + fruitBonusStr;
-					utils.addBank(who, collectVal, bankroll);
-					
-					//random saying extra bit on end: 
-					var sayings = JSON.stringify(tree.config.harvestMessages);
-					sayings = JSON.parse(sayings);
-					messStr += utils.listPick(sayings);
-					
-					utils.chSend(message, messStr);
-					
-					//magic seeds ... (do nothing right now unfortunately) =(
-					//since I'm testing and will have them set common, we're calling them "regularSeeds"
-					if (Math.floor(Math.random() * tree.config.magicSeedRarity) === 0) {
-						utils.chSend(message, utils.makeTag(who) + ', what\'s this? You have found a ' +
-						'loot tree seed in your harvest! Looks useful! You save it.');
-						
-						utils.alterStat(who, 'tree', 'regularSeeds', 1, gameStats);
-					}
-
-					//raffle ticket! DOES award, be careful with rarity!
-					if (Math.floor(Math.random() * tree.config.ticketRarity) === 0) {
-						utils.chSend(message, utils.makeTag(who) + ', what\'s this? A raffle ticket ' +
-						':tickets: fell out of the tree! (`!giveways` for more info.)');
-						utils.alterStat(who, 'raffle', 'ticketCount', 1, gameStats);
-					
-					}
-				}
-			}
-		},
-		fruit: {
-			do: function(message) {
-				//var fruit = getStat(message.author.id, tree, ...
-				var who = message.author.id;
-				if (tree.trees.hasOwnProperty(who)) {
-					var fruit = tree.trees[who];
-					
-					// show each fruit's stats
-					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
-					for (var i = 0; i < fruit.length; i++) {	
-						fruitMess += fruit[i].stats.name + ' ' + fruit[i].stats.color +
-						  ' loot fruit   Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
-						if (fruit[i].stats.health) {
-							fruitMess += ' (thriving!)';
-						}
-						fruitMess += '\n';
-					}
-					utils.chSend(message, fruitMess);
-				} else {
-					utils.chSend(message, 'I see no fruit for you to check, ' + message.author +
-					  '\nI\'ll give you three starter fruit. You can !tree tend or !tree pick them' +
-					  ' at any time, for now.');
-					tree.trees[who] = [];
-					tree.trees[who].push(new Fruit({}));
-					tree.trees[who].push(new Fruit({}));
-					tree.trees[who].push(new Fruit({}));
-				}
-			}
-		},
-		tend: {
-			do: function(message) {
-				//var fruit = getStat(message.author.id, tree, ...
-				var who = message.author.id;
-				if (tree.trees.hasOwnProperty(who)) {
-					var fruit = tree.trees[who];
-					// tend to each Fruit
-					var fruitMess = '``` Loot fruit status for '+ message.author.username +': ```\n';
-					for (var i = 0; i < fruit.length; i++) {
-						var ageIt = (Math.random() < 0.67); // 67% per fruit chance of aging
-						if (ageIt) {
-							fruit[i].age();
-						}
-							
-						fruitMess += fruit[i].stats.name + ' ' + fruit[i].stats.color +
-						  ' loot fruit   Ripeness: ' + (fruit[i].stats.ripeness * 100).toFixed(1) + '%';
-						if (ageIt) {
-							fruitMess += ' (tended)';
-						} if (fruit[i].stats.health) {
-							fruitMess += ' (thriving!)';
-						}
-						fruitMess += '\n';
-					}
-					utils.chSend(message, fruitMess);
-				} else {
-					utils.chSend(message, 'I see no trees you can tend to.');
-				}
-			}
-		},
-		pick: {
-			do: function(message) {
-				var who = message.author.id;
-				if (tree.trees.hasOwnProperty(who)) {
-					var fruit = tree.trees[who];
-				
-					// .pick() each Fruit
-					var pickMess = '```Loot Fruit pick results for '+ message.author.username +': ```\n ';
-					for (var i = 0; i < fruit.length; i++) {
-						pickMess += fruit[i].pick(message) + '\n';
-					}
-					utils.chSend(message, pickMess);
-				}
-			}
-		}
-	},
-	cmdGroup: 'Fun and Games',
-	help: 'Interact with your loot `!tree` and collect regular rewards!',
-	longHelp: 'Loot trees are a _brand new_ feature springing up on the server!\n' +
-	  ' You can currently `!tree check` your tree, or `!tree harvest` from it.\n' +
-	  ' They normally pay out every 12 hours, but are currently growing like mad!\n' +
-	  ' \n Loot trees will always award credit when harvested, and sometimes other ' +
-	  ' surprises! \n :deciduous_tree: :deciduous_tree: Good luck! :moneybag: :moneybag:',
+	help: tree.help,
+	longHelp: tree.longHelp,
 	disabled: false,
 	access: false,
-	timedCmd: {
-		howOften: cons.ONE_DAY / 2,
-		gracePeriod: 300000,
-		failResponse: 'Your loot `!tree` is healthy and growing well! But there ' +
-		  'is nothing to harvest on it yet. It looks like it\'ll yield loot in ' +
-		  'about <<next>>. Loot trees typically yield fruit every <<howOften>>. '},
+	cmdGroup: tree.cmdGroup,
 	do: function(message, parms) {
-		parms = parms.split(' ');		
-		if (parms[0] === '') {
-			utils.chSend(message, 'Please see `!help tree` for help with your loot tree.');
-			return;
-		}
-		
-		parms[0] = parms[0].toLowerCase();
-		
-		if (spongeBot.tree.subCmd.hasOwnProperty(parms[0])) {
-			//we've found a found sub-command, so do it...
-			spongeBot.tree.subCmd[parms[0]].do(message);
-		} else {
-			utils.chSend(message, 'What are you trying to do to that tree?!');
-		}
+		tree.do(message, parms, gameStats, bankroll);
 	}
-};
+}
 spongeBot.loot = {
 		disabled: false,
 		access: false,
@@ -1061,15 +733,6 @@ spongeBot.showCode = {
 	},
 	help: 'shows code.',
 	disabled: true
-};
-//-----------------------------------------------------------------------------
-spongeBot.ttc = {
-	cmdGroup: 'Miscellaneous',
-	do: function(message, parms) {
-		ebon.ttc(message, parms);
-	},
-	help: '`!ttc <item>` sends a link to the item on eu.tamrieltradecentre.com.' +
-	  ' Use an exact item name, or you can search for partial matches.'
 };
 //-----------------------------------------------------------------------------
 spongeBot.sammich = {
