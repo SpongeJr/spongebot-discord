@@ -2,6 +2,7 @@ var ut = require('../lib/utils.js');
 var cons = require('../lib/constants.js');
 var players = require('../' + cons.DATA_DIR + cons.MUD.playerFile);
 var rooms = require('../' + cons.DATA_DIR + cons.MUD.roomFile);
+var items = require('../' + cons.DATA_DIR + cons.MUD.itemFile);
 var dungeonBuilt = false;
 var noWiz = false;
 
@@ -75,7 +76,29 @@ var defaultLook = function(item) {
 	outP += item.description;
 	return outP;
 };
-var defaultGet = function() {};
+var defaultGet = function(who, client) {
+	players[who].inventory[this.id] = this.id;
+	delete rooms[players[who].location].data.items[this.id];
+	this.data.location = who;
+	ut.saveObj(rooms, cons.MUD.roomFile);
+	ut.saveObj(players, cons.MUD.playerFile);
+	ut.saveObj(items, cons.MUD.itemFile);
+	eMaster('roomGet', players[who].location, who, this.id, client);
+};
+var defaultDrop = function(who, where, client) {
+	rooms[where].data.items[this.id] = this.id;
+	this.data.location = where;
+	delete players[who].inventory[this.id];
+	
+	ut.saveObj(rooms, cons.MUD.roomFile);
+	ut.saveObj(players, cons.MUD.playerFile);
+	ut.saveObj(items, cons.MUD.itemFile);
+	
+	if (!this.data.hidden) {
+	// don't fire off event if item is hidden
+		eMaster('roomDrop', where, who, this.id, client);
+	}
+};
 var defaultDescribe = function() {
 	// temporary: build a generic stat block thing
 	let outStr = '**` -=[ ' + this.charName;
@@ -278,6 +301,36 @@ var defaultPlayerEventHandler = function(eventName, callback, id) {
 		"callback": callback
 	};
 };
+var defaultItemEventHandler = function(eventName, callback, id) {
+
+	let roomId = this.location;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		eMaster.listens[eventName][roomId] = {};
+	}
+	
+	eMaster.listens[eventName][roomId][this.id] = {
+		"callback": callback
+	};
+};
+var defaultItemEventKiller = function(eventName, id) {
+
+	let roomId = this.location;
+	
+	if (typeof eMaster.listens[eventName][roomId] === 'undefined') {
+		console.log('WARNING: Tried to kill a ' + eventName +
+		  ' in ' + roomId + ' that did not have those.');
+		return false;
+	}
+	
+	if (typeof eMaster.listens[eventName][roomId][id] === 'undefined') {
+		console.log('WARNING: Tried to kill nonexistent ' + eventName +
+		'event with id ' + id + ' in ' + roomId);
+		return false;
+	}
+	delete(eMaster.listens[eventName][roomId][id]);
+};
+
 var defaultRoomDescribe = function(id) {
 	// builds a standard "room description string" and returns it
 	var outStr = '-=-=-=-\n';
@@ -301,9 +354,16 @@ var defaultRoomDescribe = function(id) {
 		
 		var count = 0;
 		var itemStr = '';
-		for (var itemName in rooms[id].data.items) {
-			if (!rooms[id].data.items[itemName].data.hidden) {
-				itemStr += '`' + itemName + '`   ';
+		for (let itemId in rooms[id].data.items) {
+			console.log(itemId);
+			let theItem = items[itemId];
+			if (!theItem.data.hidden) {
+				itemStr += theItem.data.description;
+				itemStr += '(' + theItem.data.shortName + ')';
+				if (!noWiz) {
+					itemStr += '(' + '`' + itemId + '`)';
+				}
+				itemStr += ' ';
 				count++;
 			}
 		}
@@ -384,28 +444,142 @@ var defaultRoomShortDesc = function(id) {
 	}
 	return outStr;
 };
-var Item = function(data) {
-	this.data = data || {};
-	this.data.hidden = data.hidden || false;
-	this.data.description = data.description || "Some object you spotted.";
-	this.data.hidden = false;
-	// thid.id = ???
+var defaultValidItems = function() {
+	for (var item in this.items) {
+		theItem = items[item];
+		
+		
+	}
 };
+var nextId = {};
+
+var itemGroup = {
+	"junk": {
+		
+	},
+	"potion": {
+		
+	},
+	"unique" : {
+		
+	}
+};
+var itemTypes = {
+	"energy drink": {
+		group: "potion"
+	},
+	"healing potion": {
+		group: "potion"
+	},
+	"empty soda can": {
+		shortName: "can",
+		group: "junk"
+	},
+	"unique": {
+		group: "unique"
+	},
+	"soda machine": {
+		group: "unique"
+	}
+};
+var Item = function(itemType, data) {
+	this.data = data || {};
+	if (typeof data !== 'object') {
+		data = {};
+	}
+	this.data.hidden = data.hidden || false; // doesn't make sense
+	this.data.description = data.description || "Some object you spotted.";
+	this.data.shortName = data.shortName || 'item';
+	this.data.location = data.location || 'nowhere really';
+	this.data.type = data.type || itemType;
+	if (!nextId[itemType]) {
+		nextId[itemType] = 1;
+	}
+	
+	// stamp it with an instance # and increment the instance counter
+	this.id = itemType + '##' + nextId[itemType];
+	if (typeof itemTypes[itemType] === 'undefined') {
+		itemTypes[itemType] = {group: "junk"};
+	}
+	console.log('Item "' + this.data.shortName + '" created with id: ' + this.id +
+	  ' (group: ' + itemTypes[itemType].group + '). Placing in: ' + this.data.location);
+	
+	nextId[itemType]++;
+	
+	// figure out where it belongs (room or player) and update that object, too
+	var loc = this.data.location;
+	if (isNaN(loc.charAt(0))) {
+		// first letter not a number, so it's in a room
+		rooms[this.data.location].data.items[this.id] = this.id;
+	} else {
+		// it's on a player
+		players[this.data.location].inventory[this.id] = this.id;
+	}
+	
+	// add it to the items file...
+	items[this.id] = this;
+	//console.log(items[this.id]);
+};
+Item.prototype.look = defaultLook;
+Item.prototype.get = defaultGet;
+Item.prototype.drop = defaultDrop;
 var SceneryItem = function(data) {
 	this.data = data || {};
 	this.data.description = data.description || "A part of the scenery.";
 	this.id = data.id;
 	this.data.hidden = true;
 };
-Item.prototype.look = defaultLook;
-Item.prototype.get = defaultGet;
 SceneryItem.prototype.look = defaultLook;
+var ItemGenerator = function(itemType, data) {
+	this.data = data || {};
+	this.data.shortName = data.shortName || "scenery";
+	this.data.description = data.description || "A part of the scenery.";
+	this.location = data.location || "nowhere really";
+	this.data.hidden = true;
+	this.data.type = itemType || itemType;
+	
+	if (!nextId[itemType]) {
+		nextId[itemType] = 1;
+	}
+	
+	// stamp it with an instance # and increment the instance counter
+	this.id = itemType + '##' + nextId[itemType];
+	console.log('Item(scenery) "' + this.data.shortName + '" created with id: ' + this.id +
+	  ' (group: ' + itemTypes[itemType].group + '). Placing in: ' + this.data.location);
+	nextId[itemType]++;
+	
+	// figure out where it belongs (room or player) and update that object, too
+	var loc = this.data.location;
+	if (isNaN(loc.charAt(0))) {
+		// first letter not a number, so it's in a room
+		rooms[this.data.location].data.items[this.id] = this.id;
+	} else {
+		// it's on a player
+		players[this.data.location].inventory[this.id] = this.id;
+	}
+	
+	// add it to the items file...
+	items[this.id] = this;
+};
+ItemGenerator.prototype.look = defaultLook;
+ItemGenerator.prototype.make = function(itemType, data) {
+	var theItem;
+	if (typeof itemTypes[itemType] === undefined) {
+		return false;
+	}
+	theItem = new Item(itemType, data);
 
+	return theItem;
+};
+ItemGenerator.prototype.on = defaultItemEventHandler;
+ItemGenerator.prototype.off = defaultItemEventKiller;
 var Player = function(data) {
 	this.location = data.location || "airport",
 	this.inventory = data.inventory || {
-		"backpack": new Item({
-			description: "You can keep some stuff in here safely."
+		"backpack": new Item("unique", {
+			description: "You can keep some stuff in here safely.",
+			shortName: "backpack",
+			location: this.location
 		})
 	};
 	this.charName = data.charName || 'Anonymous';
@@ -449,7 +623,6 @@ Room.prototype.on = defaultRoomEventHandler;
 Room.prototype.off = defaultRoomEventKiller;
 Room.prototype.describe = defaultRoomDescribe;
 Room.prototype.shortDesc = defaultRoomShortDesc;
-
 Player.prototype.describe = defaultDescribe;
 Player.prototype.attack = defaultAttack;
 
@@ -489,6 +662,11 @@ Player.prototype.registerForRoomEvents = function() {
 		var server = client.guilds.get(players[whoSaid].server);
 		var who = player.id;
 		var user = server.members.get(who);
+		
+		if (!user) {
+			console.log('WARNING! server.members.get(' + who + ') is undefined!');
+			return false;
+		}
 		var whoStr;
 		whoStr = players[whoSaid].charName;
 		user.send('**' + whoStr + '**' + ' leaves towards ' + newRoom);
@@ -524,6 +702,7 @@ Player.prototype.unregisterForRoomEvents = function() {
 	this.off('roomExit', this.id);
 	this.off('roomGeneric', this.id);
 };
+
 //------- hardcoded test room ---------
 var talkingRoom = new Room({title: "A talking room?!", id: "talking room"});
 talkingRoom.on('roomSay', function(whoSaid, whatSaid, client) {
@@ -567,20 +746,14 @@ var buildDungeon = function() {
 	for (var room in rooms) {
 		var theRoom = new Room(rooms[room].data);
 		
-		// now, take all the items out, add their necessary methods and such,
-		// dust them off and put them back into the rooms
-		for (var item in theRoom.data.items) {
-			var theItem;
-			if (theRoom.data.items[item].data.hidden) {
-				// all the "hidden" items are the "scenery" items. for now.
-				theItem = new SceneryItem(theRoom.data.items[item].data);
-			} else {
-				theItem = new Item(theRoom.data.items[item].data);
-			}
-			theRoom.data.items[item] = theItem;
-		}
+		// wipe out any existing chars and items
+		// they'll get replaced by buildPlayers() and buildItems() calling new Item
+		theRoom.data.items = {};
+		theRoom.data.chars = [];
+		
 		rooms[room] = theRoom;
 	}
+
 	console.log('Dungeon built.');
 	
 	//----- temporary hardcoded exit to test room -----
@@ -605,30 +778,60 @@ var buildPlayers = function() {
 			thePlayer.registerForRoomEvents();
 		}
 		
-		// now, take all the items out, add their necessary methods and such,
-		// dust them off and put them back into the player
-		for (var item in thePlayer.inventory) {
-			var theItem;
-			if (thePlayer.inventory[item].data.hidden) {
-				// all the "hidden" items are the "scenery" items. for now.
-				theItem = new SceneryItem(thePlayer.inventory[item].data);
-			} else {
-				theItem = new Item(thePlayer.inventory[item].data);
-			}
-			thePlayer.inventory[item] = theItem;
-		}
-		
 		// if they're missing the server property use The Planet for now
 		if (!thePlayer.server) {
 			thePlayer.server = cons.SERVER_ID;
 		}
 		players[player] = thePlayer;
+		
+		// put them in their room:
+		if (!rooms[thePlayer.location].data.chars) {
+			rooms[thePlayer.location].data.chars = [];
+		}
+		console.log(' Putting ' + player + ' in ' + thePlayer.location);
+		rooms[thePlayer.location].data.chars.push(player);
 	}
 	console.log('Players database built.');
 };
+var buildItems = function() {
+	for (var item in items) {	
+		if (!items[item].type) {
+			// no type found, so we'll pull it from the id
+			items[item].type = items[item].id.split('##')[0];	
+		}
+		var theItem = new Item(items[item].type, items[item].data);
+	}
+	
+	//----- hardcoded test "generator"-----
+	var drinkMachine = new ItemGenerator('soda machine', {
+		description: "This machine dispenses drinks from time to time",
+		shortName: "machine",
+		location: "tarmac"
+	});
+
+	/*
+	drinkMachine.on('roomSay', () => {
+		console.log(this);
+		this.make('empty soda can', this.location);
+	});
+	*/
+
+	drinkMachine.on('roomSay', function() {
+		console.log(this);
+		drinkMachine.make('empty soda can', {
+			shortName: "can",
+			location: drinkMachine.location,
+			description: "An empty aluminum soda can is here."
+		});
+		ut.saveObj(items, cons.MUD.itemFile);
+	});
+	console.log(drinkMachine.id);
+	rooms.tarmac.data.items[drinkMachine.id] = drinkMachine.id;
+}
 module.exports = {
 	buildDungeon: buildDungeon,
 	buildPlayers: buildPlayers,
+	buildItems: buildItems,
 	terse: {
 		do: function(message) {
 			var who = message.author.id;
@@ -671,8 +874,18 @@ module.exports = {
 					player.unregisterForRoomEvents(); // first, unregister for events in this room
 					newLoc = rooms[pLoc].data.exits[where].goesto; // find our target room
 					eMaster('roomExit', pLoc, who, newLoc, client); // fire off roomExit, notify everyone but us
-					var oldLoc = '' + pLoc; // hang onto old location
+					let oldLoc = '' + pLoc; // hang onto old location
 					player.location = newLoc; // actually move us
+					
+					// remove from old room chars[], add to new
+					let ind = rooms[oldLoc].data.chars.indexOf(who);
+					rooms[oldLoc].data.chars.splice(ind, 1);
+					if (!rooms[newLoc].data.chars) {
+						console.log('WARNING! no `.data.chars` on room ' + newLoc + '! Resetting to []!');
+						rooms[newLoc].data.chars = [];
+					}
+					rooms[newLoc].data.chars.push(who);
+					
 					player.registerForRoomEvents();// now register for room events in new room
 					eMaster('roomEnter', newLoc, who, oldLoc, client); // fire off roomEnter, notify everyone + us
 					ut.saveObj(players, cons.MUD.playerFile); // save to disk
@@ -816,6 +1029,12 @@ module.exports = {
 	},
 	attack: {
 		do: function(message, parms) {
+			var who = message.author.id;
+			var fail = cantDo(who, 'attack');
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
 			
 			parms = parms.split(' ');
 			target = parms[0];
@@ -858,21 +1077,60 @@ module.exports = {
 	get: {
 		do: function(message, parms, client) {
 			var who = message.author.id;
+			var targetId;
+			var choiceNum;
 			var fail = cantDo(who, 'get');
 			if (fail) {
 				ut.chSend(message, fail);
 				return false;
 			}
-		
+			
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
 			
+			choiceNum = parseInt(target.split('.')[0]);
+			if (!isNaN(choiceNum)) {
+				target = target.split('.')[1];
+			} else {
+				choiceNum = 0;
+			}
 			
-			if (typeof rooms[pl.location].data.items[target] !== 'undefined') {
+			var choices = [];
+			for (var itemId in rooms[pl.location].data.items) {
+				console.log('(get list) itemId: ' + itemId);
+				if (items[itemId].data.shortName.startsWith(target)) {
+					if (!items[itemId].data.hidden) {
+						// not "hidden"
+						//ut.chSend (message, '(here) `' + items[itemId].data.shortName + '`: ' + items[itemId].data.description + '\n');
+						choices.push(itemId);
+					} else {
+						// is "hidden"!
+					}
+				}
+			}
+			
+			if (choices.length === 0) {
+				ut.chSend(message, 'I see no ' + target + ' here!');
+				return false;
+			}
+			
+			if (choiceNum > choices.length) {
+				ut.chSend(message, 'I see no ' + choiceNum + '.' + target + ' here!!!');
+				return false;
+			}
+			
+			if (choices.length === 1) {
+				targetId = choices[0];
+			} else {
+				targetId = choices[choiceNum];
+				ut.chSend(message, 'Found ' + choices.length + ' matches, using [' + choiceNum + ']');
+			}
+
+			if (typeof rooms[pl.location].data.items[targetId] !== 'undefined') {
 				// legit target, see if it has a .get() method, though
 				
-				var theItem = rooms[pl.location].data.items[target];
+				var theItem = items[targetId];
 				if (typeof theItem.get === 'undefined') {
 					ut.chSend(message, 'You can\'t pick **that** up!');
 					return false;
@@ -880,11 +1138,8 @@ module.exports = {
 				
 				// ok, we can let them pick it up
 				// later, this will probably call theItem.get()
-				pl.inventory[target] = theItem;
-				delete rooms[pl.location].data.items[target];
-				ut.saveObj(rooms, cons.MUD.roomFile);
-				ut.saveObj(players, cons.MUD.playerFile);
-				eMaster('roomGet', pl.location, who, target, client);
+				theItem.get(who, client); // it's later.
+
 			} else {
 				ut.chSend(message, 'I see no ' + target + ' here.');
 			}
@@ -901,21 +1156,41 @@ module.exports = {
 			var pl = players[who];
 			parms = parms.split(' ');
 			var target = parms[0];
-			if (typeof pl.inventory[target] !== 'undefined') {
-				var theItem = pl.inventory[target];
-				rooms[pl.location].data.items[target] = theItem;
-				delete pl.inventory[target];
-				ut.saveObj(rooms, cons.MUD.roomFile);
-				ut.saveObj(players, cons.MUD.playerFile);
-				
-				if (!theItem.data.hidden) {
-					// don't fire off event if item is hidden
-					eMaster('roomDrop', pl.location, who, target, client);	
-				}
-				
+			
+			choiceNum = parseInt(target.split('.')[0]);
+			if (!isNaN(choiceNum)) {
+				target = target.split('.')[1];
 			} else {
-				ut.chSend(message, 'You can\'t drop what you\'re not carrying.');
+				choiceNum = 0;
 			}
+			
+			var choices = [];
+			for (var itemId in pl.inventory) {
+				console.log('(drop list) itemId: ' + itemId);
+				if (items[itemId].data.shortName.startsWith(target)) {
+					choices.push(itemId);
+				}
+			}			
+			
+			if (choices.length === 0) {
+				ut.chSend(message, 'I see no ' + target + ' that you can drop.');
+				return false;
+			}
+			
+			if (choiceNum > choices.length) {
+				ut.chSend(message, 'I see no ' + choiceNum + '.' + target + ' here!');
+				return false;
+			}
+			
+			if (choices.length === 1) {
+				targetId = choices[0];
+			} else {
+				targetId = choices[choiceNum];
+				ut.chSend(message, 'Found ' + choices.length + ' matches, using [' + choiceNum + ']');
+			}
+			
+			var theItem = pl.inventory[targetId];
+			items[theItem].drop(who, pl.location, client);
 		}
 	},
 	inv: {
@@ -1063,7 +1338,7 @@ module.exports = {
 			} 			
 		}
 	},
-	wizitem: {
+	wizprop: {
 		do: function(message, parms) {
 			var who = message.author.id;
 			if (!isPlayer(who)) {
@@ -1095,6 +1370,58 @@ module.exports = {
 			  ' When you drop it, you won\'t be able to pick it back up, so make sure ' +
 			  'you drop it in the room where you want to make it part of the scenery!');
 			ut.saveObj(rooms, cons.MUD.roomFile);
+		}
+	},
+	wizitem: {
+		do: function(message, parms) {
+			// "itemType", shortname, description
+			var who = message.author.id;
+			if (!isPlayer(who)) {
+				ut.chSend(message, message.author + ', you need to `!joinmud` first.');
+				return;
+			} 
+			
+			if (who !== cons.SPONGE_ID && noWiz) {
+				ut.chSend(message, ' magicking up items is temporarily disabled, sorry. ');
+			}
+			
+			who = message.author.id;
+			var pl = players[who];
+			
+			parms = parms.split('"');
+			iType = parms[1];
+		
+			var iType = parms[1];
+			if (!iType) {
+				ut.chSend(message, ' You need to specify an itemType (in quotes) as first argument!');
+				return;
+			}
+			
+			parms.shift();
+			parms.shift();
+			parms = parms[0].split(' ');
+			parms.shift();
+			
+			var shortName = parms[0];
+			
+			if (!shortName) {
+				ut.chSend(message, ' Need to specify a one-word shortName for second argument!');
+				return;
+			}
+			
+			parms.shift();
+			var itemDesc = parms.join(' '); // everything that's left
+			var theItem = new Item(iType, {
+				"shortName": shortName,
+				"description": itemDesc,
+				"location": who
+			});
+			items[theItem.id] = theItem;
+			pl.inventory[theItem.id] = theItem.id;
+			
+			ut.saveObj(rooms, cons.MUD.roomFile);
+			ut.saveObj(players, cons.MUD.playerFile);
+			ut.saveObj(items, cons.MUD.itemFile);
 		}
 	},
 	killitem: {
@@ -1169,52 +1496,48 @@ module.exports = {
 				exam <Player>
 				exam <SceneryItem>
 			*/
-			// for now, we'll just do <item in inv>
-			// and if not found, check room?
-			
-			// 1. Figure out what the target is
-			// 2. Check for an .exam() method on it
-			// 3. If it exists, run it
-			
-			
-			// Item selector algorithm (for `exam`, use limited versions for other
-			// commands, e.g., `get` only iterates over Items, `attack` only over Mobs (and players for PvP), etc.)
-			// build up a list of valid targets:
-			//	iterate over all Items, SceneryItems, Exits, Mobs, and Players in current room
-			//	build a table of their shortname : Array [UNID, UNID, ...]
-			//		Some entities may have multiple shortnames, add to each Array as needed!
-			//	check player input vs shortnames   'bag'
-			//	if Array length > 1,
-			//		and they don't specify: tell them it's ambiguous and show a list
-			//		if they specify: (eg: 3.bag) use that one
-			//	For Array length = 1,
-			//		we've found the item, use it.
-			//
-			// Future: allow partial matches, but no ambiguity: "Does 'ba' mean 'bag' or 'basketball' or 'BaalzarTheKiller'?"
-			// (continue to allow picking within a list, e.g.,  2.basketball to get the second of "basketball" and "flat basketball" objects.
-			
-			
+		
 			var outP = '';
 			var found = 0;
-			
-			// check inventory
-			if (typeof pl.inventory[target] !== 'undefined') {
-				outP += '(inv.) `' + target + '`: ' + pl.inventory[target].data.description + '\n';
-				found++;
-			}
-			
-			// check room
-			if (typeof rooms[loc].data.items[target] !== 'undefined') {
-				if (!rooms[loc].data.items[target].data.hidden) {
-					// not "hidden"
-					outP += '(here) `' + target + '`: ' + rooms[loc].data.items[target].data.description + '\n';
-				} else {
-					// is "hidden", only use .description by itself
-					outP += rooms[loc].data.items[target].data.description + '\n';
+
+			// check inventory NEW
+			for (var itemId in pl.inventory) {
+				if (items[pl.inventory[itemId]].data.shortName.startsWith(target)) {
+					outP += '(inv.) `' + items[pl.inventory[itemId]].data.shortName + '`: ' + items[pl.inventory[itemId]].data.description + '\n';
+					found++;
 				}
-				found++;
 			}
 			
+			// check room NEW
+			// items...
+			for (var itemId in rooms[loc].data.items) {
+				console.log('(look list) itemId: ' + itemId);
+				if (items[itemId].data.shortName.startsWith(target)) {
+					if (!items[itemId].data.hidden) {
+						// not "hidden"
+						outP += '(here) `' + items[itemId].data.shortName + '`: ' + items[itemId].data.description + '\n';
+						found++;
+					} else {
+						// is "hidden", only use .description by itself
+						outP += items[itemId].data.description + '\n';
+						found++;
+					}
+				}
+			}
+			// players...
+			if (!rooms[loc].data.chars) {
+				console.log('WARNING! no `.data.chars` on room ' + loc + '! Resetting to []!');
+				rooms[loc].data.chars = [];
+			}
+
+			for (var i = 0; i < rooms[loc].data.chars.length; i++) {
+				console.log(players[rooms[loc].data.chars[i]].charName + ' is here.');
+				if (players[rooms[loc].data.chars[i]].charName.startsWith(target)) {
+					outP += players[rooms[loc].data.chars[i]].description;
+					found++;
+				}
+			}
+
 			// check exits
 			if (typeof rooms[loc].data.exits[target] !== 'undefined') {
 				outP += '(exit) `' + target + '`: ';
@@ -1225,18 +1548,6 @@ module.exports = {
 				}
 				found++;
 			}
-
-			// check players (this sucks, will have to store in room data later)
-			// horrifying.
-			for (let plId in players) {
-				if (players[plId].charName === target) {
-					if (players[plId].location === loc) {
-						outP += '\n' + players[plId].describe();
-						found++;
-					}
-					break;
-				}
-			}		
 			
 			if (!found) {
 				outP += 'I see no ' + target + ' here.';
@@ -1252,7 +1563,7 @@ module.exports = {
 			let who = message.author.id;
 			let player = players[who];
 			let target = parms;
-			let fail = cantDo(who, 'exam'); 
+			let fail = cantDo(who, 'tele'); 
 			if (fail) {
 				ut.chSend(message, fail);
 				return;
@@ -1283,8 +1594,13 @@ module.exports = {
 		}
 	},
 	sit: {
-		do: function(message, parms, client) {
+		do: function(message, parms, client) {	
 			var who = message.author.id;
+			let fail = cantDo(who, 'sit'); 
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
 			var pl = players[who];
 			var pLoc = pl.location;
 			
@@ -1305,6 +1621,12 @@ module.exports = {
 	stand: {
 		do: function(message, parms, client) {
 			var who = message.author.id;
+			let fail = cantDo(who, 'stand'); 
+			if (fail) {
+				ut.chSend(message, fail);
+				return;
+			}
+			
 			var pl = players[who];
 			var pLoc = pl.location;
 
@@ -1379,6 +1701,19 @@ module.exports = {
 			} else {
 				ut.chSend(message, 'Sorry, I couldn\'t find ' + parms);
 			}
+		}
+	},
+	nuke: {
+		do: function(message, parms) {
+			for (var roomId in rooms) {
+				rooms[roomId].data.contents ={};
+				rooms[roomId].data.items ={};
+			}
+			ut.chSend(message, 'All room contents nuked. :bomb: :open_mouth:');
+			for (var pId in players) {
+				players[pId].inventory = {};
+			}
+			ut.chSend(message, 'All player inventories nuked. :bomb: :open_mouth:');
 		}
 	}
 };
