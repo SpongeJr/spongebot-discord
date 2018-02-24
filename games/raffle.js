@@ -10,19 +10,14 @@ module.exports = {
 	v: {},
 	giveaways: {
 		do: function(message, parms, gameStats) {
+			var str = '';
+			var count = 0;
 			if (!parms) {
-				utils.chSend(message, ' **OFFICIAL GIVEAWAY NOTICE** The next giveaway will be on: ' +
-				  ' Friday Feb. 23 sometime between the hours of 1200 and 2100 EST. You do not have to be ' +
-				  ' present to win. A pinned message will be in #giveaways with the list of winners!\n\n' +
-				  ' There will be one winner who can pick any one item from `!giveaways list`, and several ' +
-				  ' smaller prizes (probably credits and tickets for the next raffle).');
 				utils.chSend(message, 'Type `!giveaways list` to see what is available for winning a raffle. ' + 
-				  ' Items listed there will be options  you can pick if you win a weekly raffle. ' +
-				  ' The details around raffle tickets and drawings are still being finalized, but are almost complete.\n' +
-				  ' We hope to have raffles up and running _before_ mid-February. You\'ll want to grab as many entry tickets' +
-				  ' :tickets: as you can get your hands on, to have the best chances! Type !stats to see how many you have.' +
-				  '\n\n Also see `!help giveaways` for new options like `!giveaways addrole` and `!giveaways categories`.');
-				return;
+				  ' Items listed there will be options  you can pick if you win a standard raffle.' +
+				  ' Standard raffles are usually on the second and fourth friday of every month.' +
+				  '\n\n Also see `!help giveaways` for help on options like `!giveaways addrole` and ' +
+				  '`!giveaways categories`.');
 			}
 			
 			parms = parms.split(' ');
@@ -37,9 +32,8 @@ module.exports = {
 				parms.shift();
 				parms = parms.join(' ');
 				
-				var str = 'Use `!giveaways info <item>` for more info.\n';
-				var count = 0;
-				for (var item in giveaways) {
+				str = 'Use `!giveaways info <item>` for more info.\n';
+				for (let item in giveaways) {
 					if ((giveaways[item].hasOwnProperty('type') && giveaways[item].type === parms) || parms === '') {
 						if ((giveaways[item].hasOwnProperty('disabled') && giveaways[item].disabled !== "true") || (!giveaways[item].hasOwnProperty('disabled'))) {
 							str += '`' + item + '`   ';
@@ -56,13 +50,14 @@ module.exports = {
 				}
 				str += '\nList subject to change.';
 				utils.chSend(message, str);
+				return;
 			}
 			
 			if (parms[0] === 'info') {
 				parms.shift();
 				parms = parms.join(' ');
 				if (giveaways.hasOwnProperty(parms)) {
-					var str = '`' + parms + '`: ';
+					str = '`' + parms + '`: ';
 					str += giveaways[parms].info.description + '\n';
 					str += ' **Category**: ' + (giveaways[parms].type || '(none)');
 					str += '   **More info**: ' + giveaways[parms].info.infoUrl;
@@ -79,7 +74,7 @@ module.exports = {
 					return;
 				}
 
-				var role = message.guild.roles.find('name', 'giveaways');
+				let role = message.guild.roles.find('name', 'giveaways');
 				if (message.member.roles.has(role.id)) {
 					utils.debugPrint('!giveaways addrole: Did not add role or award ticket because they had it already.');
 					utils.chSend(message, message.author + ' I think you already had that role.');
@@ -93,14 +88,14 @@ module.exports = {
 					  utils.alterStat(message.author.id, 'raffle', 'ticketCount', 1, gameStats) + ' raffle tickets!');
 				}
 			} else if (parms[0] === 'categories') {
-				var cats = {};
+				let cats = {};
 				var theStr = ' Raffle item categories: ';
-				for (var item in giveaways) {
+				for (let item in giveaways) {
 					if (giveaways[item].hasOwnProperty('type')) {
 						cats[giveaways[item].type] = true;
 					}
 				}
-				for (var cat in cats) {
+				for (let cat in cats) {
 					theStr += '`' + cat + '` ';
 				}
 				utils.chSend(message, theStr);
@@ -112,29 +107,27 @@ module.exports = {
 			do: function(message, parms, gameStats) {
 				// replace with access check someday
 				if (message.author.id === cons.SPONGE_ID) {
-					
+					var who;
+					var amt;
+					var str;
 					if (!parms) {
 						utils.chSend(message, 'You forgot the target to for !ticket.');
 						return;
 					}
 					
 					parms = parms.split(' ');
-					var who = utils.makeId(parms[0]);
+					who = utils.makeId(parms[0]);
 
-					var amt;
 					if (message.mentions.users.has(who)) {
 						// there's an @ mention, and it matches the id sent up
 						// so we can pass a user up to alterStat for nick nicking
 						who = message.mentions.users.find('id', who);
 					}
-					
-					//var who = utils.makeId(parms[0]);
-					var str;
-					
+
 					if (parms[1] === '' || typeof parms[1] === 'undefined') {
 						amt = 1;
 					} else {
-						var amt = parseInt(parms[1]);	
+						amt = parseInt(parms[1]);	
 					}
 					
 					str = who + ' now has ';
@@ -145,27 +138,15 @@ module.exports = {
 				}
 			}
 		},
-		tix: {
-			do: function(message) {
-				utils.chSend(message, 'Too lazy to spell "tickets" out, or what?');
-			}
-		},
-		go: {
-			do: function(message) {
-				utils.chSend(message, 'Super ultra raffle shtyle GO! :shtyle:');
-			}
-		},
 		next: {
 			do: function(message) {
-				var when = new Date();
-				when = new Date(when.valueOf() + cons.ONE_WEEK);
+				var when = new Date(cons.NEXT_RAFFLE);
 				utils.chSend(message, 'Next raffle is scheduled for: ' + when + ' , but' +
 				  ' this is subject to bugs, unexpected circumstances, and whimsy.');
 			}
 		},
 		hype: {
 			do: function(message) {
-				var str = '';
 				var when = new Date(cons.NEXT_RAFFLE);
 				utils.chSend(message, 'The next raffle is on ' + when + '! Are you ready?!\n' +
 				  '(use !time to find out official server time)');
@@ -185,17 +166,16 @@ module.exports = {
 					return;
 				}
 
-				var user;
-				var nick;
 				var str = '';
 				var str2 = '';
 				var tNum = raf.startNum;
 				var tix = [];
 				var numTix = {};
 				var numUsers = 0;
+				var newTix = [];
 				
 				// go find all the tickets by iterating over gameStats
-				for (var who in gameStats) {
+				for (let who in gameStats) {
 					if (gameStats[who].hasOwnProperty('raffle')) {
 						if (!gameStats[who].raffle.hasOwnProperty('ticketCount')) {
 							utils.debugPrint('!raffle: ' + who + ' has .raffle but no .ticketCount');
@@ -210,7 +190,7 @@ module.exports = {
 								// user is this user, ticket is sequential from startNum
 								// IOW, the tickets are "handed out in order" first
 								numTix[who] = gameStats[who].raffle.ticketCount;
-								for (var i = 0; i < numTix[who]; i++) {
+								for (let i = 0; i < numTix[who]; i++) {
 									tix.push({"num": tNum, "user": who});
 									tNum++;
 								}
@@ -224,12 +204,12 @@ module.exports = {
 				  raf.startNum + '` through `' + (raf.startNum + tix.length - 1);
 				str += '`! They belong to ' + numUsers + ' users:\n```';
 				
-				newTix = [];
+
 				str2 += '```\n';
 				
 				var column = 0;
 				// for each user with tickets...
-				for (var who in numTix) {
+				for (let who in numTix) {
 					
 					// builds second message user sections
 					str2 += '\n';
@@ -268,11 +248,11 @@ module.exports = {
 					//if (column % 3 === 0) {str += '\n'}
 
 					// for each ticket belonging to them...
-					for (var i = 0; i < numTix[who]; i++) {
+					for (let i = 0; i < numTix[who]; i++) {
 						// pick 1 random ticket from those left in original array,
 						// yank it out and put in ranTick. It's an object.
 						// .slice() is destructive to the original array. good.
-						ranTick = tix.splice(Math.floor(Math.random() * tix.length), 1);
+						let ranTick = tix.splice(Math.floor(Math.random() * tix.length), 1);
 						ranTick = ranTick[0]; // .splice() gave us an array with 1 element
 						
 						// modify the "user" property to match the new owner
