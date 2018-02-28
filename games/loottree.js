@@ -1,9 +1,11 @@
+// Contains !tree 
+// Also weekly loot bag !collect code going in here for now
+
 const cons = require('../lib/constants.js');
 const FRUIT_VAL = 300;
 const utils = require('../lib/utils.js');
-
-// Contains !tree 
-// Also weekly loot bag !collect code going in here for now
+const treefile = require('../' + cons.DATA_DIR + cons.LOOTTREE_FILE);
+var treesLoaded = false;
 
 //-----------------------------------------------------------------------------
 /* tree.config: {
@@ -22,23 +24,27 @@ var Fruit = function(stats) {
 	this.stats.color = utils.listPick(['striped','spotted','plain', 'shiny', 'dull', 'dark', 'light', 'bright', 'mottled']) +
 	  ' ' + utils.listPick(['red','orange','yellow','green','blue','indigo','golden','silver']);
 };
-Fruit.prototype.pick = function(message) {
-	// returns some text about what happened
-	var outP = '';
+Fruit.prototype.pick = function() {
+	// returns object with a message and a value to add to bank
+	let outP = '';
+	let totValue = 0;
 	
 	if (Math.random() < 0.08) {
 		outP += this.stats.name + ' loot fruit got squished! ';
 		this.stats.name = ':grapes: a squished';
 		this.stats.valueMult = 0;
-	}	
+	}
+	
+	totValue = FRUIT_VAL * this.stats.valueMult;
+	
 	outP += this.stats.name + ' loot fruit was picked for ' + FRUIT_VAL +
-	  ' x ' + (this.stats.valueMult * 100) + '% = ' + FRUIT_VAL * this.stats.valueMult;
+	  ' x ' + (this.stats.valueMult * 100) + '% = ' + totValue;
 		
 	this.stats.ripeness = Math.random() * 0.04;
 	this.stats.name = ':seedling: budding';
 	this.stats.valueMult = 0;
 	
-	return outP;
+	return {message: outP, value: totValue}
 };
 Fruit.prototype.age = function() {
 	this.stats.ripeness = parseFloat(this.stats.ripeness + Math.random() * 0.4);
@@ -60,6 +66,18 @@ Fruit.prototype.age = function() {
 		this.stats.valueMult = 0;
 	}
 };
+const loadTrees = function() {
+	// Take the trees loaded in from disk and creates new Fruit as needed for them
+
+	for (var whoseTree in tree.trees) {
+		var allFruit = tree.trees[whoseTree];
+		for (var i = 0; i < allFruit.length; i++) {	
+			let newFruit = new Fruit(allFruit[i].stats);
+			allFruit[i] = newFruit;
+		}
+	}
+	treesLoaded = true;
+};
 var tree = {
 	config: {
 		treeVal: 3500,
@@ -70,7 +88,7 @@ var tree = {
 		  'Thanks for participating on the server!','Don\'t spend it all on the `!slots`!',':treasure:',':coin: :coin: :coin:',
 		  ':money_mouth:', 'That\'s some good loot!','If you have certain roles, you get more on your harvest!','','','','','']
 	},
-	trees: {}
+	trees: treefile
 };
 module.exports = {
 	timers: {
@@ -84,13 +102,13 @@ module.exports = {
 		tend: {
 			howOften: 45000,
 			gracePeriod: 0,
-			failResponse: 'You can only do the fruit tending thing every <<howOften>>, ' +
+			failResponse: 'You can only tend to your loot fruit every <<howOften>>, ' +
 			  ' and you need to wait <<next>> before you can do it again.'
 		},
 		pick: {
 			howOften: 360000,
 			gracePeriod: 0,
-			failResponse: 'You can only do the fruit picking thing every <<howOften>>, ' +
+			failResponse: 'You can only pick your loot fruit every <<howOften>>, ' +
 			  ' and you need to wait <<next>> before you can do it again.'			
 		}
 	},
@@ -132,10 +150,12 @@ module.exports = {
 					var fruitBonus = 0;
 					var fruitBonusStr = '';
 					
-					//fruit bonus
+					//fruit bonus (disabled)
+					/*
 					if (tree.trees.hasOwnProperty(who)) {
 						fruitBonus += 50 * tree.trees[who].length;
 					}
+					*/
 					collectVal = tree.config.treeVal + fruitBonus;
 					
 					var specialRoles = {
@@ -259,6 +279,7 @@ module.exports = {
 						}
 						fruitMess += '\n';
 					}
+					utils.saveObj(tree.trees, cons.LOOTTREE_FILE);
 					utils.chSend(message, fruitMess);
 				} else {
 					utils.chSend(message, 'I see no fruit you can tend to.');
@@ -279,12 +300,17 @@ module.exports = {
 				
 					// .pick() each Fruit
 					pickMess = '```Loot Fruit pick results for '+ message.author.username +': ```\n ';
+					var totalFruitVal = 0;
 					for (let i = 0; i < fruit.length; i++) {
-						pickMess += fruit[i].pick(message) + '\n';
+						let pickResult = fruit[i].pick();
+						totalFruitVal += pickResult.value;
+						pickMess += pickResult.message + '\n';
 					}
 				} else {
 					pickMess = 'Nothing to pick... you need to do `!tree fruit` first.';
 				}
+				pickMess += '\n **TOTAL LOOT FRUIT VALUE**: ' + totalFruitVal + ' (added to your bank)';
+				utils.addBank(who, totalFruitVal, bankroll);
 				utils.chSend(message, pickMess);
 			}
 		}
@@ -299,6 +325,12 @@ module.exports = {
 	disabled: false,
 	access: false,
 	do: function(message, parms, gameStats, bankroll) {
+		
+		if (!treesLoaded) {
+			loadTrees();
+			console.log('tree.do(): Fruit placed on trees.');
+		}
+		
 		parms = parms.split(' ');		
 		if (parms[0] === '') {
 			utils.chSend(message, 'Please see `!help tree` for help with your loot tree.');
@@ -336,13 +368,15 @@ module.exports = {
 				var collectVal = 12500;
 				var fruitBonus = 0;
 				
-				// small extra fruit bonus for now (750 / fr.) 
+				// Fruit bonus removed
+				/*
 				if (tree.trees.hasOwnProperty(who)) {
 					fruitBonus += 750 * tree.trees[who].length;
 					collectVal += fruitBonus;
 					messStr += ' :money_mouth: Bonus of ' + fruitBonus + ' for trying ' +
 					' the `!tree fruit` alpha-testing feature since last bot restart!\n';
 				}
+				*/
 
 				var numTix = 1;
 				messStr += utils.makeTag(who) +  ', you have added ' + collectVal + ' credits ' + 
