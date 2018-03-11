@@ -288,6 +288,7 @@ spongeBot.quote = {
 		quotes.q.do(message, parms, BOT);
 	}
 };
+/*
 spongeBot.z = {
 	help: 'Use `!z <text to add>` to keep a story going.',
 	disabled: true,
@@ -331,6 +332,36 @@ spongeBot.zshow = {
 		iFic.zshow.do(message, parms);
 	}
 };
+*/
+
+
+/*
+var Command = function(trigger, module, config) {
+	// config is optional -- uses defaults if omitted:
+	//	disabled: false
+	//	do: function(message, parms, gameStats, bankroll)
+	//	help: module[
+	
+	
+	
+}
+*/
+
+
+var StoryCommand = function(name) {
+	return {
+		disabled: true,
+		do: function(message, parms) {
+			iFic[name].do(message.parms)
+		}
+	}
+}
+var zCommands = 'z,zclear,zundo,zsave,zchars,zload,zshow'.split(',');
+
+for (let i = 0; i < zCommands.length; i++) {
+	spongeBot[zCommands[i]] = new StoryCommand(zCommands[i]);
+}
+
 //-----------------------------------------------------------------------------
 spongeBot.collect = {
 	help: 'Collects from your weekly loot bag! What will you find?',
